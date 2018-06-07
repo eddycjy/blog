@@ -20,6 +20,9 @@
 14. [Gin实践 番外 Golang交叉编译](https://github.com/EDDYCJY/blog/blob/master/golang/gin/2018-03-26-Gin%E5%AE%9E%E8%B7%B5-%E7%95%AA%E5%A4%96-Golang%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91.md)
 
 ### 爬虫系列目录
+1. [爬取豆瓣电影 Top250](https://github.com/EDDYCJY/blog/blob/master/golang/crawler/2018-03-21-%E7%88%AC%E5%8F%96%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E8%B1%86%E7%93%A3%E7%94%B5%E5%BD%B1-Top250.md)
+2. [爬取汽车之家 二手车产品库](https://github.com/EDDYCJY/blog/blob/master/golang/crawler/2018-04-01-%E7%88%AC%E5%8F%96%E6%B1%BD%E8%BD%A6%E4%B9%8B%E5%AE%B6-%E4%BA%8C%E6%89%8B%E8%BD%A6%E4%BA%A7%E5%93%81%E5%BA%93.md)
+3. [爬虫带你了解一下Golang的市场行情](https://github.com/EDDYCJY/blog/blob/master/golang/crawler/2018-04-28-%E7%88%AC%E8%99%AB%E5%B8%A6%E4%BD%A0%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8BGolang%E7%9A%84%E5%B8%82%E5%9C%BA%E8%A1%8C%E6%83%85.md)
 
 ### gRPC系列目录
 
