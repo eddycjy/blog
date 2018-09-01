@@ -222,3 +222,7 @@ $ nginx -s reload
 在本章节，希望您能够简单习得日常使用的 Web Server 背后都是一些什么逻辑，Nginx 是什么？反向代理？负载均衡？
 
 怎么简单部署，知道了吧。
+
+## 参考
+### 本系列示例代码
+- [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
