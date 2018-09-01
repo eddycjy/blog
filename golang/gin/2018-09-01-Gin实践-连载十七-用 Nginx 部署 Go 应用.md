@@ -209,7 +209,7 @@ $ nginx -s reload
 
 #### 验证
 
-再重复访问 http://api.blog.com:8081/auth?username={USER_NAME}}&password={PASSWORD}，多访问几次便于查看效果
+再重复访问 `http://api.blog.com:8081/auth?username={USER_NAME}}&password={PASSWORD}`，多访问几次便于查看效果
 
 目前 Nginx 没有进行特殊配置，那么它是轮询策略，而 go-gin-example 默认开着 debug 模式，看看请求 log 就明白了
 
