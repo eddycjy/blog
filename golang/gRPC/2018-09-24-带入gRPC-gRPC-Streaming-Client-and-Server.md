@@ -14,7 +14,7 @@
 
 ### 图
 
-![image](https://developers.google.com/web/fundamentals/performance/http2/images/multiplexing01.svg)
+![image](https://i.imgur.com/gcg2I8t.png)
 
 gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
 
