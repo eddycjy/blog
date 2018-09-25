@@ -301,7 +301,7 @@ func (x *streamServiceListClient) Recv() (*StreamResponse, error) {
 
 RecvMsg 会从流中读取完整的 gRPC 消息体，另外通过阅读源码可得知：
 
-（1）RecvMsg 是阻塞的
+（1）RecvMsg 是阻塞等待的
 
 （2）RecvMsg 当流成功/结束（调用了 Close）时，会返回 `io.EOF`
 
