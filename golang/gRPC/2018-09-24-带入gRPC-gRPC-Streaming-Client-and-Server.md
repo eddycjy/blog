@@ -299,7 +299,20 @@ func (x *streamServiceListClient) Recv() (*StreamResponse, error) {
 }
 ```
 
-通过阅读源码，可得知：当流结束（调用了 Close）时，会出现 `io.EOF`。而错误信息（err）基本都由另一侧反馈过来，因此进行日常处理和标记即可
+RecvMsg 会从流中读取完整的 gRPC 消息体，另外通过阅读源码可得知：
+
+（1）RecvMsg 是阻塞的
+
+（2）RecvMsg 当流成功/结束（调用了 Close）时，会返回 `io.EOF`
+
+（3）RecvMsg 当流出现任何错误时，流会被中止，错误信息会包含 RPC 错误码。而在 RecvMsg 中可能出现如下错误：
+
+- io.EOF
+- io.ErrUnexpectedEOF
+- transport.ConnectionError
+- google.golang.org/grpc/codes
+
+同时需要注意，默认的 MaxReceiveMessageSize 值为 1024 * 1024 * 4，建议不要超出
 
 #### 验证
 
