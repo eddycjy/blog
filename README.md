@@ -5,11 +5,15 @@
 ### 杂谈
  
 1. [Go依赖管理工具 - dep](https://github.com/EDDYCJY/blog/blob/master/golang/2018-03-06-Go%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7dep.md)
-2. [如此，用dep获取私有库](https://github.com/EDDYCJY/blog/blob/master/golang/2018-03-01-%E5%A6%82%E6%AD%A4%EF%BC%8C%E7%94%A8dep%E8%8E%B7%E5%8F%96%E7%A7%81%E6%9C%89%E5%BA%93.md)
-3. [聊一聊，Golang的相对路径问题](https://github.com/EDDYCJY/blog/blob/master/golang/2018-03-13-%E8%81%8A%E4%B8%80%E8%81%8A%EF%BC%8CGolang%E7%9B%B8%E5%AF%B9%E8%B7%AF%E5%BE%84%E9%97%AE%E9%A2%98.md)
-4. [Go的fake-useragent了解一下](https://github.com/EDDYCJY/blog/blob/master/golang/2018-05-21-Go%E7%9A%84fake-useragent%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8B.md)
+2. [如此，用 dep 获取私有库](https://github.com/EDDYCJY/blog/blob/master/golang/2018-03-01-%E5%A6%82%E6%AD%A4%EF%BC%8C%E7%94%A8dep%E8%8E%B7%E5%8F%96%E7%A7%81%E6%9C%89%E5%BA%93.md)
+3. [聊一聊，Golang 的相对路径问题](https://github.com/EDDYCJY/blog/blob/master/golang/2018-03-13-%E8%81%8A%E4%B8%80%E8%81%8A%EF%BC%8CGolang%E7%9B%B8%E5%AF%B9%E8%B7%AF%E5%BE%84%E9%97%AE%E9%A2%98.md)
+4. [Go的 fake-useragent 了解一下](https://github.com/EDDYCJY/blog/blob/master/golang/2018-05-21-Go%E7%9A%84fake-useragent%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8B.md)
 5. [用 Go 来了解一下 Redis 通讯协议](https://github.com/EDDYCJY/blog/blob/master/golang/2018-06-07-%E7%94%A8Go%E6%9D%A5%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8BRedis%E9%80%9A%E8%AE%AF%E5%8D%8F%E8%AE%AE.md)
 6. [Golang 大杀器之性能剖析 PProf](https://github.com/EDDYCJY/blog/blob/master/golang/2018-09-15-Golang%20%E5%A4%A7%E6%9D%80%E5%99%A8%E4%B9%8B%E6%80%A7%E8%83%BD%E5%89%96%E6%9E%90%20PProf.md)
+
+### 源码剖析
+
+1. [Golang 源码剖析：log 标准库](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-09-28-Golang-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90-log-%E6%A0%87%E5%87%86%E5%BA%93.md)
 
 ### gin系列目录
 
