@@ -48,6 +48,8 @@
 1. [带入gRPC：gRPC及相关介绍](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-09-23-%E5%B8%A6%E5%85%A5gRPC%E4%B8%80-gRPC%E5%8F%8A%E7%9B%B8%E5%85%B3%E4%BB%8B%E7%BB%8D.md)
 2. [带入gRPC：gRPC Client and Server](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-09-23-%E5%B8%A6%E5%85%A5gRPC%E4%BA%8C-gRPC-Client-and-Server.md)
 3. [带入gRPC：gRPC Streaming, Client and Server](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-09-24-%E5%B8%A6%E5%85%A5gRPC-gRPC-Streaming-Client-and-Server.md)
+4. [带入gRPC：TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-01-%E5%B8%A6%E5%85%A5gRPC-TLS-%E8%AF%81%E4%B9%A6%E8%AE%A4%E8%AF%81.md)
+5. [带入gRPC：基于 CA 的 TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-01-%E5%B8%A6%E5%85%A5gRPC-%E5%9F%BA%E4%BA%8ECA%E7%9A%84TLS%E8%AF%81%E4%B9%A6%E8%AE%A4%E8%AF%81.md)
 
 #### gRPC+gRPC Gateway实践
 1. [gRPC+gRPC Gateway实践一 介绍与环境安装](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-02-23-gRPC%2BgRPC-Gateway%E5%AE%9E%E8%B7%B5%E4%B8%80-%E4%BB%8B%E7%BB%8D%E4%B8%8E%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85.md)
