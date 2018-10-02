@@ -1,5 +1,7 @@
 # 带入gRPC：gRPC Streaming, Client and Server
 
+项目地址：https://github.com/EDDYCJY/go-grpc-example
+
 ## 前言
 
 本章节将介绍 gRPC 的流式，分为三种类型：

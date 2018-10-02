@@ -1,5 +1,7 @@
 # 带入gRPC：基于 CA 的 TLS 证书认证
 
+项目地址：https://github.com/EDDYCJY/go-grpc-example
+
 ## 前言
 
 在上一章节中，我们提出了一个问题。就是如何保证证书的可靠性和有效性？你如何确定你 Server、Client 的证书是对的呢？
