@@ -1,5 +1,7 @@
 # 带入gRPC：gRPC Client and Server 
 
+项目地址：https://github.com/EDDYCJY/go-grpc-example
+
 ## 前言
 
 本章节将使用 Go 来编写 gRPC Server 和 Client，让其互相通讯。在此之上会使用到如下库：
