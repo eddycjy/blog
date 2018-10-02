@@ -52,6 +52,10 @@ go get -u github.com/golang/protobuf/protoc-gen-go
 
 本小节开始正式编写 gRPC 相关的程序，一起上车吧 😄
 
+### 图示
+
+![image](https://i.imgur.com/Z3V3hl1.png)
+
 ### 目录结构
 
 ```
