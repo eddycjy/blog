@@ -216,7 +216,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 简单来讲就是客户端发起一次普通的 RPC 请求，服务端通过流式响应多次发送数据集，客户端 Recv 接收数据集。大致如图：
 
-![image](https://i.imgur.com/6puynw4.png)
+![image](https://i.imgur.com/W7g3kSC.png)
 
 #### Server
 
@@ -341,7 +341,7 @@ $ go run client.go
 
 客户端流式 RPC，单向流，客户端通过流式发起**多次** RPC 请求给服务端，服务端发起**一次**响应给客户端，大致如图：
 
-![image](https://i.imgur.com/wxDlgpM.png)
+![image](https://i.imgur.com/e60IAxT.png)
 
 #### Server
 
@@ -425,7 +425,11 @@ $ go run server.go
 
 首个请求一定是 Client 发起，但具体交互方式（谁先谁后、一次发多少、响应多少、什么时候关闭）根据程序编写的方式来确定（可以结合协程）
 
-因此图示也千变万化，这里就不放出来了
+假设该双向流是**按顺序发送**的话，大致如图：
+
+![image](https://i.imgur.com/DCcxwfj.png)
+
+还是要强调，双向流变化很大，因程序编写的不同而不同。**双向流图示无法适用不同的场景**
 
 #### Server
 
