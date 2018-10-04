@@ -297,3 +297,7 @@ func main() {
 在本章节，我们使用 CA 颁发的根证书对客户端、服务端的证书进行了签发。进一步的提高了两者的通讯安全 
 
 这回是真的大功告成了！
+
+## 参考
+### 本系列示例代码
+- [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

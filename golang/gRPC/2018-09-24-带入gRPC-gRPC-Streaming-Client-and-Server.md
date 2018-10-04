@@ -528,3 +528,7 @@ $ go run client.go
 ## 总结
 
 在本文共介绍了三类流的交互方式，可以根据实际的业务场景去选择合适的方式。会事半功倍哦 🎑
+
+## 参考
+### 本系列示例代码
+- [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

@@ -200,3 +200,7 @@ main.RecoveryInterceptor.func1(0xc420223a10)
 ## 总结
 
 通过本章节，你可以学会最常见的拦截器使用方法。接下来其它“新”需求只要举一反三即可 😈
+
+## 参考
+### 本系列示例代码
+- [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

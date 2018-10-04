@@ -297,3 +297,7 @@ $ go run client.go
 ## 总结
 
 在本章节，我们对 Protobuf、gRPC Client/Server 分别都进行了介绍。希望你结合文中讲述内容再写一个 Demo 进行深入了解，肯定会更棒 🤔
+
+## 参考
+### 本系列示例代码
+- [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)
