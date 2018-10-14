@@ -91,6 +91,26 @@ docker run -d -p 9411:9411 openzipkin/zipkin
 
 接下来实现 gRPC 通过 Opentracing 标准 API 对接 Zipkin，再通过 Zipkin 去查看数据
 
+## 目录结构
+
+新建 simple_zipkin_client、simple_zipkin_server 目录，目录结构如下：
+
+```
+go-grpc-example
+├── LICENSE
+├── README.md
+├── client
+│   ├── ...
+│   ├── simple_zipkin_client
+├── conf
+├── pkg
+├── proto
+├── server
+│   ├── ...
+│   ├── simple_zipkin_server
+└── vendor
+```
+
 ### 安装
 
 ```
