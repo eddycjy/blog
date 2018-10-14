@@ -54,6 +54,7 @@
 7. [带入gRPC：让你的服务同时提供 HTTP 接口](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-04-%E5%B8%A6%E5%85%A5gRPC-%E8%AE%A9%E4%BD%A0%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%90%8C%E6%97%B6%E6%8F%90%E4%BE%9BHTTP%E6%8E%A5%E5%8F%A3.md)
 8. [带入gRPC：对 RPC 方法做自定义认证](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-05-%E5%B8%A6%E5%85%A5gRPC-%E5%AF%B9RPC%E6%96%B9%E6%B3%95%E5%81%9A%E8%87%AA%E5%AE%9A%E4%B9%89%E8%AE%A4%E8%AF%81.md)
 9. [带入gRPC：gRPC Deadlines](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-06-%E5%B8%A6%E5%85%A5gRPC-gRPC-Deadlines.md)
+10. [带入gRPC：分布式链路追踪 gRPC+Opentracing+Zipkin](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-14-%E5%B8%A6%E5%85%A5gRPC-%E5%88%86%E5%B8%83%E5%BC%8F%E9%93%BE%E8%B7%AF%E8%BF%BD%E8%B8%AA-gRPC-Opentracing-Zipkin.md)
 
 #### gRPC+gRPC Gateway实践
 1. [gRPC+gRPC Gateway实践一 介绍与环境安装](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-02-23-gRPC%2BgRPC-Gateway%E5%AE%9E%E8%B7%B5%E4%B8%80-%E4%BB%8B%E7%BB%8D%E4%B8%8E%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85.md)
