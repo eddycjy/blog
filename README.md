@@ -10,6 +10,7 @@
 4. [Go的 fake-useragent 了解一下](https://github.com/EDDYCJY/blog/blob/master/golang/2018-05-21-Go%E7%9A%84fake-useragent%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8B.md)
 5. [用 Go 来了解一下 Redis 通讯协议](https://github.com/EDDYCJY/blog/blob/master/golang/2018-06-07-%E7%94%A8Go%E6%9D%A5%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8BRedis%E9%80%9A%E8%AE%AF%E5%8D%8F%E8%AE%AE.md)
 6. [Golang 大杀器之性能剖析 PProf](https://github.com/EDDYCJY/blog/blob/master/golang/2018-09-15-Golang%20%E5%A4%A7%E6%9D%80%E5%99%A8%E4%B9%8B%E6%80%A7%E8%83%BD%E5%89%96%E6%9E%90%20PProf.md)
+7. [使用 Gomock 进行单元测试](https://github.com/EDDYCJY/blog/blob/master/golang/2018-11-25-%E4%BD%BF%E7%94%A8Gomock%E8%BF%9B%E8%A1%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95.md)
 
 ### 源码剖析
 
