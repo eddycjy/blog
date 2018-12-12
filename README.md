@@ -16,6 +16,7 @@
 
 1. [Golang 源码剖析：log 标准库](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-09-28-Golang-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90-log-%E6%A0%87%E5%87%86%E5%BA%93.md)
 2. [Golang 源码剖析：fmt 标准库](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-12-04-Golang-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90-fmt-%E6%A0%87%E5%87%86%E5%BA%93.md)
+3. [深入理解 Go Slice](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-12-11-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-Slice.md)
 
 ### gin系列目录
 
