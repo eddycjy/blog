@@ -124,7 +124,7 @@ n.i: 煎鱼, n.j: 2
 type uintptr uintptr
 ```
 
-2、unsafe.Offsetof：返回变量的字节大小，也就是本文用到的偏移量大小。需要注意的是入参 `ArbitraryType` 表示任意类型，并非定义的 `int`。它实际作用是一个占位符
+2、unsafe.Offsetof：返回成员变量 x 在结构体当中的偏移量。更具体的讲，就是返回结构体初始位置到 x 之间的字节数。需要注意的是入参 `ArbitraryType` 表示任意类型，并非定义的 `int`。它实际作用是一个占位符
 
 ```
 func Offsetof(x ArbitraryType) uintptr
