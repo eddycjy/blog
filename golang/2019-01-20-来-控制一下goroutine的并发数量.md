@@ -1,5 +1,7 @@
 # 来，控制一下 goroutine 的并发数量
 
+![image](https://i.imgur.com/dGQVT1x.jpg)
+
 ## 问题
 
 ```
