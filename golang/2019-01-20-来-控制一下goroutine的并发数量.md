@@ -354,6 +354,7 @@ go func: 2, time: 1547950569
 - [go-playground/pool](https://github.com/go-playground/pool)
 - [nozzle/throttler](https://github.com/nozzle/throttler)
 - [Jeffail/tunny](https://github.com/Jeffail/tunny)
+- [panjf2000/ants](https://github.com/panjf2000/ants)
 
 比较成熟的第三方库也不少，基本都是以生成和管理 goroutine 为目标的池工具。我简单列了几个，具体建议大家阅读下源码或者多找找，原理相似
 
