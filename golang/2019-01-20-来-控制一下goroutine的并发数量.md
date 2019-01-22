@@ -177,6 +177,7 @@ func main() {
 	userCount := 10
 	ch := make(chan bool, 2)
 	for i := 0; i < userCount; i++ {
+		wg.Add(1)
 		go Read(ch, i)
 	}
 
@@ -185,7 +186,6 @@ func main() {
 
 func Read(ch chan bool, i int) {
 	defer wg.Done()
-	wg.Add(1)
 
 	ch <- true
 	fmt.Printf("go func: %d, time: %d\n", i, time.Now().Unix())
