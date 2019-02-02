@@ -81,7 +81,7 @@ func AddTag(c *gin.Context) {
 ```
 // @Summary 修改文章标签
 // @Produce  json
-// @Param id param int true "ID"
+// @Param id path int true "ID"
 // @Param name query string true "ID"
 // @Param state query int false "State"
 // @Param modified_by query string true "ModifiedBy"
@@ -90,7 +90,7 @@ func AddTag(c *gin.Context) {
 func EditTag(c *gin.Context) {
 ```
 
-参考的注解可见 [gin-blog](https://github.com/EDDYCJY/go-gin-example)
+参考的注解请参见 [go-gin-example](https://github.com/EDDYCJY/go-gin-example)。以确保获取最新的 swag 语法
 
 ## 生成
 
