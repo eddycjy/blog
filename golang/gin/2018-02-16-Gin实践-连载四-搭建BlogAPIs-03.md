@@ -104,7 +104,7 @@ gin-blog/
 
 ---
 
-##编写models逻辑
+## 编写models逻辑
 创建`models`目录下的`article.go`，写入文件内容：
 ```
 package models
