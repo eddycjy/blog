@@ -22,6 +22,8 @@
 1. [Golang 源码剖析：log 标准库](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-09-28-Golang-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90-log-%E6%A0%87%E5%87%86%E5%BA%93.md)
 2. [Golang 源码剖析：fmt 标准库](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-12-04-Golang-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90-fmt-%E6%A0%87%E5%87%86%E5%BA%93.md)
 3. [深入理解 Go Slice](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-12-11-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-Slice.md)
+4. [深入理解 Go map：初始化和访问元素](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-03-04-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-map-%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E8%AE%BF%E9%97%AE%E5%85%83%E7%B4%A0.md)
+5. [深入理解 Go map：赋值和扩容迁移](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-03-24-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-map-%E8%B5%8B%E5%80%BC%E5%92%8C%E6%89%A9%E5%AE%B9%E8%BF%81%E7%A7%BB.md)
 
 ### gin系列目录
 
