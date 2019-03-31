@@ -16,6 +16,7 @@
 10. [Go Slice 最大容量大小是怎么来的](https://github.com/EDDYCJY/blog/blob/master/golang/2019-01-06-Go-Slice-%E6%9C%80%E5%A4%A7%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F%E6%98%AF%E6%80%8E%E4%B9%88%E6%9D%A5%E7%9A%84.md)
 11. [来，控制一下 goroutine 的并发数量](https://github.com/EDDYCJY/blog/blob/master/golang/2019-01-20-%E6%9D%A5-%E6%8E%A7%E5%88%B6%E4%B8%80%E4%B8%8Bgoroutine%E7%9A%84%E5%B9%B6%E5%8F%91%E6%95%B0%E9%87%8F.md)
 12. [for-loop 与 json.Unmarshal 性能分析概要](https://github.com/EDDYCJY/blog/blob/master/golang/2019-02-17-for-loop%E4%B8%8Ejson.Unmarshal%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90%E6%A6%82%E8%A6%81.md)
+13. [简单围观一下有趣的 //go: 指令](https://github.com/EDDYCJY/blog/blob/master/golang/2019-03-31-%E7%AE%80%E5%8D%95%E5%9B%B4%E8%A7%82%E4%B8%80%E4%B8%8B%E6%9C%89%E8%B6%A3%E7%9A%84go%E6%8C%87%E4%BB%A4.md)
 
 ### 源码剖析
 
