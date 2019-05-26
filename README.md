@@ -28,6 +28,7 @@
 4. [深入理解 Go map：初始化和访问元素](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-03-04-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-map-%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E8%AE%BF%E9%97%AE%E5%85%83%E7%B4%A0.md)
 5. [深入理解 Go map：赋值和扩容迁移](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-03-24-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-map-%E8%B5%8B%E5%80%BC%E5%92%8C%E6%89%A9%E5%AE%B9%E8%BF%81%E7%A7%BB.md)
 6. [深入理解 Go panic and recover](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-05-18-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-panic-and-recover.md)
+7. [深入理解 Go defer](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-05-26-Go-defer.md)
 
 ### gin系列目录
 
