@@ -22,6 +22,7 @@
 16. [Go defer 会有性能损耗，尽量不要用？](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-06-16-Go-defer-loss.md)
 17. [gRPC+gRPC Gateway 能不能不用证书？](https://github.com/EDDYCJY/blog/blob/master/golang/2019-06-22-grpc-gateway-tls.md)
 18. [从实践到原理，带你参透 gRPC](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2019-06-28-talking-grpc.md)
+19. [Golang 大杀器之跟踪剖析 trace](https://github.com/EDDYCJY/blog/blob/master/golang/2019-07-11-go-tool-trace.md)
 
 ### 源码剖析
 
