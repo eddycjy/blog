@@ -1,4 +1,4 @@
-# Golang Gin实践 番外 请入门 Makefile
+# 番外：请入门 Makefile
 
 ## 前言
 

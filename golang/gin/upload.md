@@ -1,4 +1,4 @@
-# 优化配置结构及实现图片上传
+# 连载十二：优化配置结构及实现图片上传
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 

@@ -1,4 +1,4 @@
-# Golang Gin实践 连载十四 实现导出、导入 Excel
+# 连载十四：实现导出、导入 Excel
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 

@@ -1,4 +1,4 @@
-# Golang Gin实践 连载十七 用 Nginx 部署 Go 应用
+# 连载十七：用 Nginx 部署 Go 应用
 
 ## 前言
 
