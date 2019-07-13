@@ -1,0 +1,4 @@
+root: ./golang
+
+structure:
+  readme: README.md
