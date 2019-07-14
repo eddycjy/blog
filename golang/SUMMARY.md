@@ -10,7 +10,7 @@
     * [1.7 for-loop 与 json.Unmarshal 性能分析概要](talk/for-loop-json-unmarshal.md)
     * [1.8 简单围观一下有趣的 //go: 指令](talk/go-ins.md)
     * [1.9 我要在栈上。不，你应该在堆上](talk/stack-heap.md)
-    * [1.10 Go defer 会有性能损耗，尽量不要用？](talk/defer-loss.md)
+    * [1.10 defer 会有性能损耗，尽量不要用](talk/defer-loss.md)
     * [1.11 从实践到原理，带你参透 gRPC](talk/talking-grpc.md)
 * 第2课 包管理
     * [2.1 Go依赖管理工具dep](module/dep.md)
@@ -45,12 +45,12 @@
     * [4.7 让你的服务同时提供 HTTP 接口](grpc/grpc-http.md)
     * [4.8 对 RPC 方法做自定义认证](grpc/per-rpc-credentials.md)
     * [4.9 gRPC Deadlines](grpc/deadlines.md)
-    * [4.10 分布式链路追踪 gRPC + Opentracing + Zipkin](grpc/zipkin.md)
+    * [4.10 分布式链路追踪](grpc/zipkin.md)
 * 第5课 grpc-gateway
     * [5.1 介绍与环境安装](grpc-gateway/install.md)
     * [5.2 Hello World](grpc-gateway/hello-world.md)
     * [5.3 Swagger了解一下](grpc-gateway/swagger.md)
-    * [5.4 gRPC+gRPC Gateway 能不能不用证书？](grpc-gateway/grpc-gateway-tls.md)
+    * [5.4 能不能不用证书？](grpc-gateway/grpc-gateway-tls.md)
 * 第6课 常用关键字
     * [6.1 panic and recover](panic/panic-and-recover.md)
     * [6.2 defer](defer/defer.md)
@@ -59,12 +59,12 @@
     * [7.2 slice 的最大容量大小是怎么来的](slice/why-slice-max.md)
     * [7.3 map：初始化和访问元素](map/map-access.md)
     * [7.4 map：赋值和扩容迁移](map/map-assign.md)
-    * [7.5 为什么遍历 map 是无序的？](map/why-map-no-order.md)
+    * [7.5 为什么遍历 map 是无序的](map/why-map-no-order.md)
 * 第8课 标准库
     * [8.1 fmt](pkg/fmt.md)
     * [8.2 log](pkg/log.md)
 * 第9课 工具
-    * [9.1 Go 大杀器之性能剖析 PProf](tools/go-tool-pprof.md.md)
+    * [9.1 Go 大杀器之性能剖析 PProf](tools/go-tool-pprof.md)
     * [9.2 Go 大杀器之跟踪剖析 trace](tools/go-tool-trace.md)
 * 第10课 爬虫
     * [9.1 爬取豆瓣电影 Top250](crawler/douban-top250.md)

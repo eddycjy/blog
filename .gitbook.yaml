@@ -1,5 +1,5 @@
 root: ./golang/
 
 structure:
-  readme: ./golang/README.md
-  summary: ./golang/SUMMARY.md
+  readme:  README.md
+  summary: SUMMARY.md
