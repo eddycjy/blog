@@ -1,4 +1,4 @@
-# 带入gRPC：对 RPC 方法做自定义认证
+# 4.8 对 RPC 方法做自定义认证
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 

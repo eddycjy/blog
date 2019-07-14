@@ -1,4 +1,4 @@
-# Go依赖管理工具
+# 2.1 Go依赖管理工具dep
 >Go dependency management tool 
 ## 环境要求
 - Golang >= 1.9

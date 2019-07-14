@@ -1,4 +1,4 @@
-# Go 的 fake-useragent 了解一下
+# 1.2 Go 的 fake-useragent 了解一下
 
 有的网站会根据 User-Agent 的不同，跳转到不同（PC、M）的站点，也有根据版本的不同给出不一样的提示等等，而 User-Agent 的变化更是爬虫里的基础姿势
 

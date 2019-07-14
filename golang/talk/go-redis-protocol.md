@@ -1,4 +1,4 @@
-# 用 Go 来了解一下 Redis 通讯协议
+# 1.3 用 Go 来了解一下 Redis 通讯协议
 
 Go、PHP、Java... 都有那么多包来支撑你使用 Redis，那你是否有想过
 

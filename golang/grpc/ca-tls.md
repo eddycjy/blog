@@ -1,4 +1,4 @@
-# 带入gRPC：基于 CA 的 TLS 证书认证
+# 4.5 基于 CA 的 TLS 证书认证
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 

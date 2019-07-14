@@ -1,6 +1,4 @@
-# Hello World
-
-在[上一节](https://segmentfault.com/a/1190000013339403)中我们已经完成了对环境的基本配置
+# 5.2 Hello World
 
 这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念
 

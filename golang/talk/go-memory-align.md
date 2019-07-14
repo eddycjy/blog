@@ -1,4 +1,4 @@
-# 在 Go 中恰到好处的内存对齐
+# 1.5 在 Go 中恰到好处的内存对齐
 
 ![image](https://i.imgur.com/SyctY6Q.png)
 

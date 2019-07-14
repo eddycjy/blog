@@ -1,4 +1,4 @@
-# Golang 大杀器之跟踪剖析 trace
+# 9.2 Go 大杀器之跟踪剖析 trace
 
 ![image](https://i.imgur.com/RHLGCaz.png)
 

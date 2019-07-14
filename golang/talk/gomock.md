@@ -1,4 +1,4 @@
-# 使用 Gomock 进行单元测试
+# 1.4 使用 Gomock 进行单元测试
 
 在实际项目中，需要进行单元测试的时候。却往往发现有一大堆依赖项。这时候就是 [Gomock](https://github.com/golang/mock) 大显身手的时候了
 

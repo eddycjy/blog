@@ -1,4 +1,4 @@
-# 带入gRPC：分布式链路追踪 gRPC + Opentracing + Zipkin
+# 4.10 分布式链路追踪 gRPC + Opentracing + Zipkin
 
 在实际应用中，你做了那么多 Server 端，写了 N 个 RPC 方法。想看看方法的指标，却无处下手？
 

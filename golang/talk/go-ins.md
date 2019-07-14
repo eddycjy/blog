@@ -1,4 +1,4 @@
-# 简单围观一下有趣的 //go: 指令
+# 1.8 简单围观一下有趣的 //go: 指令
 
 ![image](http://wx2.sinaimg.cn/large/006fVPCvly1g1m1bplu3mj30xc0m8myg.jpg)
 

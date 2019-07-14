@@ -1,4 +1,4 @@
-# 连载十五：生成二维码、合并海报
+# 3.15 生成二维码、合并海报
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 

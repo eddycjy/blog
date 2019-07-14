@@ -1,4 +1,4 @@
-# 深入理解 Go Slice
+# 7.1 深入理解 Go Slice
 
 ![image](https://i.imgur.com/lIoSqWC.png)
 

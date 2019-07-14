@@ -1,4 +1,4 @@
-# Go Slice 最大容量大小是怎么来的
+# 7.2 Go Slice 最大容量大小是怎么来的
 
 ![image](https://i.imgur.com/bQQRTTY.png)
 

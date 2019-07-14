@@ -1,4 +1,4 @@
-# Go defer 会有性能损耗，尽量不要用？
+# 1.10 Go defer 会有性能损耗，尽量不要用？
 
 ![image](https://i.imgur.com/YlKjnSH.jpg)
 

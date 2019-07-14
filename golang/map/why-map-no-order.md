@@ -1,4 +1,4 @@
-# 为什么遍历 Go map 是无序的？
+# 7.5 为什么遍历 Go map 是无序的？
 
 ![image](http://wx2.sinaimg.cn/large/006fVPCvly1g1s1ah84k8j30k70dvaac.jpg)
 

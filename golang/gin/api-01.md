@@ -1,4 +1,4 @@
-# 连载二：Gin搭建Blog API's （一）
+# 3.2 Gin搭建Blog API's （一）
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 

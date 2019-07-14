@@ -1,4 +1,4 @@
-# 来，控制一下 goroutine 的并发数量
+# 1.6 来，控制一下 goroutine 的并发数量
 
 ![image](https://i.imgur.com/dGQVT1x.jpg)
 

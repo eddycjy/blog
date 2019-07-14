@@ -1,4 +1,4 @@
-# 连载十三：优化你的应用结构和实现Redis缓存
+# 3.13 优化你的应用结构和实现Redis缓存
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 

@@ -1,4 +1,4 @@
-# 带入gRPC：gRPC Client and Server 
+# 4.2 gRPC Client and Server 
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 

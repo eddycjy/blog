@@ -1,4 +1,4 @@
-# 带入gRPC：Unary and Stream interceptor
+# 4.6 Unary and Stream interceptor
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 

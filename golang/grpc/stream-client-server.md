@@ -1,4 +1,4 @@
-# 带入gRPC：gRPC Streaming, Client and Server
+# 4.3 gRPC Streaming, Client and Server
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 

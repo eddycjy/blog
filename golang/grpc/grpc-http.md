@@ -1,4 +1,4 @@
-# 带入gRPC：让你的服务同时提供 HTTP 接口
+# 4.7 让你的服务同时提供 HTTP 接口
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 
