@@ -4,8 +4,9 @@
 
 ## Golang
 
-- 在线阅读：
-- 目录结构：
+- 项目地址：https://github.com/EDDYCJY/blog
+- 在线阅读：https://eddycjy.gitbook.io/blog/
+- 目录结构：https://github.com/EDDYCJY/blog/blob/master/SUMMARY.md
 
 ## 我的公众号
 
