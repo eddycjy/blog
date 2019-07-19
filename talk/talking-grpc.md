@@ -1,4 +1,4 @@
-# 1.10 从实践到原理，带你参透 gRPC
+# 1.11 从实践到原理，带你参透 gRPC
 
 ![image](https://i.imgur.com/cjLNsWj.png)
 
