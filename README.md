@@ -2,9 +2,10 @@
 
 写写代码，喝喝茶，搞搞 Go，一起吧。
 
+- 项目地址：https://github.com/EDDYCJY/blog
+
 ## Golang
 
-- 项目地址：https://github.com/EDDYCJY/blog
 - 在线阅读：https://eddycjy.gitbook.io/blog/
 - 目录结构：https://github.com/EDDYCJY/blog/blob/master/SUMMARY.md
 
