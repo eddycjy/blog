@@ -56,13 +56,14 @@
     * [6.2 defer](defer/defer.md)
 * 第7课 数据结构
     * [7.1 slice](slice/slice.md)
-    * [7.2 slice 的最大容量大小是怎么来的](slice/why-slice-max.md)
+    * [7.2 slice：最大容量大小是怎么来的](slice/why-slice-max.md)
     * [7.3 map：初始化和访问元素](map/map-access.md)
     * [7.4 map：赋值和扩容迁移](map/map-assign.md)
-    * [7.5 为什么遍历 map 是无序的](map/why-map-no-order.md)
+    * [7.5 map：为什么遍历 map 是无序的](map/why-map-no-order.md)
 * 第8课 标准库
     * [8.1 fmt](pkg/fmt.md)
     * [8.2 log](pkg/log.md)
+    * [8.3 unsafe](pkg/unsafe.md)
 * 第9课 工具
     * [9.1 Go 大杀器之性能剖析 PProf](tools/go-tool-pprof.md)
     * [9.2 Go 大杀器之跟踪剖析 trace](tools/go-tool-trace.md)

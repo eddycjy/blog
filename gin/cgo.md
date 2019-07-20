@@ -2,8 +2,6 @@
 
 项目地址：https://github.com/EDDYCJY/go-gin-example （快上车，支持一波）
 
-原文地址：https://segmentfault.com/a/1190000013989448
-
 ## 前言 
 
 在 [连载九](https://segmentfault.com/a/1190000013960558) 讲解**构建Scratch镜像**时，我们编译可执行文件用了另外一个形式的命令，不知道你有没有疑问？

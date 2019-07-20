@@ -1,6 +1,6 @@
 # 6.2 深入理解 Go defer
 
-在上一章节 [《深入理解 Go panic and recover》](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2019-05-18-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-panic-and-recover.md) 中，我们发现了 `defer` 与其关联性极大，还是觉得非常有必要深入一下。希望通过本章节大家可以对 `defer` 关键字有一个深刻的理解，那么我们开始吧。你先等等，请排好队，我们这儿采取后进先出 LIFO 的出站方式...
+在上一章节 [《深入理解 Go panic and recover》](https://book.eddycjy.com/golang/panic/panic-and-recover.html) 中，我们发现了 `defer` 与其关联性极大，还是觉得非常有必要深入一下。希望通过本章节大家可以对 `defer` 关键字有一个深刻的理解，那么我们开始吧。你先等等，请排好队，我们这儿采取后进先出 LIFO 的出站方式...
 
 ## 特性
 
