@@ -1,8 +1,6 @@
 # 煎鱼的迷之博客
 
-写写代码，喝喝茶，搞搞 Go，一起吧。
-
-- 项目地址：https://github.com/EDDYCJY/blog
+写写代码，喝喝茶，搞搞 Go，一起吧，这是我的项目地址：https://github.com/EDDYCJY/blog
 
 ## 在线阅读
 
