@@ -4,10 +4,10 @@
 
 - 项目地址：https://github.com/EDDYCJY/blog
 
-## Golang
+## 在线阅读
 
-- 在线阅读：https://book.eddycjy.com/golang/
-- 目录结构：https://github.com/EDDYCJY/blog/blob/master/SUMMARY.md
+- https://book.eddycjy.com/golang/
+- https://eddycjy.gitbook.io/golang/
 
 ## 我的公众号
 
