@@ -6,7 +6,7 @@
 
 ## Golang
 
-- 在线阅读：https://eddycjy.gitbook.io/blog/
+- 在线阅读：https://book.eddycjy.com/golang/
 - 目录结构：https://github.com/EDDYCJY/blog/blob/master/SUMMARY.md
 
 ## 我的公众号
