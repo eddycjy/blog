@@ -1,6 +1,6 @@
 # 有点不安全却又一亮的 Go unsafe.Pointer
 
-在上一篇文章[《深入理解 Go Slice》](https://github.com/EDDYCJY/blog/blob/master/golang/pkg/2018-12-11-%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Go-Slice.md)中，大家会发现其底层数据结构使用了 `unsafe.Pointer`。因此想着再介绍一下其关联知识
+在上一篇文章[《深入理解 Go Slice》](https://book.eddycjy.com/golang/slice/slice.html)中，大家会发现其底层数据结构使用了 `unsafe.Pointer`。因此想着再介绍一下其关联知识
 
 ## 前言
 
