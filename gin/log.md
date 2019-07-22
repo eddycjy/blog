@@ -80,6 +80,7 @@ type PathError struct {
 - `os.IsNotExist`：能够接受`ErrNotExist`、`syscall`的一些错误，它会返回一个布尔值，能够得知文件不存在或目录不存在
 - `os.IsPermission`：能够接受`ErrPermission`、`syscall`的一些错误，它会返回一个布尔值，能够得知权限是否满足
 - `os.OpenFile`：调用文件，支持传入文件名称、指定的模式调用文件、文件权限，返回的文件的方法可以用于I/O。如果出现错误，则为`*PathError`。
+
 ```
 const (
     // Exactly one of O_RDONLY, O_WRONLY, or O_RDWR must be specified.
@@ -93,7 +94,6 @@ const (
     O_SYNC   int = syscall.O_SYNC   // 同步IO
     O_TRUNC  int = syscall.O_TRUNC  // 如果可以，打开时
 )
-
 ```
 - `os.Getwd`：返回与当前目录对应的根路径名
 - `os.MkdirAll`：创建对应的目录以及所需的子目录，若成功则返回`nil`，否则返回`error`
