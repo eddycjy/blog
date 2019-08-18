@@ -47,7 +47,7 @@ $ go get -u github.com/swaggo/gin-swagger/swaggerFiles
 
 ## 初始化
 
-## 编写API注释
+### 编写API注释
 
 `Swagger` 中需要将相应的注释或注解编写到方法上，再利用生成器自动生成说明文件
 
@@ -92,7 +92,37 @@ func EditTag(c *gin.Context) {
 
 参考的注解请参见 [go-gin-example](https://github.com/EDDYCJY/go-gin-example)。以确保获取最新的 swag 语法
 
-## 生成
+### 路由
+
+在完成了注解的编写后，我们需要针对 swagger 新增初始化动作和对应的路由规则，才可以使用。打开 routers/router.go 文件，新增内容如下：
+
+```
+package routers
+
+import (
+	...
+	
+	_ "github.com/EDDYCJY/go-gin-example/docs"
+
+	...
+)
+
+// InitRouter initialize routing information
+func InitRouter() *gin.Engine {
+	...
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	...
+	apiv1 := r.Group("/api/v1")
+	apiv1.Use(jwt.JWT())
+	{
+		...
+	}
+
+	return r
+}
+```
+
+### 生成
 
 我们进入到`gin-blog`的项目根目录中，执行初始化命令
 ```
@@ -116,7 +146,7 @@ docs/
 我们可以检查 `docs.go` 文件中的 `doc` 变量，详细记载中我们文件中所编写的注解和说明
 ![docs.go](https://sfault-image.b0.upaiyun.com/285/983/2859833321-5aade21608b65_articlex)
 
-## 验证
+### 验证
 
 大功告成，访问一下 `http://127.0.0.1:8000/swagger/index.html`， 查看 `API` 文档生成是否正确
 
