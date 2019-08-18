@@ -253,7 +253,7 @@ func DeleteTag(c *gin.Context) {
 
 接下来我们编写**新增标签**的接口
 
-打开`models`目录下v1版本的`tag.go`，修改文件（增加2个方法）：
+打开`models`目录下的`tag.go`，修改文件（增加2个方法）：
 ```
 ...
 func ExistTagByName(name string) bool {
