@@ -321,7 +321,7 @@ func CheckPermission(src string) bool {
 }
 
 func IsNotExistMkDir(src string) error {
-	if exist := CheckExist(src); exist == false {
+	if notExist := CheckNotExist(src); notExist == true {
 		if err := MkDir(src); err != nil {
 			return err
 		}
