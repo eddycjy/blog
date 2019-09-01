@@ -68,6 +68,7 @@
     * [9.1 Go 大杀器之性能剖析 PProf](tools/go-tool-pprof.md)
     * [9.2 Go 大杀器之跟踪剖析 trace](tools/go-tool-trace.md)
     * [9.3 用 GODEBUG 看调度跟踪](tools/godebug-sched.md)
+    * [9.4 用 GODEBUG 看GC](tools/godebug-gc.md)
 * 第10课 爬虫
     * [9.1 爬取豆瓣电影 Top250](crawler/douban-top250.md)
     * [9.2 爬取汽车之家 二手车产品库](crawler/cars.md)
