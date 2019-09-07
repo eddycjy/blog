@@ -12,6 +12,7 @@
     * [1.9 我要在栈上。不，你应该在堆上](talk/stack-heap.md)
     * [1.10 defer 会有性能损耗，尽量不要用](talk/defer-loss.md)
     * [1.11 从实践到原理，带你参透 gRPC](talk/talking-grpc.md)
+    * [1.12 Go1.13 defer 的性能是如何提高的？](talk/go1.13-defer.md)
 * 第2课 包管理
     * [2.1 Go依赖管理工具dep](module/dep.md)
     * [2.2 如此，用dep获取私有库](module/dep-private.md)
