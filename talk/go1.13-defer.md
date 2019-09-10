@@ -165,7 +165,28 @@ case ODEFER:
 
 ### 小结
 
-这块结合来看，核心就是当 `e.loopdepth == 1` 时，会将逃逸分析结果 `n.Esc` 设置为 `EscNever`，也就是将 `_defer` 分配到栈上，那这个 `e.loopdepth` 到底又是何方神圣呢，我想它应该是迭代深度的意思，我们可以来证实一下，代码如下：
+这块结合来看，核心就是当 `e.loopdepth == 1` 时，会将逃逸分析结果 `n.Esc` 设置为 `EscNever`，也就是将 `_defer` 分配到栈上，那这个 `e.loopdepth` 到底又是何方神圣呢，我们再详细看看代码，如下：
+
+```
+// src/cmd/compile/internal/gc/esc.go
+type NodeEscState struct {
+	Curfn             *Node
+	Flowsrc           []EscStep 
+	Retval            Nodes    
+	Loopdepth         int32  
+	Level             Level
+	Walkgen           uint32
+	Maxextraloopdepth int32
+}
+```
+
+这里重点查看 `Loopdepth` 字段，目前它共有三个值标识，分别是:
+
+- -1：全局。
+- 0：返回变量。
+- 1：顶级函数，又或是内部函数的不断增长值。
+
+这个读起来有点绕，结合我们上述 `e.loopdepth == 1` 的表述来看，也就是当 `defer func` 是顶级函数时，将会分配到栈上。但是若在  `defer func` 外层出现显式的迭代循环，又或是出现隐式迭代，将会分配到堆上。其实深层表示的还是迭代深度的意思，我们可以来证实一下刚刚说的方向，显式迭代的代码如下：
 
 ```
 func main() {
@@ -195,7 +216,7 @@ $ go tool compile -S main.go
 	...
 ```
 
-显然，最终 `defer` 调用的是 `runtime.deferproc` 方法，也就是分配到堆上了，没毛病。
+显然，最终 `defer` 调用的是 `runtime.deferproc` 方法，也就是分配到堆上了，没毛病。而隐式迭代的话，你可以借助 `goto` 语句去实现这个功能，再自己验证一遍，这里就不再赘述了。
 
 ## 总结
 
