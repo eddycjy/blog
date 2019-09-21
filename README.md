@@ -9,7 +9,9 @@
 
 ## 我的公众号
 
-![image](https://image.eddycjy.com/dde35ca13201867da9aa35fe69a975d4.jpg)
+为了留言功能，最近换了新的公众号，可能需要大家重新关注一下，谢谢。
+
+![image](https://image.eddycjy.com/7b703c95f19bad89cf81b15c83927e46.jpg)
 
 ## ？
 
