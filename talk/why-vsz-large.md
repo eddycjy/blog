@@ -336,7 +336,6 @@ type arenaHint struct {
 - [全成的 Go 程序是怎样跑起来的](https://www.cnblogs.com/qcrao-2018/p/11124360.html)
 - [欧神的 go-under-the-hood](https://github.com/changkun/go-under-the-hood/blob/master/book/zh-cn/part2runtime/ch07alloc/readme.md)
 - [High virtual memory allocation by golang](https://forum.golangbridge.org/t/high-virtual-memory-allocation-by-golang/6716)
-
 - [GO MEMORY MANAGEMENT](https://povilasv.me/go-memory-management/)
 - [GoBigVirtualSize](https://utcc.utoronto.ca/~cks/space/blog/programming/GoBigVirtualSize)
 - [GoProgramMemoryUse](https://utcc.utoronto.ca/~cks/space/blog/programming/GoProgramMemoryUse)
