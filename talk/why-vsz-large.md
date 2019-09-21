@@ -239,7 +239,9 @@ func schedinit() {
 
 #### 初始化内存分配器
 
-在引导流程中， `mallocinit` 主要承担 Go 程序的内存分配器的初始化动作，而我们今天主要是针对虚拟内存地址这块进行拆解，如下：
+##### mallocinit
+
+接下来我们正式的分析一下 `mallocinit` 方法，在引导流程中， `mallocinit` 主要承担 Go 程序的内存分配器的初始化动作，而今天主要是针对虚拟内存地址这块进行拆解，如下：
 
 ```
 func mallocinit() {
@@ -301,6 +303,74 @@ type arenaHint struct {
 
 在这里的话，你需要理解 arean 区域在 Go 内存里的作用就可以了。
 
+##### mmap 
+
+我们刚刚通过上述的分析，已经知道 `mallocinit` 的用途了，但是你可能还是会有疑惑，就是我们之前所看到的 `mmap` 系统调用，和它又有什么关系呢，怎么就关联到一起了，接下来我们先一起来看看更下层的代码，如下：
+
+```
+func sysAlloc(n uintptr, sysStat *uint64) unsafe.Pointer {
+	p, err := mmap(nil, n, _PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
+	...
+	mSysStatInc(sysStat, n)
+	return p
+}
+
+func sysReserve(v unsafe.Pointer, n uintptr) unsafe.Pointer {
+	p, err := mmap(v, n, _PROT_NONE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
+	...
+}
+
+func sysMap(v unsafe.Pointer, n uintptr, sysStat *uint64) {
+	...
+	munmap(v, n)
+	p, err := mmap(v, n, _PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_FIXED|_MAP_PRIVATE, -1, 0)
+  ...
+}
+```
+
+在 Go Runtime 中存在着一系列的系统级内存调用方法，本文涉及的主要如下：
+
+- sysAlloc：从 OS 系统上申请清零后的内存空间，调用参数是 `_PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_PRIVATE`，得到的结果需进行内存对齐。
+- sysReserve：从 OS 系统中保留内存的地址空间，这时候还没有分配物理内存，调用参数是 `_PROT_NONE, _MAP_ANON|_MAP_PRIVATE`，得到的结果需进行内存对齐。
+- sysMap：通知 OS 系统我们要使用已经保留了的内存空间，调用参数是 `_PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_FIXED|_MAP_PRIVATE`。
+
+看上去好像很有道理的样子，但是 `mallocinit` 方法在初始化时，到底是在哪里涉及了 `mmap` 方法呢，表面看不出来，如下：
+
+```
+for i := 0x7f; i >= 0; i-- {
+	...
+	hint := (*arenaHint)(mheap_.arenaHintAlloc.alloc())
+	hint.addr = p
+	hint.next, mheap_.arenaHints = mheap_.arenaHints, hint
+}
+```
+
+实际上在调用 `mheap_.arenaHintAlloc.alloc()` 时，调用的是 `mheap`  下的 `sysAlloc` 方法，而 `sysAlloc` 又会与 `mmap` 方法产生调用关系，并且这个方法与常规的 `sysAlloc` 还不大一样，如下：
+
+```
+var mheap_ mheap
+...
+func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
+	...
+	for h.arenaHints != nil {
+		hint := h.arenaHints
+		p := hint.addr
+		if hint.down {
+			p -= n
+		}
+		if p+n < p {
+			v = nil
+		} else if arenaIndex(p+n-1) >= 1<<arenaBits {
+			v = nil
+		} else {
+			v = sysReserve(unsafe.Pointer(p), n)
+		}
+		...
+}
+```
+
+你可以惊喜的发现 `mheap.sysAlloc` 里其实有调用 `sysReserve` 方法，而 `sysReserve` 方法又正正是从 OS 系统中保留内存的地址空间的特定方法，是不是很惊喜，一切似乎都串起来了。
+
 #### 小结
 
 在本节中，我们先写了一个测试程序，然后根据非常规的排查思路进行了一步步的跟踪怀疑，整体流程如下：
@@ -318,8 +388,6 @@ type arenaHint struct {
 - 受不同的 OS 系统架构（GOARCH/GOOS）和位数（32/64 位）的影响。
 - 受内存对齐的影响，计算回来的内存空间大小是需要经过对齐才会进行保留。
 
-
-
 ## 总结
 
 我们通过一步步地分析，讲解了 Go 会在哪里，又会受什么因素，去调用了什么方法保留了那么多的虚拟内存空间，但是我们肯定会忧心进程虚拟内存（VSZ）高，会不会存在问题呢，我分析如下：
@@ -334,7 +402,7 @@ type arenaHint struct {
 
 - [曹大的 Go 程序的启动流程](http://xargin.com/go-bootstrap/)
 - [全成的 Go 程序是怎样跑起来的](https://www.cnblogs.com/qcrao-2018/p/11124360.html)
-- [欧神的 go-under-the-hood](https://github.com/changkun/go-under-the-hood/blob/master/book/zh-cn/part2runtime/ch07alloc/readme.md)
+- [推荐阅读 欧神的 go-under-the-hood](https://github.com/changkun/go-under-the-hood/blob/master/book/zh-cn/part2runtime/ch07alloc/readme.md)
 - [High virtual memory allocation by golang](https://forum.golangbridge.org/t/high-virtual-memory-allocation-by-golang/6716)
 - [GO MEMORY MANAGEMENT](https://povilasv.me/go-memory-management/)
 - [GoBigVirtualSize](https://utcc.utoronto.ca/~cks/space/blog/programming/GoBigVirtualSize)
