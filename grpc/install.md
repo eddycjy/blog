@@ -164,7 +164,7 @@ gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2
 
 ### 概览
 
-![image](https://grpc.io/img/landing-2.svg)
+![image](https://image.eddycjy.com/7dcac5be0a34636c699025368242d3f3.png)
 
 ### 讲解
 

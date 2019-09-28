@@ -193,7 +193,7 @@ $ go run client.go
 
 ### HTTP/1.1 访问
 
-![image](https://i.imgur.com/ftG7yn7.jpg)
+![image](https://image.eddycjy.com/1d92cb9e949e32eef7f8a64a6a77deb9.jpg)
 
 ## 总结
 

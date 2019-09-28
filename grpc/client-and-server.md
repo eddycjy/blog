@@ -54,7 +54,7 @@ go get -u github.com/golang/protobuf/protoc-gen-go
 
 ### 图示
 
-![image](https://i.imgur.com/Z3V3hl1.png)
+![image](https://image.eddycjy.com/415d9544fce1e774e1095ab99b6cc015.png)
 
 ### 目录结构
 

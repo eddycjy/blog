@@ -6,7 +6,7 @@
 
 我想在每个 RPC 方法的前或后做某些事情，怎么做？
 
-本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能 🤫
+本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能。
 
 ## 有几种方法
 
@@ -30,7 +30,7 @@ func UnaryInterceptor(i UnaryServerInterceptor) ServerOption {
 	}
 }
 ```
-
+函数原型：
 ```
 type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error)
 ```
@@ -47,7 +47,7 @@ type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *Una
 ```
 func StreamInterceptor(i StreamServerInterceptor) ServerOption
 ```
-
+函数原型：
 ```
 type StreamServerInterceptor func(srv interface{}, ss ServerStream, info *StreamServerInfo, handler StreamHandler) error
 ```
@@ -58,7 +58,7 @@ StreamServerInterceptor 与 UnaryServerInterceptor 形参的意义是一样，�
 
 另外，可以发现 gRPC 本身居然只能设置一个拦截器，难道所有的逻辑都只能写在一起？
 
-关于这一点，你可以放心。采用开源项目 [go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware) 就可以解决这个问题，本章也会使用它 😄
+关于这一点，你可以放心。采用开源项目 [go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware) 就可以解决这个问题，本章也会使用它。
 
 ```
 import "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -199,7 +199,7 @@ main.RecoveryInterceptor.func1(0xc420223a10)
 
 ## 总结
 
-通过本章节，你可以学会最常见的拦截器使用方法。接下来其它“新”需求只要举一反三即可 😈
+通过本章节，你可以学会最常见的拦截器使用方法。接下来其它“新”需求只要举一反三即可。
 
 ## 参考
 ### 本系列示例代码

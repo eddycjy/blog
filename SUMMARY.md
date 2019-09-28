@@ -14,6 +14,7 @@
     * [1.11 从实践到原理，带你参透 gRPC](talk/talking-grpc.md)
     * [1.12 Go1.13 defer 的性能是如何提高的？](talk/go1.13-defer.md)
     * [1.13 Go 应用内存占用太多，让排查？（VSZ篇）](talk/why-vsz-large.md)
+    * [1.14 干货满满的 Go Modules 和 goproxy.cn](talk/goproxy-cn.md)
 * 第2课 包管理
     * [2.1 Go依赖管理工具dep](module/dep.md)
     * [2.2 如此，用dep获取私有库](module/dep-private.md)

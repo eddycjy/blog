@@ -16,7 +16,7 @@
 
 ### 图
 
-![image](https://i.imgur.com/gcg2I8t.png)
+![image](https://image.eddycjy.com/8812038d20ffece377c0e4901c9a9231.png)
 
 gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
 
@@ -216,7 +216,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 简单来讲就是客户端发起一次普通的 RPC 请求，服务端通过流式响应多次发送数据集，客户端 Recv 接收数据集。大致如图：
 
-![image](https://i.imgur.com/W7g3kSC.png)
+![image](https://image.eddycjy.com/b25a47e2f2fb2a8c352a547f7612808b.png)
 
 #### Server
 
@@ -341,7 +341,7 @@ $ go run client.go
 
 客户端流式 RPC，单向流，客户端通过流式发起**多次** RPC 请求给服务端，服务端发起**一次**响应给客户端，大致如图：
 
-![image](https://i.imgur.com/e60IAxT.png)
+![image](https://image.eddycjy.com/97473884d939ec91d6cdf53090bef92e.png)
 
 #### Server
 
@@ -427,7 +427,7 @@ $ go run server.go
 
 假设该双向流是**按顺序发送**的话，大致如图：
 
-![image](https://i.imgur.com/DCcxwfj.png)
+![image](https://image.eddycjy.com/ab80297cd6715048a235e0c9b0f36091.png)
 
 还是要强调，双向流变化很大，因程序编写的不同而不同。**双向流图示无法适用不同的场景**
 
