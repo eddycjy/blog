@@ -1,4 +1,4 @@
-# Go Modules、Go Module Proxy 和 goproxy.cn
+# 干货满满的 Go Modules 和 goproxy.cn
 
 大家好，我是一只普通的煎鱼，周四晚上很有幸邀请到 goproxy.cn 的作者 @盛傲飞（@aofei） 到 Go 夜读给我们进行第 61 期 《Go Modules、Go Module Proxy 和 goproxy.cn》的技术分享。
 
