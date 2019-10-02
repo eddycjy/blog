@@ -1,12 +1,14 @@
-# 3.11 Cron定时任务
+# Cron定时任务
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
-如果对你有所帮助，欢迎点个 Star 或赞 😄
+## 知识点
 
-在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询？
+- 完成定时任务的功能
 
-在本文中我们将结合我们的项目讲述 Cron
+## 本文目标
+
+在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询，在本文中我们将结合我们的项目讲述 Cron。
 
 ## 介绍
 
@@ -145,7 +147,7 @@ func main() {
 
 在这段程序中，我们做了如下的事情
 
-1、cron.New()
+#### cron.New()
 
 会根据本地时间创建一个新（空白）的 Cron job runner
 
@@ -168,7 +170,7 @@ func NewWithLocation(location *time.Location) *Cron {
 }
 ```
 
-2、c.AddFunc()
+#### c.AddFunc()
 
 AddFunc 会向 Cron job runner 添加一个 func ，以按给定的时间表运行
 
@@ -214,22 +216,23 @@ func (c *Cron) Run() {
 }
 ```
 
-4、time.NewTimer + for + select + t1.Reset
+#### time.NewTimer + for + select + t1.Reset
 
 如果你是初学者，大概会有疑问，这是干嘛用的？
 
-（1）time.NewTimer 
+**（1）time.NewTimer **
 
 会创建一个新的定时器，持续你设定的时间 d 后发送一个 channel 消息
 
-（2）for + select
+**（2）for + select**
 
 阻塞 select 等待 channel
 
-（3）t1.Reset
+**（3）t1.Reset**
 
 会重置定时器，让它重新开始计时
-（注意，本文适用于 “t.C已经取走，可直接使用 Reset”）
+
+注：本文适用于 “t.C已经取走，可直接使用 Reset”。
 
 ---
 
@@ -261,7 +264,25 @@ $ go run cron.go
 
 可以不依赖系统的 Crontab 设置，指不定哪一天就用上了呢
 
+## 问题
+
+如果你手动修改计算机的系统时间，是会导致定时任务错乱的，所以一般不要乱来。
+
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月02日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

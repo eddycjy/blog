@@ -1,13 +1,19 @@
-# 3.19 Golang交叉编译
+# Golang 交叉编译
 
-项目地址：https://github.com/EDDYCJY/go-gin-example （快上车，支持一波）
+项目地址：https://github.com/EDDYCJY/go-gin-example 
 
-## 前言 
+## 知识点
 
-在 [连载九](https://segmentfault.com/a/1190000013960558) 讲解**构建Scratch镜像**时，我们编译可执行文件用了另外一个形式的命令，不知道你有没有疑问？
+- 跨平台编译
+
+## 本文目标
+
+在 [连载九](https://segmentfault.com/a/1190000013960558) 讲解**构建Scratch镜像**时，我们编译可执行文件用了另外一个形式的命令，如下：
 ```
 $ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 ```
+
+我想你可能会有疑问，今天本文会针对这块进行讲解。
 
 ## 说明
 
@@ -185,3 +191,18 @@ usage: go build [-o output] [-i] [build flags] [packages]
 
 ### 书籍
 - Go并发编程实战 第二版
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

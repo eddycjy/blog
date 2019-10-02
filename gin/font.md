@@ -1,7 +1,15 @@
-# 3.16 在图片上绘制文字
+# 在图片上绘制文字
 
-## 前言 
-主要实现**合并后的海报上绘制文字**的功能（这个需求也是常见的很了），内容比较简单
+项目地址：https://github.com/EDDYCJY/go-gin-example
+
+## 知识点
+
+- 字体库使用
+- 图片合成
+
+## 本文目标
+
+主要实现**合并后的海报上绘制文字**的功能（这个需求也是常见的很了），内容比较简单。
 
 ## 实现
 
@@ -171,3 +179,18 @@ func (a *ArticlePosterBg) Generate() (string, string, error) {
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月02日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

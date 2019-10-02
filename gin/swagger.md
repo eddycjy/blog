@@ -1,36 +1,28 @@
-# 3.8 为它加上Swagger
-
-一个好的 `API's`，必然离不开一个好的`API`文档
-
-要开发纯手写 `API` 文档，不存在的 :=)
+# 为它加上Swagger
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
+## 涉及知识点
+
+- Swagger
+
+## 本文目标
+
+一个好的 `API's`，必然离不开一个好的`API`文档，如果要开发纯手写 `API` 文档，不存在的（很难持续维护），因此我们要自动生成接口文档。
+
 ## 安装 swag
-1、go get
 ```
 $ go get -u github.com/swaggo/swag/cmd/swag
 ```
-若 `$GOPATH/bin` 没有加入`$PATH`中，你需要执行将其可执行文件移动到`$GOBIN`下
+若 `$GOROOT/bin` 没有加入`$PATH`中，你需要执行将其可执行文件移动到`$GOBIN`下
 ```
 mv $GOPATH/bin/swag /usr/local/go/bin
 ```
 
-2、gopm get
-
-该包有引用`golang.org`上的包，若无科学上网，你可以使用 [gopm](https://gopm.io/) 进行安装
-```
-gopm get -g -v github.com/swaggo/swag/cmd/swag
-
-cd $GOPATH/src/github.com/swaggo/swag/cmd/swag
-
-go install
-```
-
-同理将其可执行文件移动到`$GOBIN`下
-
-
 ### 验证是否安装成功
+
+检查 $GOBIN 下是否有 swag 文件，如下：
+
 ```
 $ swag -v
 swag version v1.1.1
@@ -43,7 +35,7 @@ $ go get -u github.com/swaggo/gin-swagger
 $ go get -u github.com/swaggo/gin-swagger/swaggerFiles
 ```
 
-注：三个包都有一定大小，安装需要等一会或要科学上网
+注：三个包都有一定大小，安装需要等一会或要科学上网。
 
 ## 初始化
 
@@ -144,14 +136,29 @@ docs/
 ```
 
 我们可以检查 `docs.go` 文件中的 `doc` 变量，详细记载中我们文件中所编写的注解和说明
-![docs.go](https://sfault-image.b0.upaiyun.com/285/983/2859833321-5aade21608b65_articlex)
+![image](https://image.eddycjy.com/37ae10e1714c63899a55d49c19af0860.png)
 
 ### 验证
 
 大功告成，访问一下 `http://127.0.0.1:8000/swagger/index.html`， 查看 `API` 文档生成是否正确
 
-![swagger](https://sfault-image.b0.upaiyun.com/151/604/1516043512-5aade24395bd8_articlex)
+![image](https://image.eddycjy.com/703b677c6756129c33b5308c1655a35c.png)
 
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

@@ -1,8 +1,14 @@
-# 3.12 优化配置结构及实现图片上传
+# 优化配置结构及实现图片上传
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
-如果对你有所帮助，欢迎点个 Star 👍
+## 知识点
+
+- 重构、调整结构
+
+## 本文目标
+
+这个应用程序跑了那么久了，越来越大，越来越壮，仿佛我们的产品一样，现在它需要进行小范围重构了，以便于后续的使用，这非常重要。
 
 ## 前言
 
@@ -815,3 +821,18 @@ Pattern: /src/*filepath
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月02日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

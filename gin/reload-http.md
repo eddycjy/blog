@@ -1,13 +1,17 @@
-# 3.7 优雅的重启服务
-
-在前面编写案例代码时，我相信你会想到
-
-每次更新完代码，更新完配置文件后
-就直接这么 `ctrl+c` 真的没问题吗，`ctrl+c`到底做了些什么事情呢？
-
-在这一节中我们简单讲述 `ctrl+c` 背后的**信号**以及如何在`Gin`中**优雅的重启服务**，也就是对 `HTTP` 服务进行热更新
+# 优雅的重启服务
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
+
+## 知识点
+
+- 信号量的了解。
+- 应用热更新。
+
+## 本文目标
+
+在前面编写案例代码时，我相信你会想到，每次更新完代码，更新完配置文件后，就直接这么 `ctrl+c` 真的没问题吗，`ctrl+c`到底做了些什么事情呢？
+
+在这一节中我们简单讲述 `ctrl+c` 背后的**信号**以及如何在`Gin`中**优雅的重启服务**，也就是对 `HTTP` 服务进行热更新。
 
 ## ctrl + c
 
@@ -277,3 +281,18 @@ func main() {
 - [graceful](https://github.com/tylerb/graceful)
 - [grace](https://github.com/facebookgo/grace)
 - [plugin: new package for loading plugins · golang/go@0cbb12f · GitHub](https://github.com/golang/go/commit/0cbb12f0bbaeb3893b3d011fdb1a270291747ab0)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

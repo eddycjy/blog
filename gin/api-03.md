@@ -1,8 +1,20 @@
-# 3.4 Gin搭建Blog API's （三）
+# Gin搭建Blog API's （三）
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
+## 涉及知识点
+
+- [Gin](https://github.com/gin-gonic/gin)：Golang的一个微框架，性能极佳。
+- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的beego的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
+- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的ORM框架，[英文文档](http://gorm.io/docs/)
+- [com](https://github.com/Unknwon/com)，一个小而美的工具包。
+
+## 本文目标
+
+- 完成博客的文章类接口定义和编写
+
 ## 定义接口
+
 本节编写文章的逻辑，我们定义一下接口吧！
 
 - 获取文章列表：GET("/articles")
@@ -48,8 +60,8 @@ package routers
 import (
     "github.com/gin-gonic/gin"
     
-    "gin-blog/routers/api/v1"
-    "gin-blog/pkg/setting"
+    "github.com/EDDYCJY/go-gin-example/routers/api/v1"
+    "github.com/EDDYCJY/go-gin-example/pkg/setting"
 )
 
 func InitRouter() *gin.Engine {
@@ -75,7 +87,7 @@ func InitRouter() *gin.Engine {
 
 当前目录结构：
 ```
-gin-blog/
+go-gin-example/
 ├── conf
 │   └── app.ini
 ├── main.go
@@ -143,7 +155,7 @@ func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
 }
 ```
 
-我们创建了一个`Article struct {}`，与`Tag`不同的是，`Article`多了几项
+我们创建了一个`Article struct {}`，与`Tag`不同的是，`Article`多了几项，如下：
 
 1. `gorm:index`，用于声明这个字段为索引，如果你使用了自动迁移功能则会有所影响，在不使用则无影响
 2. `Tag`字段，实际是一个嵌套的`struct`，它利用`TagID`与`Tag`模型相互关联，在执行查询的时候，能够达到`Article`、`Tag`关联查询的功能
@@ -248,9 +260,10 @@ func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
 ```
 
 
-在这里，我们拿出三点不同来讲
+在这里，我们拿出三点不同来讲，如下：
 
-1、 我们的`Article`是如何关联到`Tag`？？？
+**1、 我们的`Article`是如何关联到`Tag`？**
+
 ```
 func GetArticle(id int) (article Article) {
 	db.Where("id = ?", id).First(&article)
@@ -263,7 +276,8 @@ func GetArticle(id int) (article Article) {
 - `Article`有一个结构体成员是`TagID`，就是外键。`gorm`会通过类名+ID的方式去找到这两个类之间的关联关系
 - `Article`有一个结构体成员是`Tag`，就是我们嵌套在`Article`里的`Tag`结构体，我们可以通过`Related`进行关联查询
 
-2、 `Preload`是什么东西，为什么查询可以得出每一项的关联`Tag`？
+**2、 `Preload`是什么东西，为什么查询可以得出每一项的关联`Tag`？**
+
 ```
 func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Article) {
 	db.Preload("Tag").Where(maps).Offset(pageNum).Limit(pageSize).Find(&articles)
@@ -280,9 +294,9 @@ func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Artic
 
 综合之下，还是`Preload`更好，如果你有更优的方案，欢迎说一下 :)
 
-3、 `v.(I)` 是什么？
+**3、 `v.(I)` 是什么？**
 
-`v`表示一个接口值，`I`表示接口类型。这个实际就是Golang中的类型断言，用于判断一个接口值的实际类型是否为某个类型，或一个非接口值的类型是否实现了某个接口类型
+`v`表示一个接口值，`I`表示接口类型。这个实际就是Golang中的**类型断言**，用于判断一个接口值的实际类型是否为某个类型，或一个非接口值的类型是否实现了某个接口类型
 
 ---
 
@@ -296,12 +310,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/astaxie/beego/validation"
-	"github.com/Unknwon/com"
+	"github.com/unknwon/com"
 
-	"gin-blog/models"
-	"gin-blog/pkg/e"
-	"gin-blog/pkg/setting"
-	"gin-blog/pkg/util"
+	"github.com/EDDYCJY/go-gin-example/models"
+	"github.com/EDDYCJY/go-gin-example/pkg/e"
+	"github.com/EDDYCJY/go-gin-example/pkg/setting"
+	"github.com/EDDYCJY/go-gin-example/pkg/util"
 )
 
 //获取单个文章
@@ -517,7 +531,7 @@ func DeleteArticle(c *gin.Context) {
 
 当前目录结构：
 ```
-gin-blog/
+go-gin-example/
 ├── conf
 │   └── app.ini
 ├── main.go
@@ -561,7 +575,7 @@ $ go run main.go
 [GIN-debug] DELETE /api/v1/articles/:id      --> gin-blog/routers/api/v1.DeleteArticle (3 handlers)
 ```
 
-使用`Postman`检验接口是否正常（大家可以选用合适的参数传递方式，此处为了方便展示我选用了URL传参），
+使用`Postman`检验接口是否正常，在这里大家可以选用合适的参数传递方式，此处为了方便展示我选用了 GET/Param 传参的方式，而后期会改为 POST。
 
 - POST：http://127.0.0.1:8000/api/v1/articles?tag_id=1&title=test1&desc=test-desc&content=test-content&created_by=test-created&state=1
 - GET：http://127.0.0.1:8000/api/v1/articles
@@ -575,3 +589,18 @@ $ go run main.go
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

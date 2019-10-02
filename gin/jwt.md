@@ -1,22 +1,23 @@
-# 3.5 使用JWT进行身份校验
-
-在前面几节中，我们已经基本的完成了API's的编写
-
-但是，还存在一些非常严重的问题，例如，我们现在的API是可以随意调用的，这显然还不够完美，是有问题的
-
-那么我们采用 [jwt-go](https://github.com/dgrijalva/jwt-go) （[GoDoc](https://godoc.org/github.com/dgrijalva/jwt-go)）的方式来简单解决这个问题
+# 使用 JWT 进行身份校验
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
----
+## 涉及知识点
+
+- JWT
+
+## 本文目标
+
+在前面几节中，我们已经基本的完成了API's的编写，但是，还存在一些非常严重的问题，例如，我们现在的API是可以随意调用的，这显然还不安全全，在本文中我们通过 [jwt-go](https://github.com/dgrijalva/jwt-go) （[GoDoc](https://godoc.org/github.com/dgrijalva/jwt-go)）的方式来简单解决这个问题。
+
 ## 下载依赖包
 
-首先，我们下载jwt-go的依赖包
+首先，我们下载 jwt-go的依赖包，如下：
 ```
 go get -u github.com/dgrijalva/jwt-go
 ```
 
-## 编写`jwt`工具包
+## 编写 jwt 工具包
 
 我们需要编写一个`jwt`的工具包，我们在`pkg`下的`util`目录新建`jwt.go`，写入文件内容：
 ```
@@ -27,7 +28,7 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 
-	"gin-blog/pkg/setting"
+	"github.com/EDDYCJY/go-gin-example/pkg/setting"
 )
 
 var jwtSecret = []byte(setting.JwtSecret)
@@ -89,8 +90,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"gin-blog/pkg/util"
-	"gin-blog/pkg/e"
+	"github.com/EDDYCJY/go-gin-example/pkg/util"
+	"github.com/EDDYCJY/go-gin-example/pkg/e"
 )
 
 func JWT() gin.HandlerFunc {
@@ -165,9 +166,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/astaxie/beego/validation"
 
-	"gin-blog/pkg/e"
-	"gin-blog/pkg/util"
-	"gin-blog/models"
+	"github.com/EDDYCJY/go-gin-example/pkg/e"
+	"github.com/EDDYCJY/go-gin-example/pkg/util"
+	"github.com/EDDYCJY/go-gin-example/models"
 )
 
 type auth struct {
@@ -221,9 +222,9 @@ package routers
 import (
     "github.com/gin-gonic/gin"
     
-    "gin-blog/routers/api"
-    "gin-blog/routers/api/v1"
-    "gin-blog/pkg/setting"
+    "github.com/EDDYCJY/go-gin-example/routers/api"
+    "github.com/EDDYCJY/go-gin-example/routers/api/v1"
+    "github.com/EDDYCJY/go-gin-example/pkg/setting"
 )
 
 func InitRouter() *gin.Engine {
@@ -275,10 +276,10 @@ package routers
 import (
     "github.com/gin-gonic/gin"
     
-    "gin-blog/routers/api"
-    "gin-blog/routers/api/v1"
-    "gin-blog/pkg/setting"
-    "gin-blog/middleware/jwt"
+    "github.com/EDDYCJY/go-gin-example/routers/api"
+    "github.com/EDDYCJY/go-gin-example/routers/api/v1"
+    "github.com/EDDYCJY/go-gin-example/pkg/setting"
+    "github.com/EDDYCJY/go-gin-example/middleware/jwt"
 )
 
 func InitRouter() *gin.Engine {
@@ -304,7 +305,7 @@ func InitRouter() *gin.Engine {
 
 当前目录结构：
 ```
-gin-blog/
+go-gin-example/
 ├── conf
 │   └── app.ini
 ├── main.go
@@ -409,3 +410,18 @@ gin-blog/
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

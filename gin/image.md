@@ -1,22 +1,23 @@
-# 3.15 生成二维码、合并海报
+# 生成二维码、合并海报
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
-如果对你有所帮助，欢迎点个 Star 👍
+## 知识点
 
-## 前言
+- 图片生成
+- 二维码生成
 
-在本章节，将实现如下功能细项：
+## 本文目标
 
-1、生成二维码
+在文章的详情页中，我们常常会需要去宣传它，而目前最常见的就是发海报了，今天我们将实现如下功能：
 
-2、合并海报（背景图 + 二维码）
+- 生成二维码
+
+- 合并海报（背景图 + 二维码）
 
 ## 实现
 
-首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 `QrCodeSavePath`，值为 `qrcode/`
-
-经过多节连载的你应该能够完成，若有不懂可参照 [go-gin-example](https://github.com/EDDYCJY/go-gin-example/blob/master/conf/app.ini#L14)
+首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 `QrCodeSavePath`，值为 `qrcode/`，经过多节连载的你应该能够完成，若有不懂可参照 [go-gin-example](https://github.com/EDDYCJY/go-gin-example/blob/master/conf/app.ini#L14)。
 
 ## 生成二维码
 
@@ -433,3 +434,18 @@ r.StaticFS("/qrcode", http.Dir(qrcode.GetQrCodeFullPath()))
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月02日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

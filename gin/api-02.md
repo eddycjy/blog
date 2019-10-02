@@ -1,20 +1,17 @@
-# 3.3 Gin搭建Blog API's （二）
+# Gin搭建Blog API's （二）
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
-本大节将会涉及到以下知识点：
+## 涉及知识点
 
-1. [gin](https://github.com/gin-gonic/gin)：Golang的一个微框架，性能极佳
+- [Gin](https://github.com/gin-gonic/gin)：Golang的一个微框架，性能极佳。
+- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的beego的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
+- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的ORM框架，[英文文档](http://gorm.io/docs/)
+- [com](https://github.com/Unknwon/com)，一个小而美的工具包。
 
-2. [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的beego的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)
+## 本文目标
 
-3. [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的ORM框架，[英文文档](http://gorm.io/docs/)
-
-4. [com](https://github.com/Unknwon/com)，工具包
-
-5. 业务逻辑的编写 
-
-我们开始编写业务代码，博客文章会有**标签**的概念，
+- 完成博客的标签类接口定义和编写
 
 ## 定义接口
 
@@ -497,3 +494,18 @@ func EditTag(id int, data interface {}) bool {
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

@@ -1,10 +1,16 @@
-# 3.10 定制 GORM Callbacks
-
-> GORM itself is powered by Callbacks, so you could fully customize GORM as you want
+# 定制 GORM Callbacks
 
 项目地址：https://github.com/EDDYCJY/go-gin-example 
 
-GORM 本身是由回调驱动的，所以我们可以根据需要完全定制 GORM，以此达到我们的目的
+## 涉及知识点
+
+- GORM
+
+## 本文目标
+
+> GORM itself is powered by Callbacks, so you could fully customize GORM as you want
+
+GORM 本身是由回调驱动的，所以我们可以根据需要完全定制 GORM，以此达到我们的目的，如下：
 
 
 - 注册一个新的回调
@@ -13,7 +19,7 @@ GORM 本身是由回调驱动的，所以我们可以根据需要完全定制 GO
 - 注册回调的顺序
 
 
-在 GORM 中包含以上四类 Callbacks，我们结合项目选用 “替换现有的回调” 来解决一个小痛点
+在 GORM 中包含以上四类 Callbacks，我们结合项目选用 “替换现有的回调” 来解决一个小痛点。
 
 ## 问题
 
@@ -249,3 +255,18 @@ db.Callback().Delete().Replace("gorm:delete", deleteCallback)
 
 ### 文档
 - [gorm](http://gorm.io/docs/write_plugins.html)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

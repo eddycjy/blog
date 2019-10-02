@@ -1,12 +1,14 @@
-# 3.6 编写一个简单的文件日志
-
-在上一节中，我们解决了API's可以任意访问的问题，那么我们现在还有一个问题。
-
-就是我们的日志，都是输出到控制台上的，这显然对于一个项目来说是不合理的，因此我们这一节简单封装`log`库，使其支持简单的文件日志！
+# 编写一个简单的文件日志
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
----
+## 涉及知识点
+
+- 自定义 log。
+
+## 本文目标
+
+在上一节中，我们解决了API's可以任意访问的问题，那么我们现在还有一个问题，就是我们的日志，都是输出到控制台上的，这显然对于一个项目来说是不合理的，因此我们这一节简单封装`log`库，使其支持简单的文件日志！
 
 ## 新建`logging`包
 
@@ -14,7 +16,8 @@
 
 ### 编写`file`文件
 
-1、 file.go：
+**1、 file.go：**
+
 ```
 package logging
 
@@ -101,7 +104,8 @@ const (
 
 ### 编写`log`文件
 
-2、 log.go
+**2、log.go**
+
 ```
 package logging
 
@@ -236,14 +240,11 @@ gin-blog/
 ```
 
 
-我们自定义的`logging`包，已经基本完成了，接下来让它接入到我们的项目之中吧！
+我们自定义的`logging`包，已经基本完成了，接下来让它接入到我们的项目之中吧。我们打开先前包含`log`包的代码，如下：
 
-
-我们打开先前包含`log`包的代码，
-
-1. 打开`routers`目录下的`article.go`、`tag.go`、`auth.go`
-2. 将`log`包的引用删除，修改引用我们自己的日志包为`gin-blog/pkg/logging`
-3. 将原本的`log.Println(...)`改为`logging.Info(...)`
+1. 打开`routers`目录下的`article.go`、`tag.go`、`auth.go`。
+2. 将`log`包的引用删除，修改引用我们自己的日志包为`github.com/EDDYCJY/go-gin-example/pkg/logging`。
+3. 将原本的`log.Println(...)`改为`logging.Info(...)`。
 
 例如`auth.go`文件的修改内容：
 ```
@@ -255,10 +256,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/astaxie/beego/validation"
 
-	"gin-blog/pkg/e"
-	"gin-blog/pkg/util"
-	"gin-blog/models"
-	"gin-blog/pkg/logging"
+	"github.com/EDDYCJY/go-gin-example/pkg/e"
+	"github.com/EDDYCJY/go-gin-example/pkg/util"
+	"github.com/EDDYCJY/go-gin-example/models"
+	"github.com/EDDYCJY/go-gin-example/pkg/logging"
 )
 ...
 func GetAuth(c *gin.Context) {
@@ -304,3 +305,18 @@ $ tail -f log20180216.log
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

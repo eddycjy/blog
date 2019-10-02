@@ -1,13 +1,19 @@
-# 3.9 将Golang应用部署到Docker
+# 将Golang应用部署到Docker
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
-注：
-- 开始前你需要安装好 `docker`，配好镜像源
-- 本章节源码在 `f-20180324-docker` 分支上
-- 从本章节开始 项目目录都以 `go-gin-example` 为基准（请配合自己本地项目灵活变动）
+## 涉及知识点
 
-## 介绍
+- Go + Docker
+
+## 本文目标
+
+将我们的 `go-gin-example` 应用部署到一个 Docker 里，你需要先准备好如下东西：
+
+- 你需要安装好 `docker`。
+- 如果上外网比较吃力，需要配好镜像源。
+
+## Docker
 
 在这里简单介绍下Docker，建议深入学习
 
@@ -21,7 +27,7 @@ Docker 是一个开源的轻量级容器技术，让开发者可以打包他们�
 - 隔离应用
 - 快速、持续部署
 
---- 
+---
 
 接下来我们正式开始对项目进行 `docker` 的所需处理和编写，每一个大标题为步骤大纲
 
@@ -34,6 +40,7 @@ Docker 是一个开源的轻量级容器技术，让开发者可以打包他们�
 ```
 FROM golang:latest
 
+ENV GOPROXY https://goproxy.cn,direct
 WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
 COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
 RUN go build .
@@ -128,7 +135,10 @@ Step 3/6 : COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
 Removing intermediate container 63e310b3f60c
 Step 4/6 : RUN go build .
  ---> Running in 52648a431450
-
+go: downloading github.com/gin-gonic/gin v1.3.0
+go: downloading github.com/go-ini/ini v1.32.1-0.20180214101753-32e4be5f41bb
+go: downloading github.com/swaggo/gin-swagger v1.0.1-0.20190110070702-0c6fcfd3c7f3
+...
  ---> 7bfbeb301fea
 Removing intermediate container 52648a431450
 Step 5/6 : EXPOSE 8000
@@ -423,3 +433,18 @@ $ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -v /data/
 
 ### 书籍
 - [Docker —— 从入门到实践](https://www.gitbook.com/book/yeasy/docker_practice/details)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

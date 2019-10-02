@@ -1,14 +1,19 @@
-# 3.17 用Nginx部署Go应用
+# 用Nginx部署Go应用
 
-## 前言
+项目地址：https://github.com/EDDYCJY/go-gin-example
 
-如果已经看过前面 “十六部连载，两部番外”，相信您的能力已经有所提升
+## 知识点
 
-那么，现在今天来说说简单部署后端服务的事儿 🤓
+- Nginx。
+- 反向代理。
+
+## 本文目标
+
+简单部署后端服务。
 
 ## 做什么
 
-在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 [go-gin-example](https://github.com/EDDYCJY/go-gin-example) 的部署，会实现反向代理和简单负载均衡的功能
+在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 [go-gin-example](https://github.com/EDDYCJY/go-gin-example) 的部署，会实现反向代理和简单负载均衡的功能。
 
 
 ## Nginx
@@ -226,3 +231,18 @@ $ nginx -s reload
 ## 参考
 ### 本系列示例代码
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
+
+## 关于
+
+### 修改记录
+
+- 第一版：2018年02月16日发布文章
+- 第二版：2019年10月01日修改文章
+
+## ？
+
+如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
+
+### 我的公众号 
+
+![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)
