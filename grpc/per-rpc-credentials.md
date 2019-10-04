@@ -6,9 +6,9 @@
 
 在前面的章节中，我们介绍了两种（证书算一种）可全局认证的方法：
 
-1. [TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-01-%E5%B8%A6%E5%85%A5gRPC-TLS-%E8%AF%81%E4%B9%A6%E8%AE%A4%E8%AF%81.md)
-2. [基于 CA 的 TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-01-%E5%B8%A6%E5%85%A5gRPC-%E5%9F%BA%E4%BA%8ECA%E7%9A%84TLS%E8%AF%81%E4%B9%A6%E8%AE%A4%E8%AF%81.md)
-3. [Unary and Stream interceptor](https://github.com/EDDYCJY/blog/blob/master/golang/gRPC/2018-10-02-%E5%B8%A6%E5%85%A5gRPC-Unary-and-Stream-interceptor.md)
+1. [TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/grpc/grpc-tls.md)
+2. [基于 CA 的 TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/grpc/ca-tls.md)
+3. [Unary and Stream interceptor](https://github.com/EDDYCJY/blog/blob/master/grpc/interceptor.md)
 
 
 而在实际需求中，常常会对某些模块的 RPC 方法做特殊认证或校验。今天将会讲解、实现这块的功能点
@@ -204,7 +204,7 @@ exit status 1
 
 ## 总结
 
-本章节比较简单，主要是针对 RPC 方法的自定义认证进行了介绍，如果是想做全局的，建议是举一反三从拦截器下手哦 😄
+本章节比较简单，主要是针对 RPC 方法的自定义认证进行了介绍，如果是想做全局的，建议是举一反三从拦截器下手哦。
 
 ## 参考
 ### 本系列示例代码
