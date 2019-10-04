@@ -2,7 +2,7 @@
 
 在实际应用中，你做了那么多 Server 端，写了 N 个 RPC 方法。想看看方法的指标，却无处下手？
 
-本文将通过 gRPC + Opentracing + Zipkin 搭建一个**分布式链路追踪系统**来实现查看整个系统的链路、性能等指标 🤓
+本文将通过 gRPC + Opentracing + Zipkin 搭建一个**分布式链路追踪系统**来实现查看整个系统的链路、性能等指标。
 
 ## Opentracing
 
@@ -48,7 +48,7 @@ Baggage Items 可以理解为 trace 全局运行中额外传输的数据集合
 
 ### 一个案例
 
-![image](https://wu-sheng.gitbooks.io/opentracing-io/content/images/OTOV_3.png)
+![image](https://image.eddycjy.com/c7912244434f56f32be37ac66ad164ab.png)
 
 图中可以看到以下内容：
 
@@ -60,7 +60,7 @@ Baggage Items 可以理解为 trace 全局运行中额外传输的数据集合
 
 ## Zipkin
 
-![image](https://i.imgur.com/rZU6zoj.png)
+![image](https://image.eddycjy.com/f82f883ce74801abfece12c775f45c6c.png)
 
 ### 是什么
 
@@ -80,7 +80,7 @@ docker run -d -p 9411:9411 openzipkin/zipkin
 
 访问 http://127.0.0.1:9411/zipkin/ 检查 Zipkin 是否运行正常
 
-![image](https://i.imgur.com/iWhfEef.jpg)
+![image](https://image.eddycjy.com/f22ea6012f6ce4adea9f29d36f1017c7.jpg)
 
 ## gRPC + Opentracing + Zipkin
 
@@ -222,15 +222,15 @@ func main() {
 
 启动 Server.go，执行 Client.go。查看 http://127.0.0.1:9411/zipkin/ 的示意图：
 
-![image](https://i.imgur.com/z2IRxnj.jpg)
+![image](https://image.eddycjy.com/35c586cc15b28496d5c227e03cde7e67.jpg)
 
-![image](https://i.imgur.com/0rqEzvl.jpg)
+![image](https://image.eddycjy.com/8c17c36d87764237e75b4d7c4739fdf4.jpg)
 
 ## 复杂点
 
-![image](https://i.imgur.com/0Nuq66Z.jpg)
+![image](https://image.eddycjy.com/d33c339e872ceab76c906e2da1a450c3.jpg)
 
-![image](https://i.imgur.com/eRr62ny.jpg)
+![image](https://image.eddycjy.com/dc3fc3ec49276d3b56c0c2d22e6a5ad4.jpg)
 
 来，自己实践一下
 
@@ -238,7 +238,7 @@ func main() {
 
 在多服务下的架构下，串行、并行、服务套服务是一个非常常见的情况，用常规的方案往往很难发现问题在哪里（成本太大）。而这种情况就是**分布式追踪系统**大展拳脚的机会了
 
-希望你通过本章节的介绍和学习，能够了解其概念和搭建且应用一个追踪系统 😄
+希望你通过本章节的介绍和学习，能够了解其概念和搭建且应用一个追踪系统。
 
 ## 参考
 ### 本系列示例代码
