@@ -47,33 +47,6 @@ go-gin-example/
 - routers 路由逻辑处理
 - runtime：应用运行时数据
 
-### 添加 Go Modules Replace
-
-打开 `go.mod` 文件，新增 `replace` 配置项，如下：
-
-```
-module github.com/EDDYCJY/go-gin-example
-
-go 1.13
-
-require (...)
-
-replace (
-		github.com/EDDYCJY/go-gin-example/pkg/setting => ~/go-application/go-gin-example/pkg/setting
-		github.com/EDDYCJY/go-gin-example/conf    	  => ~/go-application/go-gin-example/pkg/conf
-		github.com/EDDYCJY/go-gin-example/middleware  => ~/go-application/go-gin-example/middleware
-		github.com/EDDYCJY/go-gin-example/models 	  => ~/go-application/go-gin-example/models
-		github.com/EDDYCJY/go-gin-example/routers 	  => ~/go-application/go-gin-example/routers
-)
-```
-
-可能你会不理解为什么要特意跑来加 `replace` 配置项，首先你要看到我们使用的是完整的外部模块引用路径（`github.com/EDDYCJY/go-gin-example/xxx`），而这个模块还没推送到远程，是没有办法下载下来的，因此需要用 `replace` 将其指定读取本地的模块路径，这样子就可以解决本地模块读取的问题。
-
-
-
-**注：后续每新增一个本地应用目录，你都需要主动去 go.mod 文件里新增一条 replace（我不会提醒你），如果你漏了，那么编译时会出现报错，找不到那个模块。**
-
-
 ### 初始项目数据库
 
 新建 `blog` 数据库，编码为`utf8_general_ci`，在 `blog` 数据库下，新建以下表
@@ -161,7 +134,7 @@ NAME = blog
 TABLE_PREFIX = blog_
 ```
 
-建立调用配置的`setting`模块，在`go-gin-example`的`pkg`目录下新建`setting`目录（注意新增 replace 配置），新建 `setting.go` 文件，写入内容：
+建立调用配置的`setting`模块，在`go-gin-example`的`pkg`目录下新建`setting`目录，新建 `setting.go` 文件，写入内容：
 ```
 package setting
 
@@ -239,7 +212,7 @@ go-gin-example
 ```
 
 ## 编写API错误码包
-建立错误码的`e`模块，在`go-gin-example`的`pkg`目录下新建`e`目录（注意新增 replace 配置），新建`code.go`和`msg.go`文件，写入内容：
+建立错误码的`e`模块，在`go-gin-example`的`pkg`目录下新建`e`目录，新建`code.go`和`msg.go`文件，写入内容：
 
 **1、 code.go：**
 
@@ -291,7 +264,7 @@ func GetMsg(code int) string {
 ```
 
 ## 编写工具包
-在`go-gin-example`的`pkg`目录下新建`util`目录（注意新增 replace 配置），并拉取`com`的依赖包，如下：
+在`go-gin-example`的`pkg`目录下新建`util`目录，并拉取`com`的依赖包，如下：
 
 ```
 go get -u github.com/unknwon/com
