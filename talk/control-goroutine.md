@@ -106,7 +106,7 @@ PID    COMMAND      %CPU  TIME     #TH   #WQ  #PORT MEM    PURG   CMPRS  PGRP  P
 ```
 func main() {
 	userCount := 10
-	ch := make(chan bool, 2)
+	ch := make(chan bool, 1)
 	for i := 0; i < userCount; i++ {
 		ch <- true
 		go Read(ch, i)
