@@ -7,7 +7,9 @@
 ![image](https://camo.githubusercontent.com/e75a8b46b078a3c1df0ed9966a16c24add9ccb83/68747470733a2f2f646f63732e676f6f676c652e636f6d2f64726177696e67732f642f3132687034435071724e5046686174744c5f63496f4a707446766c41716d35774c513067677149356d6b43672f7075623f773d37343926683d333730)
 
 ## 准备环节
+
 在正式开始我们的`Grpc`+`Grpc Gateway`实践前，我们需要先配置好我们的开发环境
+
 - Grpc
 - Protoc Plugin
 - Protocol Buffers
@@ -16,26 +18,31 @@
 ## Grpc
 
 ### 是什么
-Google对`Grpc`的定义：
+
+Google 对`Grpc`的定义：
+
 > A high performance, open-source universal RPC framework
 
-也就是`Grpc`是一个高性能、开源的通用RPC框架，具有以下特性：
+也就是`Grpc`是一个高性能、开源的通用 RPC 框架，具有以下特性：
+
 - 强大的`IDL`，使用`Protocol Buffers`作为数据交换的格式，支持`v2`、`v3`（推荐`v3`）
 - 跨语言、跨平台，也就是`Grpc`支持多种平台和语言
-- **支持HTTP2**，双向传输、多路复用、认证等
-
+- **支持 HTTP2**，双向传输、多路复用、认证等
 
 ### 安装
+
 1、官方推荐（需科学上网）
+
 ```
 go get -u google.golang.org/grpc
 ```
+
 2、通过`github.com`
 
+进入到第一个\$GOPATH 目录（因为`go get` 会默认安装在第一个下）下，新建`google.golang.org`目录，拉取`golang`在`github`上的镜像库：
 
-进入到第一个$GOPATH目录（因为`go get` 会默认安装在第一个下）下，新建`google.golang.org`目录，拉取`golang`在`github`上的镜像库：
 ```
-cd /usr/local/go/path/src   
+cd /usr/local/go/path/src
 
 mkdir google.golang.org
 
@@ -47,6 +54,7 @@ mv grpc-go/ grpc/
 ```
 
 目录结构：
+
 ```
 google.golang.org/
 └── grpc
@@ -54,6 +62,7 @@ google.golang.org/
 ```
 
 而在`grpc`下有许多常用的包，例如：
+
 - [metadata](https://gowalker.org/google.golang.org/grpc/metadata)：定义了`grpc`所支持的元数据结构，包中方法可以对`MD`进行获取和处理
 - [credentials](https://gowalker.org/google.golang.org/grpc/credentials)：实现了`grpc`所支持的各种认证凭据，封装了客户端对服务端进行身份验证所需要的所有状态，并做出各种断言
 - [codes](https://gowalker.org/google.golang.org/grpc/codes)：定义了`grpc`使用的标准错误码，可通用
@@ -61,20 +70,26 @@ google.golang.org/
 ## Protoc Plugin
 
 ### 是什么
+
 编译器插件
 
 ### 安装
+
 ```
 go get -u github.com/golang/protobuf/protoc-gen-go
 ```
-将`Protoc Plugin`的可执行文件从$GOPATH中移动到$GOBIN下
+
+将`Protoc Plugin`的可执行文件从$GOPATH中移动到$GOBIN 下
+
 ```
 mv /usr/local/go/path/bin/protoc-gen-go /usr/local/go/bin/
 ```
 
 ## Protocol Buffers v3
+
 ### 是什么
->Protocol buffers are a flexible, efficient, automated mechanism for serializing structured data – think XML, but smaller, faster, and simpler. You define how you want your data to be structured once, then you can use special generated source code to easily write and read your structured data to and from a variety of data streams and using a variety of languages. You can even update your data structure without breaking deployed programs that are compiled against the "old" format.
+
+> Protocol buffers are a flexible, efficient, automated mechanism for serializing structured data – think XML, but smaller, faster, and simpler. You define how you want your data to be structured once, then you can use special generated source code to easily write and read your structured data to and from a variety of data streams and using a variety of languages. You can even update your data structure without breaking deployed programs that are compiled against the "old" format.
 
 `Protocol Buffers`是`Google`推出的一种数据描述语言，支持多语言、多平台，它是一种二进制的格式，总得来说就是更小、更快、更简单、更灵活，目前分别有`v2`、`v3`的版本，我们推荐使用`v3`
 
@@ -95,17 +110,21 @@ make install
 ```
 
 检查是否安装成功
+
 ```
 protoc --version
 ```
 
 如果出现报错
+
 ```
 protoc: error while loading shared libraries: libprotobuf.so.15: cannot open shared object file: No such file or directory
 ```
+
 则执行`ldconfig`后，再次运行即可成功
 
 #### 为什么要执行`ldconfig`
+
 我们通过控制台输出的信息可以知道，`Protocol Buffers Libraries`的默认安装路径在`/usr/local/lib`
 
 ```
@@ -129,7 +148,8 @@ more information, such as the ld(1) and ld.so(8) manual pages.
 
 而我们安装了一个新的动态链接库，`ldconfig`一般在系统启动时运行，所以现在会找不到这个`lib`，因此我们要手动执行`ldconfig`，**让动态链接库为系统所共享，它是一个动态链接库管理命令**，这就是`ldconfig`命令的作用
 
-### protoc使用
+### protoc 使用
+
 我们按照惯例执行`protoc --help`（查看帮助文档），我们抽出几个常用的命令进行讲解
 
 1、`-IPATH, --proto_path=PATH`：指定`import`搜索的目录，可指定多个，如果不指定则默认当前工作目录
@@ -137,18 +157,22 @@ more information, such as the ld(1) and ld.so(8) manual pages.
 2、`--go_out`：生成`golang`源文件
 
 #### 参数
+
 若要将额外的参数传递给插件，可使用从输出目录中分离出来的逗号分隔的参数列表:
+
 ```
 protoc --go_out=plugins=grpc,import_path=mypackage:. *.proto
 ```
 
 - `import_prefix=xxx`：将指定前缀添加到所有`import`路径的开头
 - `import_path=foo/bar`：如果文件没有声明`go_package`，则用作包。如果它包含斜杠，那么最右边的斜杠将被忽略。
-- `plugins=plugin1+plugin2`：指定要加载的子插件列表（我们所下载的repo中唯一的插件是grpc）
+- `plugins=plugin1+plugin2`：指定要加载的子插件列表（我们所下载的 repo 中唯一的插件是 grpc）
 - `Mfoo/bar.proto=quux/shme`： `M`参数，指定`.proto`文件编译后的包名（`foo/bar.proto`编译后为包名为`quux/shme`）
 
-#### Grpc支持
+#### Grpc 支持
+
 如果`proto`文件指定了`RPC`服务，`protoc-gen-go`可以生成与`grpc`相兼容的代码，我们仅需要将`plugins=grpc`参数传递给`--go_out`，就可以达到这个目的
+
 ```
 protoc --go_out=plugins=grpc:. *.proto
 ```
@@ -156,16 +180,19 @@ protoc --go_out=plugins=grpc:. *.proto
 ## Grpc-gateway
 
 ### 是什么
+
 > grpc-gateway is a plugin of protoc. It reads gRPC service definition, and generates a reverse-proxy server which translates a RESTful JSON API into gRPC. This server is generated according to custom options in your gRPC definition.
 
-[grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)是protoc的一个插件。它读取gRPC服务定义，并生成一个反向代理服务器，将RESTful JSON API转换为gRPC。此服务器是根据gRPC定义中的自定义选项生成的。
+[grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)是 protoc 的一个插件。它读取 gRPC 服务定义，并生成一个反向代理服务器，将 RESTful JSON API 转换为 gRPC。此服务器是根据 gRPC 定义中的自定义选项生成的。
 
 ### 安装
+
 ```
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 ```
 
 如果出现以下报错，我们分析错误提示可得知是连接超时（大概是被墙了）
+
 ```
 package google.golang.org/genproto/googleapis/api/annotations: unrecognized import path "google.golang.org/genproto/googleapis/api/annotations" (https fetch: Get https://google.golang.org/genproto/googleapis/api/annotations?go-get=1: dial tcp 216.239.37.1:443: getsockopt: connection timed out)
 ```
@@ -176,7 +203,8 @@ package google.golang.org/genproto/googleapis/api/annotations: unrecognized impo
 
 2、通过`github.com`
 
-进入到第一个$GOTPATH目录的`google.golang.org`目录下，拉取`genproto`在`github`上的`go-genproto`镜像库：
+进入到第一个\$GOTPATH 目录的`google.golang.org`目录下，拉取`genproto`在`github`上的`go-genproto`镜像库：
+
 ```
 cd /usr/local/go/path/src/google.golang.org
 
@@ -185,8 +213,8 @@ git clone https://github.com/google/go-genproto.git
 mv go-genproto/ genproto/
 ```
 
-
 在安装完毕后，我们将`grpc-gateway`的可执行文件从$GOPATH中移动到$GOBIN
+
 ```
 mv /usr/local/go/path/bin/protoc-gen-grpc-gateway /usr/local/go/bin/
 ```
@@ -194,6 +222,7 @@ mv /usr/local/go/path/bin/protoc-gen-grpc-gateway /usr/local/go/bin/
 到这里我们这节就基本完成了，建议多反复看几遍加深对各个组件的理解！
 
 ## 参考
-### 示例代码
-- [grpc-hello-world](https://github.com/EDDYCJY/grpc-hello-world)
 
+### 示例代码
+
+- [grpc-hello-world](https://github.com/EDDYCJY/grpc-hello-world)

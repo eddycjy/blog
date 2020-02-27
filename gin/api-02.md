@@ -1,12 +1,12 @@
-# Gin搭建Blog API's （二）
+# Gin 搭建 Blog API's （二）
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
 ## 涉及知识点
 
-- [Gin](https://github.com/gin-gonic/gin)：Golang的一个微框架，性能极佳。
-- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的beego的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
-- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的ORM框架，[英文文档](http://gorm.io/docs/)
+- [Gin](https://github.com/gin-gonic/gin)：Golang 的一个微框架，性能极佳。
+- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的 beego 的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
+- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的 ORM 框架，[英文文档](http://gorm.io/docs/)
 - [com](https://github.com/Unknwon/com)，一个小而美的工具包。
 
 ## 本文目标
@@ -26,8 +26,9 @@
 
 ## 编写路由空壳
 
-开始编写路由文件逻辑，在`routers`下新建`api`目录，我们当前是第一个API大版本，因此在`api`下新建`v1`目录，再新建`tag.go`文件，写入内容：
-```
+开始编写路由文件逻辑，在`routers`下新建`api`目录，我们当前是第一个 API 大版本，因此在`api`下新建`v1`目录，再新建`tag.go`文件，写入内容：
+
+```go
 package v1
 
 import (
@@ -54,12 +55,13 @@ func DeleteTag(c *gin.Context) {
 ## 注册路由
 
 我们打开`routers`下的`router.go`文件，修改文件内容为：
-```
+
+```go
 package routers
 
 import (
     "github.com/gin-gonic/gin"
-    
+
     "gin-blog/routers/api/v1"
     "gin-blog/pkg/setting"
 )
@@ -90,6 +92,7 @@ func InitRouter() *gin.Engine {
 ```
 
 当前目录结构：
+
 ```
 gin-blog/
 ├── conf
@@ -117,8 +120,9 @@ gin-blog/
 ## 检验路由是否注册成功
 
 回到命令行，执行`go run main.go`，检查路由规则是否注册成功。
+
 ```
-$ go run main.go 
+$ go run main.go
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
@@ -134,15 +138,18 @@ $ go run main.go
 ## 下载依赖包
 
 ---
+
 首先我们要拉取`validation`的依赖包，在后面的接口里会使用到表单验证
+
 ```
-go get -u github.com/astaxie/beego/validation
+$ go get -u github.com/astaxie/beego/validation
 ```
 
-## 编写标签列表的models逻辑
+## 编写标签列表的 models 逻辑
 
 创建`models`目录下的`tag.go`，写入文件内容：
-```
+
+```go
 package models
 
 type Tag struct {
@@ -156,7 +163,7 @@ type Tag struct {
 
 func GetTags(pageNum int, pageSize int, maps interface {}) (tags []Tag) {
 	db.Where(maps).Offset(pageNum).Limit(pageSize).Find(&tags)
-	
+
 	return
 }
 
@@ -175,10 +182,11 @@ func GetTagTotal(maps interface {}) (count int){
 
 ## 编写标签列表的路由逻辑
 
-打开`routers`目录下v1版本的`tag.go`，第一我们先编写**获取标签列表的接口**
+打开`routers`目录下 v1 版本的`tag.go`，第一我们先编写**获取标签列表的接口**
 
 修改文件内容：
-```
+
+```go
 package v1
 
 import (
@@ -236,22 +244,22 @@ func DeleteTag(c *gin.Context) {
 }
 ```
 
-1. `c.Query`可用于获取`?name=test&state=1`这类URL参数，而`c.DefaultQuery`则支持设置一个默认值
+1. `c.Query`可用于获取`?name=test&state=1`这类 URL 参数，而`c.DefaultQuery`则支持设置一个默认值
 2. `code`变量使用了`e`模块的错误编码，这正是先前规划好的错误码，方便排错和识别记录
 3. `util.GetPage`保证了各接口的`page`处理是一致的
-4. `c *gin.Context`是`Gin`很重要的组成部分，可以理解为上下文，它允许我们在中间件之间传递变量、管理流、验证请求的JSON和呈现JSON响应
+4. `c *gin.Context`是`Gin`很重要的组成部分，可以理解为上下文，它允许我们在中间件之间传递变量、管理流、验证请求的 JSON 和呈现 JSON 响应
 
-在本机执行`curl 127.0.0.1:8000/api/v1/tags`，正确的返回值为`{"code":200,"data":{"lists":[],"total":0},"msg":"ok"}`，若存在问题请结合gin结果进行拍错。
-
+在本机执行`curl 127.0.0.1:8000/api/v1/tags`，正确的返回值为`{"code":200,"data":{"lists":[],"total":0},"msg":"ok"}`，若存在问题请结合 gin 结果进行拍错。
 
 在获取标签列表接口中，我们可以根据`name`、`state`、`page`来筛选查询条件，分页的步长可通过`app.ini`进行配置，以`lists`、`total`的组合返回达到分页效果。
 
-## 编写新增标签的models逻辑
+## 编写新增标签的 models 逻辑
 
 接下来我们编写**新增标签**的接口
 
-打开`models`目录下的`tag.go`，修改文件（增加2个方法）：
-```
+打开`models`目录下的`tag.go`，修改文件（增加 2 个方法）：
+
+```go
 ...
 func ExistTagByName(name string) bool {
 	var tag Tag
@@ -277,8 +285,9 @@ func AddTag(name string, state int, createdBy string) bool{
 
 ## 编写新增标签的路由逻辑
 
-打开`routers`目录下的`tag.go`，修改文件（变动AddTag方法）：
-```
+打开`routers`目录下的`tag.go`，修改文件（变动 AddTag 方法）：
+
+```go
 package v1
 
 import (
@@ -294,7 +303,9 @@ import (
     "gin-blog/pkg/util"
     "gin-blog/pkg/setting"
 )
+
 ...
+
 //新增文章标签
 func AddTag(c *gin.Context) {
     name := c.Query("name")
@@ -327,14 +338,15 @@ func AddTag(c *gin.Context) {
 ...
 ```
 
-用`Postman`用POST访问`http://127.0.0.1:8000/api/v1/tags?name=1&state=1&created_by=test`，查看`code`是否返回`200`及`blog_tag`表中是否有值，有值则正确。
+用`Postman`用 POST 访问`http://127.0.0.1:8000/api/v1/tags?name=1&state=1&created_by=test`，查看`code`是否返回`200`及`blog_tag`表中是否有值，有值则正确。
 
-## 编写models callbacks
+## 编写 models callbacks
 
 但是这个时候大家会发现，我明明新增了标签，但`created_on`居然没有值，那做修改标签的时候`modified_on`会不会也存在这个问题？
 
-为了解决这个问题，我们需要打开`models`目录下的`tag.go`文件，修改文件内容（修改包引用和增加2个方法）：
-```
+为了解决这个问题，我们需要打开`models`目录下的`tag.go`文件，修改文件内容（修改包引用和增加 2 个方法）：
+
+```go
 package models
 
 import (
@@ -358,11 +370,11 @@ func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
 }
 ```
 
-重启服务，再在用`Postman`用POST访问`http://127.0.0.1:8000/api/v1/tags?name=2&state=1&created_by=test`，发现`created_on`已经有值了！
+重启服务，再在用`Postman`用 POST 访问`http://127.0.0.1:8000/api/v1/tags?name=2&state=1&created_by=test`，发现`created_on`已经有值了！
 
 **在这几段代码中，涉及到知识点：**
 
-这属于`gorm`的`Callbacks`，可以将回调方法定义为模型结构的指针，在创建、更新、查询、删除时将被调用，如果任何回调返回错误，gorm将停止未来操作并回滚所有更改。
+这属于`gorm`的`Callbacks`，可以将回调方法定义为模型结构的指针，在创建、更新、查询、删除时将被调用，如果任何回调返回错误，gorm 将停止未来操作并回滚所有更改。
 
 `gorm`所支持的回调方法：
 
@@ -377,10 +389,11 @@ func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
 
 接下来，我们一口气把剩余的两个接口（EditTag、DeleteTag）完成吧
 
-打开`routers`目录下v1版本的`tag.go`文件，修改内容：
+打开`routers`目录下 v1 版本的`tag.go`文件，修改内容：
 
-```
+```go
 ...
+
 //修改文章标签
 func EditTag(c *gin.Context) {
     id := com.StrTo(c.Param("id")).MustInt()
@@ -424,7 +437,7 @@ func EditTag(c *gin.Context) {
         "msg" : e.GetMsg(code),
         "data" : make(map[string]string),
     })
-}    
+}
 
 //删除文章标签
 func DeleteTag(c *gin.Context) {
@@ -451,10 +464,11 @@ func DeleteTag(c *gin.Context) {
 }
 ```
 
-## 编写其余接口的models逻辑
+## 编写其余接口的 models 逻辑
 
 打开`models`下的`tag.go`，修改文件内容：
-```
+
+```go
 ...
 
 func ExistTagByID(id int) bool {
@@ -483,29 +497,30 @@ func EditTag(id int, data interface {}) bool {
 
 ## 验证功能
 
-重启服务，用Postman
+重启服务，用 Postman
 
-- PUT访问http://127.0.0.1:8000/api/v1/tags/1?name=edit1&state=0&modified_by=edit1，查看code是否返回200
-- DELETE访问http://127.0.0.1:8000/api/v1/tags/1，查看code是否返回200
+- PUT 访问 http://127.0.0.1:8000/api/v1/tags/1?name=edit1&state=0&modified_by=edit1 ，查看 code 是否返回 200
+- DELETE 访问 http://127.0.0.1:8000/api/v1/tags/1 ，查看 code 是否返回 200
 
-
-至此，Tag的API's完成，下一节我们将开始Article的API's编写！
+至此，Tag 的 API's 完成，下一节我们将开始 Article 的 API's 编写！
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

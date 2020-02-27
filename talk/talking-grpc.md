@@ -1,14 +1,14 @@
 # 1.11 从实践到原理，带你参透 gRPC
 
-![image](https://i.imgur.com/cjLNsWj.png)
+![image](https://s2.ax1x.com/2020/02/27/3wKfNq.png)
 
 gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
 
-![image](https://i.imgur.com/TYvrtlc.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wMMrQ.jpg)
 
 ## 简述
 
-gRPC  是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C++, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
+gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C++, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
 
 gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。
 
@@ -30,11 +30,11 @@ gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩�
 
 ### 一、Unary RPC：一元 RPC
 
-![image](https://i.imgur.com/Z3V3hl1.png)
+![image](https://s2.ax1x.com/2020/02/27/3wMNxU.png)
 
 #### Server
 
-```
+```go
 type SearchService struct{}
 
 func (s *SearchService) Search(ctx context.Context, r *pb.SearchRequest) (*pb.SearchResponse, error) {
@@ -61,7 +61,7 @@ func main() {
 
 #### Client
 
-```
+```go
 func main() {
     conn, err := grpc.Dial(":"+PORT, grpc.WithInsecure())
     ...
@@ -81,11 +81,11 @@ func main() {
 
 ### 二、Server-side streaming RPC：服务端流式 RPC
 
-![image](https://i.imgur.com/W7g3kSC.png)
+![image](https://s2.ax1x.com/2020/02/27/3wMdr4.png)
 
 #### Server
 
-```
+```go
 func (s *StreamService) List(r *pb.StreamRequest, stream pb.StreamService_ListServer) error {
     for n := 0; n <= 6; n++ {
         stream.Send(&pb.StreamResponse{
@@ -101,11 +101,11 @@ func (s *StreamService) List(r *pb.StreamRequest, stream pb.StreamService_ListSe
 
 #### Client
 
-```
+```go
 func printLists(client pb.StreamServiceClient, r *pb.StreamRequest) error {
     stream, err := client.List(context.Background(), r)
     ...
-    
+
     for {
         resp, err := stream.Recv()
         if err == io.EOF {
@@ -118,14 +118,13 @@ func printLists(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 }
 ```
 
-
 ### 三、Client-side streaming RPC：客户端流式 RPC
 
-![image](https://i.imgur.com/e60IAxT.png)
+![image](https://s2.ax1x.com/2020/02/27/3wMBZ9.png)
 
 #### Server
 
-```
+```go
 func (s *StreamService) Record(stream pb.StreamService_RecordServer) error {
     for {
         r, err := stream.Recv()
@@ -142,11 +141,11 @@ func (s *StreamService) Record(stream pb.StreamService_RecordServer) error {
 
 #### Client
 
-```
+```go
 func printRecord(client pb.StreamServiceClient, r *pb.StreamRequest) error {
     stream, err := client.Record(context.Background())
     ...
-    
+
     for n := 0; n < 6; n++ {
         stream.Send(r)
     }
@@ -160,11 +159,11 @@ func printRecord(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 ### 四、Bidirectional streaming RPC：双向流式 RPC
 
-![image](https://i.imgur.com/DCcxwfj.png)
+![image](https://s2.ax1x.com/2020/02/27/3wMrI1.png)
 
 #### Server
 
-```
+```go
 func (s *StreamService) Route(stream pb.StreamService_RouteServer) error {
     for {
         stream.Send(&pb.StreamResponse{...})
@@ -181,7 +180,7 @@ func (s *StreamService) Route(stream pb.StreamService_RouteServer) error {
 
 #### Client
 
-```
+```go
 func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
     stream, err := client.Route(context.Background())
     ...
@@ -205,7 +204,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 在开始分析之前，我们要先 gRPC 的调用有一个初始印象。那么最简单的就是对 Client 端调用 Server 端进行抓包去剖析，看看整个过程中它都做了些什么事。如下图：
 
-![image](https://i.imgur.com/H0HPgv9.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wMgxO.jpg)
 
 - Magic
 - SETTINGS
@@ -214,7 +213,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 - SETTINGS
 - WINDOW_UPDATE
 - PING
-- HEADERS 
+- HEADERS
 - DATA
 - HEADERS
 - WINDOW_UPDATE
@@ -226,7 +225,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 #### Magic
 
-![image](https://i.imgur.com/fFkwLPK.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wM7JP.jpg)
 
 Magic 帧的主要作用是建立 HTTP/2 请求的前言。在 HTTP/2 中，要求两端都要发送一个连接前言，作为对所使用协议的最终确认，并确定 HTTP/2 连接的初始设置，客户端和服务端各自发送不同的连接前言。
 
@@ -234,9 +233,9 @@ Magic 帧的主要作用是建立 HTTP/2 请求的前言。在 HTTP/2 中，要�
 
 #### SETTINGS
 
-![image](https://i.imgur.com/wSCvLtb.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wQPzT.jpg)
 
-![image](https://i.imgur.com/0780hAb.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wQ779.jpg)
 
 SETTINGS 帧的主要作用是设置这一个连接的参数，作用域是整个连接而并非单一的流。
 
@@ -244,7 +243,7 @@ SETTINGS 帧的主要作用是设置这一个连接的参数，作用域是整�
 
 #### HEADERS
 
-![image](https://i.imgur.com/cfDGkPS.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wN2tg.jpg)
 
 HEADERS 帧的主要作用是存储和传播 HTTP 的标头信息。我们关注到 HEADERS 里有一些眼熟的信息，分别如下：
 
@@ -259,21 +258,21 @@ HEADERS 帧的主要作用是存储和传播 HTTP 的标头信息。我们关注
 
 #### DATA
 
-![image](https://i.imgur.com/EbsbREx.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wNTBV.jpg)
 
 DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，可以很明显看到我们的请求参数 gRPC 存储在里面。只需要了解到这一点就可以了。
 
 #### HEADERS, DATA, HEADERS
 
-![image](https://i.imgur.com/ZHGY0K6.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wNj39.jpg)
 
 在上图中 HEADERS 帧比较简单，就是告诉我们 HTTP 响应状态和响应的内容格式。
 
-![imgae](https://i.imgur.com/u0Js4iF.jpg)
+![imgae](https://s2.ax1x.com/2020/02/27/3wUl4g.jpg)
 
 在上图中 DATA 帧主要承载了响应结果的数据集，图中的 gRPC Server 就是我们 RPC 方法的响应结果。
 
-![image](https://i.imgur.com/5SPNVYk.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wUUbV.jpg)
 
 在上图中 HEADERS 帧主要承载了 gRPC 状态 和 gRPC 状态消息，图中的 `grpc-status` 和 `grpc-message` 就是我们的 gRPC 调用状态的结果。
 
@@ -283,7 +282,7 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 主要作用是管理和流的窗口控制。通常情况下打开一个连接后，服务器和客户端会立即交换 SETTINGS 帧来确定流控制窗口的大小。默认情况下，该大小设置为约 65 KB，但可通过发出一个 WINDOW_UPDATE 帧为流控制设置不同的大小。
 
-![image](https://i.imgur.com/MVsSKSx.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wUwUU.jpg)
 
 #### PING/PONG
 
@@ -291,7 +290,7 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 ### 小结
 
-![image](https://i.imgur.com/FrA8EW4.png)
+![image](https://s2.ax1x.com/2020/02/27/3wU05F.png)
 
 - 在建立连接之前，客户端/服务端都会发送**连接前言**（Magic+SETTINGS），确立协议和配置项。
 - 在传输数据时，是会涉及滑动窗口（WINDOW_UPDATE）等流控策略的。
@@ -305,13 +304,13 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 ### 服务端
 
-![image](https://i.imgur.com/xgcsjiQ.png)
+![image](https://s2.ax1x.com/2020/02/27/3wUDC4.png)
 
 为什么四行代码，就能够起一个 gRPC Server，内部做了什么逻辑。你有想过吗？接下来我们一步步剖析，看看里面到底是何方神圣。
 
-### 一、初始化 
+### 一、初始化
 
-```
+```go
 // grpc.NewServer()
 func NewServer(opt ...ServerOption) *Server {
 	opts := defaultServerOptions
@@ -342,18 +341,18 @@ func NewServer(opt ...ServerOption) *Server {
 - m：服务信息映射。
 - quit：退出信号。
 - done：完成信号。
-- czData：用于存储 ClientConn，addrConn 和 Server 的channelz 相关数据。
+- czData：用于存储 ClientConn，addrConn 和 Server 的 channelz 相关数据。
 - cv：当优雅退出时，会等待这个信号量，直到所有 RPC 请求都处理并断开才会继续处理。
 
-### 二、注册 
+### 二、注册
 
-```
+```go
 pb.RegisterSearchServiceServer(server, &SearchService{})
 ```
 
 #### 步骤一：Service API interface
 
-```
+```go
 // search.pb.go
 type SearchServiceServer interface {
 	Search(context.Context, *SearchRequest) (*SearchResponse, error)
@@ -370,7 +369,7 @@ func RegisterSearchServiceServer(s *grpc.Server, srv SearchServiceServer) {
 
 你想乱传糊弄一下？不可能的，请乖乖定义与 Protobuf 一致的接口方法。但是那个 `&_SearchService_serviceDesc` 又有什么作用呢？代码如下：
 
-```
+```go
 // search.pb.go
 var _SearchService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.SearchService",
@@ -396,7 +395,7 @@ var _SearchService_serviceDesc = grpc.ServiceDesc{
 
 #### 步骤三：Register Service
 
-```
+```go
 func (s *Server) register(sd *ServiceDesc, ss interface{}) {
     ...
 	srv := &service{
@@ -427,16 +426,16 @@ func (s *Server) register(sd *ServiceDesc, ss interface{}) {
 
 在这一章节中，主要介绍的是 gRPC Server 在启动前的整理和注册行为，看上去很简单，但其实一切都是为了后续的实际运行的预先准备。因此我们整理一下思路，将其串联起来看看，如下：
 
-![image](https://i.imgur.com/vvBWEyx.png)
+![image](https://s2.ax1x.com/2020/02/27/3wUgDx.png)
 
 ### 三、监听
 
 接下来到了整个流程中，最重要也是大家最关注的监听/处理阶段，核心代码如下：
 
-```
+```go
 func (s *Server) Serve(lis net.Listener) error {
 	...
-	var tempDelay time.Duration 
+	var tempDelay time.Duration
 	for {
 		rawConn, err := lis.Accept()
 		if err != nil {
@@ -477,7 +476,7 @@ func (s *Server) Serve(lis net.Listener) error {
 
 Serve 会根据外部传入的 Listener 不同而调用不同的监听模式，这也是 `net.Listener` 的魅力，灵活性和扩展性会比较高。而在 gRPC Server 中最常用的就是 `TCPConn`，基于 TCP Listener 去做。接下来我们一起看看具体的处理逻辑，如下：
 
-![image](https://i.imgur.com/SYrkt0d.png)
+![image](https://s2.ax1x.com/2020/02/27/3wUI8H.png)
 
 - 循环处理连接，通过 `lis.Accept` 取出连接，如果队列中没有需处理的连接时，会形成阻塞等待。
 - 若 `lis.Accept` 失败，则触发休眠机制，若为第一次失败那么休眠 5ms，否则翻倍，再次失败则不断翻倍直至上限休眠时间 1s，而休眠完毕后就会尝试去取下一个 “它”。
@@ -486,11 +485,11 @@ Serve 会根据外部传入的 Listener 不同而调用不同的监听模式，�
 
 ## 客户端
 
-![image](https://i.imgur.com/xK0QsIm.png)
+![image](https://s2.ax1x.com/2020/02/27/3wUHKI.png)
 
 ### 一、创建拨号连接
 
-```
+```go
 // grpc.Dial(":"+PORT, grpc.WithInsecure())
 func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *ClientConn, err error) {
 	cc := &ClientConn{
@@ -514,7 +513,7 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 
 - 初始化 ClientConn
 - 初始化（基于进程 LB）负载均衡配置
-- 初始化 channelz 
+- 初始化 channelz
 - 初始化重试规则和客户端一元/流式拦截器
 - 初始化协议栈上的基础信息
 - 相关 context 的超时控制
@@ -525,11 +524,11 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 
 之前听到有的人说调用 `grpc.Dial` 后客户端就已经与服务端建立起了连接，但这对不对呢？我们先鸟瞰全貌，看看正在跑的 goroutine。如下：
 
-![image](https://i.imgur.com/yPK1KZn.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wUXa8.jpg)
 
 我们可以有几个核心方法一直在等待/处理信号，通过分析底层源码可得知。涉及如下：
 
-```
+```go
 func (ac *addrConn) connect()
 func (ac *addrConn) resetTransport()
 func (ac *addrConn) createTransport(addr resolver.Address, copts transport.ConnectOptions, connectDeadline time.Time)
@@ -538,7 +537,7 @@ func (ac *addrConn) getReadyTransport()
 
 在这里主要分析 goroutine 提示的 `resetTransport` 方法，看看都做了啥。核心代码如下：
 
-```
+```go
 func (ac *addrConn) resetTransport() {
 	for i := 0; ; i++ {
 		if ac.state == connectivity.Shutdown {
@@ -583,15 +582,15 @@ func (ac *addrConn) resetTransport() {
 
 #### 真的连了吗
 
-![image](https://i.imgur.com/hYklktM.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wakZV.jpg)
 
 在抓包工具上提示一个包都没有，那么这算真正连接了吗？我认为这是一个表述问题，我们应该尽可能的严谨。如果你真的想通过 `DialContext` 方法就打通与服务端的连接，则需要调用 `WithBlock` 方法，虽然会导致阻塞等待，但最终连接会到达 `Ready` 状态（握手成功）。如下图：
 
-![image](https://i.imgur.com/jHNuIYR.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3waJiD.jpg)
 
 ### 二、实例化 Service API
 
-```
+```go
 type SearchServiceClient interface {
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
 }
@@ -609,7 +608,7 @@ func NewSearchServiceClient(cc *grpc.ClientConn) SearchServiceClient {
 
 ### 三、调用
 
-```
+```go
 // search.pb.go
 func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
 	out := new(SearchResponse)
@@ -623,7 +622,7 @@ func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opt
 
 proto 生成的 RPC 方法更像是一个包装盒，把需要的东西放进去，而实际上调用的还是 `grpc.invoke` 方法。如下：
 
-```
+```go
 func invoke(ctx context.Context, method string, req, reply interface{}, cc *ClientConn, opts ...CallOption) error {
 	cs, err := newClientStream(ctx, unaryStreamDesc, cc, method, opts...)
 	if err != nil {
@@ -644,7 +643,7 @@ func invoke(ctx context.Context, method string, req, reply interface{}, cc *Clie
 
 #### 连接
 
-```
+```go
 // clientconn.go
 func (cc *ClientConn) getTransport(ctx context.Context, failfast bool, method string) (transport.ClientTransport, func(balancer.DoneInfo), error) {
 	t, done, err := cc.blockingpicker.pick(ctx, failfast, balancer.PickOptions{
@@ -661,7 +660,7 @@ func (cc *ClientConn) getTransport(ctx context.Context, failfast bool, method st
 
 ### 四、关闭连接
 
-```
+```go
 // conn.Close()
 func (cc *ClientConn) Close() error {
 	defer cc.cancel()
@@ -701,7 +700,7 @@ func (cc *ClientConn) Close() error {
 
 ### 1. gRPC Metadata 是通过什么传输？
 
-![image](https://i.imgur.com/N7xx2JH.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3waaQA.jpg)
 
 ### 2. 调用 grpc.Dial 会真正的去连接服务端吗？
 
@@ -713,25 +712,25 @@ func (cc *ClientConn) Close() error {
 
 **3.1. 客户端**
 
-![image](https://i.imgur.com/YFMv93J.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wawLt.jpg)
 
 **3.2. 服务端**
 
-![image](https://i.imgur.com/mu65CZL.png)
+![image](https://s2.ax1x.com/2020/02/27/3wa6Jg.png)
 
 **3.3. TCP**
 
-![image](https://i.imgur.com/0Wg6ZY7.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3waWyn.jpg)
 
 ### 4. 不控制超时调用的话，会出现什么问题？
 
 短时间内不会出现问题，但是会不断积蓄泄露，积蓄到最后当然就是服务无法提供响应了。如下图：
 
-![image](https://i.imgur.com/GIgP062.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wafLq.jpg)
 
 ### 5. 为什么默认的拦截器不可以传多个？
 
-```
+```go
 func chainUnaryClientInterceptors(cc *ClientConn) {
 	interceptors := cc.dopts.chainUnaryInts
 	if cc.dopts.unaryInt != nil {
@@ -759,7 +758,7 @@ func chainUnaryClientInterceptors(cc *ClientConn) {
 
 单单会用还不行，我们再深剖一下，看看它是怎么实现的。核心代码如下：
 
-```
+```go
 func ChainUnaryClient(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
 	n := len(interceptors)
 	if n > 1 {
@@ -793,7 +792,7 @@ func ChainUnaryClient(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryCli
 
 这个问题我们可以反向验证一下，假设不公用 ClientConn 看看会怎么样？如下:
 
-```
+```go
 func BenchmarkSearch(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		conn, err := GetClientConn()
@@ -807,6 +806,7 @@ func BenchmarkSearch(b *testing.B) {
 	}
 }
 ```
+
 输出结果：
 
 ```
@@ -818,7 +818,7 @@ FAIL
 exit status 1
 ```
 
-当你的应用场景是存在高频次同时生成/调用 ClientConn 时，可能会导致系统的文件句柄占用过多。这种情况下你可以变更应用程序生成/调用 ClientConn 的模式，又或是池化它，这块可以参考 [grpc-go-pool](github.com/processout/grpc-go-pool) 项目。 
+当你的应用场景是存在高频次同时生成/调用 ClientConn 时，可能会导致系统的文件句柄占用过多。这种情况下你可以变更应用程序生成/调用 ClientConn 的模式，又或是池化它，这块可以参考 [grpc-go-pool](github.com/processout/grpc-go-pool) 项目。
 
 ### 8. 客户端请求失败后会默认重试吗？
 

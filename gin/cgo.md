@@ -1,6 +1,6 @@
 # Golang 交叉编译
 
-项目地址：https://github.com/EDDYCJY/go-gin-example 
+项目地址：https://github.com/EDDYCJY/go-gin-example
 
 ## 知识点
 
@@ -8,7 +8,8 @@
 
 ## 本文目标
 
-在 [连载九](https://segmentfault.com/a/1190000013960558) 讲解**构建Scratch镜像**时，我们编译可执行文件用了另外一个形式的命令，如下：
+在 [连载九](https://segmentfault.com/a/1190000013960558) 讲解**构建 Scratch 镜像**时，我们编译可执行文件用了另外一个形式的命令，如下：
+
 ```
 $ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 ```
@@ -29,8 +30,7 @@ $ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 
 **意义：**
 
-存在交叉编译的情况时，`cgo` 工具是不可用的。在标准go命令的上下文环境中，交叉编译意味着程序构建环境的目标计算架构的标识与程序运行环境的目标计算架构的标识不同，或者程序构建环境的目标操作系统的标识与程序运行环境的目标操作系统的标识不同
-
+存在交叉编译的情况时，`cgo` 工具是不可用的。在标准 go 命令的上下文环境中，交叉编译意味着程序构建环境的目标计算架构的标识与程序运行环境的目标计算架构的标识不同，或者程序构建环境的目标操作系统的标识与程序运行环境的目标操作系统的标识不同
 
 **小结：**
 
@@ -41,6 +41,7 @@ $ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 **补充：**
 
 `golang` 是默认开启 `cgo` 工具的，可执行 `go env` 命令查看
+
 ```
 $ go env
 GOARCH="amd64"
@@ -63,6 +64,7 @@ CGO_ENABLED="1"
 用于标识（声明）程序构建环境的目标操作系统
 
 如：
+
 - linux
 - windows
 
@@ -73,19 +75,18 @@ CGO_ENABLED="1"
 若不设置，默认值与程序运行环境的目标计算架构一致（案例就是采用的默认值）
 
 如：
+
 - amd64
 - 386
 
-
-系统 | GOOS | GOARCH
---- | ---|---
-Windows 32位 | windows | 386
-Windows 64位 | windows | amd64
-OS X 32位 | darwin | 386
-OS X 64位 | darwin | amd64
-Linux 32位 | linux | 386
-Linux 64位 | linux | amd64
-
+| 系统          | GOOS    | GOARCH |
+| ------------- | ------- | ------ |
+| Windows 32 位 | windows | 386    |
+| Windows 64 位 | windows | amd64  |
+| OS X 32 位    | darwin  | 386    |
+| OS X 64 位    | darwin  | amd64  |
+| Linux 32 位   | linux   | 386    |
+| Linux 64 位   | linux   | amd64  |
 
 ### 四、GOHOSTOS
 
@@ -95,7 +96,7 @@ Linux 64位 | linux | amd64
 
 用于标识（声明）程序运行环境的目标计算架构
 
-### 六、go build 
+### 六、go build
 
 #### -a
 
@@ -186,23 +187,26 @@ usage: go build [-o output] [-i] [build flags] [packages]
 ```
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ### 书籍
-- Go并发编程实战 第二版
+
+- Go 并发编程实战 第二版
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

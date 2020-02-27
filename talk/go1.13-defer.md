@@ -1,6 +1,6 @@
 # Go1.13 defer 的性能是如何提高的？
 
-最近 Go1.13 终于发布了，其中一个值得关注的特性就是 **defer 在大部分的场景下性能提升了30%**，但是官方并没有具体写是怎么提升的，这让大家非常的疑惑。而我因为之前写过[《深入理解 Go defer》](https://book.eddycjy.com/golang/defer/defer.html) 和 [《Go defer 会有性能损耗，尽量不要用？》](https://book.eddycjy.com/golang/talk/defer-loss.html) 这类文章，因此我挺感兴趣它是做了什么改变才能得到这样子的结果，所以今天和大家一起探索其中奥妙。
+最近 Go1.13 终于发布了，其中一个值得关注的特性就是 **defer 在大部分的场景下性能提升了 30%**，但是官方并没有具体写是怎么提升的，这让大家非常的疑惑。而我因为之前写过[《深入理解 Go defer》](https://book.eddycjy.com/golang/defer/defer.html) 和 [《Go defer 会有性能损耗，尽量不要用？》](https://book.eddycjy.com/golang/talk/defer-loss.html) 这类文章，因此我挺感兴趣它是做了什么改变才能得到这样子的结果，所以今天和大家一起探索其中奥妙。
 
 ## 一、测试
 
@@ -61,9 +61,9 @@ ok  	github.com/EDDYCJY/awesomeDefer	3.444s
 
 ## 三、观察源码
 
-### _defer
+### \_defer
 
-```
+```go
 type _defer struct {
 	siz     int32
 	siz     int32 // includes both arguments and results
@@ -79,13 +79,13 @@ type _defer struct {
 
 ### deferprocStack
 
-```
+```go
 func deferprocStack(d *_defer) {
 	gp := getg()
 	if gp.m.curg != gp {
 		throw("defer on system stack")
 	}
-	
+
 	d.started = false
 	d.heap = false
 	d.sp = getcallersp()
@@ -99,7 +99,7 @@ func deferprocStack(d *_defer) {
 }
 ```
 
-这一块代码挺常规的，主要是获取调用 `defer` 函数的函数栈指针、传入函数的参数具体地址以及PC（程序计数器），这块在前文 [《深入理解 Go defer》](https://book.eddycjy.com/golang/defer/defer.html) 有详细介绍过，这里就不再赘述了。
+这一块代码挺常规的，主要是获取调用 `defer` 函数的函数栈指针、传入函数的参数具体地址以及 PC（程序计数器），这块在前文 [《深入理解 Go defer》](https://book.eddycjy.com/golang/defer/defer.html) 有详细介绍过，这里就不再赘述了。
 
 那这个 `deferprocStack` 特殊在哪呢，我们可以看到它把 `d.heap` 设置为了 `false`，也就是代表 `deferprocStack` 方法是针对将 `_defer` 分配在栈上的应用场景的。
 
@@ -107,7 +107,7 @@ func deferprocStack(d *_defer) {
 
 那么问题来了，它又在哪里处理分配到堆上的应用场景呢？
 
-```
+```go
 func newdefer(siz int32) *_defer {
 	...
 	d.heap = true
@@ -119,7 +119,7 @@ func newdefer(siz int32) *_defer {
 
 那么 `newdefer` 是在哪里调用的呢，如下：
 
-```
+```go
 func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
 	...
 	sp := getcallersp()
@@ -171,9 +171,9 @@ case ODEFER:
 // src/cmd/compile/internal/gc/esc.go
 type NodeEscState struct {
 	Curfn             *Node
-	Flowsrc           []EscStep 
-	Retval            Nodes    
-	Loopdepth         int32  
+	Flowsrc           []EscStep
+	Retval            Nodes
+	Loopdepth         int32
 	Level             Level
 	Walkgen           uint32
 	Maxextraloopdepth int32
@@ -186,9 +186,9 @@ type NodeEscState struct {
 - 0：返回变量。
 - 1：顶级函数，又或是内部函数的不断增长值。
 
-这个读起来有点绕，结合我们上述 `e.loopdepth == 1` 的表述来看，也就是当 `defer func` 是顶级函数时，将会分配到栈上。但是若在  `defer func` 外层出现显式的迭代循环，又或是出现隐式迭代，将会分配到堆上。其实深层表示的还是迭代深度的意思，我们可以来证实一下刚刚说的方向，显式迭代的代码如下：
+这个读起来有点绕，结合我们上述 `e.loopdepth == 1` 的表述来看，也就是当 `defer func` 是顶级函数时，将会分配到栈上。但是若在 `defer func` 外层出现显式的迭代循环，又或是出现隐式迭代，将会分配到堆上。其实深层表示的还是迭代深度的意思，我们可以来证实一下刚刚说的方向，显式迭代的代码如下：
 
-```
+```go
 func main() {
 	for p := 0; p < 10; p++ {
 		defer func() {

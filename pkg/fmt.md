@@ -1,8 +1,8 @@
-# 8.1 fmt 标准库 --- Print* 是怎么样输出的？
+# 8.1 fmt 标准库 --- Print\* 是怎么样输出的？
 
 ## 前言
 
-```
+```go
 package main
 
 import (
@@ -18,8 +18,7 @@ func main() {
 
 ## 原型
 
-
-```
+```go
 func Print(a ...interface{}) (n int, err error) {
 	return Fprint(os.Stdout, a...)
 }
@@ -45,7 +44,7 @@ func Printf(format string, a ...interface{}) (n int, err error) {
 
 在这里我们使用 `Print` 方法做一个分析，便于后面的加深理解 😄
 
-```
+```go
 func Print(a ...interface{}) (n int, err error) {
 	return Fprint(os.Stdout, a...)
 }
@@ -55,7 +54,7 @@ func Print(a ...interface{}) (n int, err error) {
 
 #### 原型
 
-```
+```go
 func Fprint(w io.Writer, a ...interface{}) (n int, err error) {
 	p := newPrinter()
 	p.doPrint(a)
@@ -74,7 +73,7 @@ func Fprint(w io.Writer, a ...interface{}) (n int, err error) {
 
 1、 p := newPrinter(): 申请一个临时对象池（sync.Pool）
 
-```
+```go
 var ppFree = sync.Pool{
 	New: func() interface{} { return new(pp) },
 }
@@ -88,14 +87,14 @@ func newPrinter() *pp {
 }
 ```
 
-- ppFree.Get()：基于 sync.Pool 实现 *pp 的临时对象池，每次获取一定会返回一个新的 pp 对象用于接下来的处理
-- *pp.panicking：用于解决无限递归的 panic、recover 问题，会根据该参数在 catchPanic 及时掐断
-- *pp.erroring：用于表示正在处理错误无效的 verb 标识符，主要作用是防止调用 handleMethods 方法
-- *pp.fmt.init(&p.buf)：初始化 fmt 配置，会设置 buf 并且清空 fmtFlags 标志位
+- ppFree.Get()：基于 sync.Pool 实现 \*pp 的临时对象池，每次获取一定会返回一个新的 pp 对象用于接下来的处理
+- \*pp.panicking：用于解决无限递归的 panic、recover 问题，会根据该参数在 catchPanic 及时掐断
+- \*pp.erroring：用于表示正在处理错误无效的 verb 标识符，主要作用是防止调用 handleMethods 方法
+- \*pp.fmt.init(&p.buf)：初始化 fmt 配置，会设置 buf 并且清空 fmtFlags 标志位
 
 2、 p.doPrint(a): 执行约定的格式化动作（参数间增加一个空格、最后一个参数增加换行符）
 
-```
+```go
 func (p *pp) doPrint(a []interface{}) {
 	prevString := false
 	for argNum, arg := range a {
@@ -119,13 +118,13 @@ func (p *pp) doPrint(a []interface{}) {
 
 而在 `Print` 方法中，不需要指定格式符。实际上在该方法内直接指定为 `v`。也就是默认格式的值
 
-```
+```go
 p.printArg(arg, 'v')
 ```
 
 3. w.Write(p.buf): 写入标准输出（io.Writer）
 
-4. *pp.free(): 释放已缓存的内容。在使用完临时对象后，会将 buf、arg、value 清空再重新存放到 ppFree 中。以便于后面再取出重用（利用 sync.Pool 的临时对象特性）
+4. \*pp.free(): 释放已缓存的内容。在使用完临时对象后，会将 buf、arg、value 清空再重新存放到 ppFree 中。以便于后面再取出重用（利用 sync.Pool 的临时对象特性）
 
 ### 案例二：Printf
 
@@ -165,7 +164,7 @@ p.printArg(arg, 'v')
 
 #### 原型
 
-```
+```go
 func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
 	p := newPrinter()
 	p.doPrintf(format, a)
@@ -177,7 +176,7 @@ func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
 
 与 Print 相比，最大的不同就是 doPrintf 方法了。在这里我们来详细看看其代码，如下：
 
-```
+```go
 func (p *pp) doPrintf(format string, a []interface{}) {
 	end := len(format)
 	argNum := 0         // we process one argument per non-trivial format
@@ -217,7 +216,7 @@ formatLoop:
 					i++
 					continue formatLoop
 				}
-				
+
 				break simpleFormat
 			}
 		}
@@ -284,7 +283,7 @@ formatLoop:
 
 在特殊情况下，若提供的参数集比 verb 标识符多。fmt 将会贪婪检查下去，将多出的参数集以特定的格式输出，如下：
 
-```
+```go
 fmt.Printf("%d", 1, 2, 3)
 // 1%!(EXTRA int=2, int=3)
 ```
@@ -301,7 +300,7 @@ fmt.Printf("%d", 1, 2, 3)
 
 #### 原型
 
-```
+```go
 func Fprintln(w io.Writer, a ...interface{}) (n int, err error) {
 	p := newPrinter()
 	p.doPrintln(a)
@@ -313,7 +312,7 @@ func Fprintln(w io.Writer, a ...interface{}) (n int, err error) {
 
 在这个方法中，最大的区别就是 doPrintln，我们一起来看看，如下：
 
-```
+```go
 func (p *pp) doPrintln(a []interface{}) {
 	for argNum, arg := range a {
 		if argNum > 0 {
@@ -331,12 +330,11 @@ func (p *pp) doPrintln(a []interface{}) {
 - 格式化当前参数，默认以 `%v` 对参数进行格式化
 - 在结尾添加 `\n` 字符
 
-
 ## 如何格式化参数
 
 在上例的执行流程分析中，可以看到格式化参数这一步是在 `p.printArg(arg, verb)` 执行的，我们一起来看看它都做了些什么？
 
-```
+```go
 func (p *pp) printArg(arg interface{}, verb rune) {
 	p.arg = arg
 	p.value = reflect.Value{}
@@ -391,7 +389,7 @@ func (p *pp) printArg(arg interface{}, verb rune) {
 
 它主要用于格式化并处理错误的行为。我们可以一起来看看，代码如下：
 
-```
+```go
 func (p *pp) badVerb(verb rune) {
 	p.erroring = true
 	p.buf.WriteString(percentBangString)
@@ -413,7 +411,7 @@ func (p *pp) badVerb(verb rune) {
 
 在处理错误格式化时，我们可以对比以下例子：
 
-```
+```go
 fmt.Printf("%s", []int64{1, 2, 3})
 // [%!s(int64=1) %!s(int64=2) %!s(int64=3)]%
 ```
@@ -430,7 +428,7 @@ fmt.Printf("%s", []int64{1, 2, 3})
 
 2、handleMethods
 
-```
+```go
 func (p *pp) handleMethods(verb rune) (handled bool) {
 	if p.erroring {
 		return
@@ -445,7 +443,7 @@ func (p *pp) handleMethods(verb rune) (handled bool) {
 
 	// If we're doing Go syntax and the argument knows how to supply it, take care of it now.
 	...
-	
+
 	return false
 }
 ```
@@ -453,7 +451,7 @@ func (p *pp) handleMethods(verb rune) (handled bool) {
 这个方法比较特殊，一般在自定义结构体和未知情况下进行调用。主要流程是：
 
 - 若当前参数为错误 verb 标识符，则直接返回
-- 判断是否实现了 Formatter 
+- 判断是否实现了 Formatter
 - 实现，则利用自定义 Formatter 格式化参数
 - 未实现，则最大程度的利用 Go syntax 默认规则去格式化参数
 
@@ -463,7 +461,7 @@ func (p *pp) handleMethods(verb rune) (handled bool) {
 
 ### fmt.State
 
-```
+```go
 type State interface {
 	Write(b []byte) (n int, err error)
 
@@ -484,7 +482,7 @@ State 用于获取标志位的状态值，涉及如下：
 
 ### fmt.Formatter
 
-```
+```go
 type Formatter interface {
 	Format(f State, c rune)
 }
@@ -496,7 +494,7 @@ Formatter 用于实现**自定义格式化方法**。可通过在自定义结构
 
 ### fmt.Stringer
 
-```
+```go
 type Stringer interface {
 	String() string
 }
@@ -506,14 +504,13 @@ type Stringer interface {
 
 ### fmt.GoStringer
 
-```
+```go
 type GoStringer interface {
 	GoString() string
 }
 ```
 
 当格式化特定 verb 标识符（%v）时，将调用 `GoString()` 方法对其进行格式化
-
 
 ## 总结
 

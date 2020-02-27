@@ -8,7 +8,7 @@
 
 - 微信（公众号、小程序）等第三方回调接口只支持 HTTP 接口，怎么办
 
-我相信你在实际工作中都会遇到如上问题，在 gRPC 中都是有解决方案的，本章节将会进行介绍 🤔 
+我相信你在实际工作中都会遇到如上问题，在 gRPC 中都是有解决方案的，本章节将会进行介绍 🤔
 
 ## 为什么可以同时提供 HTTP 接口
 
@@ -18,7 +18,7 @@
 
 ### 检测协议
 
-```
+```go
 if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
     server.ServeHTTP(w, r)
 } else {
@@ -64,7 +64,7 @@ go-grpc-example
 
 在 simple_http_server 目录下新建 server.go，写入文件内容：
 
-```
+```go
 package main
 
 import (
@@ -139,7 +139,7 @@ func GetHTTPServeMux() *http.ServeMux {
 
 在 simple_http_server 目录下新建 client.go，写入文件内容：
 
-```
+```go
 package main
 
 import (
@@ -187,7 +187,7 @@ func main() {
 ### gRPC Client
 
 ```
-$ go run client.go 
+$ go run client.go
 2018/10/04 14:56:56 resp: gRPC HTTP Server
 ```
 
@@ -208,5 +208,7 @@ $ go run client.go
 你以为这个方案就万能了吗，不。Envoy Proxy 的支持就不完美，无法同时监听一个端口的两种流量 😤
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

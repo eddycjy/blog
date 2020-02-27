@@ -44,7 +44,7 @@ profile.proto 是一个 Protocol Buffer v3 的描述文件，它描述了一组 
 
 （1）demo.go，文件内容：
 
-``` go
+```go
 package main
 
 import (
@@ -67,7 +67,7 @@ func main() {
 
 （2）data/d.go，文件内容：
 
-``` go
+```go
 package data
 
 var datas []string
@@ -110,13 +110,13 @@ full goroutine stack dump
 - goroutine：`$HOST/debug/pprof/goroutine`，查看当前所有运行的 goroutines 堆栈跟踪
 - heap（Memory Profiling）: `$HOST/debug/pprof/heap`，查看活动对象的内存分配情况
 - mutex（Mutex Profiling）：`$HOST/debug/pprof/mutex`，查看导致互斥锁的竞争持有者的堆栈跟踪
-- threadcreate：`$HOST/debug/pprof/threadcreate`，查看创建新OS线程的堆栈跟踪
+- threadcreate：`$HOST/debug/pprof/threadcreate`，查看创建新 OS 线程的堆栈跟踪
 
 #### 二、通过交互式终端使用
 
 （1）go tool pprof http://localhost:6060/debug/pprof/profile?seconds=60
 
-``` sh
+```sh
 $ go tool pprof http://localhost:6060/debug/pprof/profile\?seconds\=60
 
 Fetching profile over HTTP from http://localhost:6060/debug/pprof/profile?seconds=60
@@ -124,12 +124,12 @@ Saved profile in /Users/eddycjy/pprof/pprof.samples.cpu.007.pb.gz
 Type: cpu
 Duration: 1mins, Total samples = 26.55s (44.15%)
 Entering interactive mode (type "help" for commands, "o" for options)
-(pprof) 
+(pprof)
 ```
 
 执行该命令后，需等待 60 秒（可调整 seconds 的值），pprof 会进行 CPU Profiling。结束后将默认进入 pprof 的交互式命令模式，可以对分析的结果进行查看或导出。具体可执行 `pprof help` 查看命令说明
 
-``` sh
+```sh
 (pprof) top10
 Showing nodes accounting for 25.92s, 97.63% of 26.55s total
 Dropped 85 nodes (cum <= 0.13s)
@@ -157,7 +157,7 @@ Showing top 10 nodes out of 21
 
 （2）go tool pprof http://localhost:6060/debug/pprof/heap
 
-``` sh
+```sh
 $ go tool pprof http://localhost:6060/debug/pprof/heap
 Fetching profile over HTTP from http://localhost:6060/debug/pprof/heap
 Saved profile in /Users/eddycjy/pprof/pprof.alloc_objects.alloc_space.inuse_objects.inuse_space.008.pb.gz
@@ -173,7 +173,6 @@ Showing nodes accounting for 837.48MB, 100% of 837.48MB total
 
 - -alloc_objects：分析应用程序的内存临时分配情况
 
-
 （3） go tool pprof http://localhost:6060/debug/pprof/block
 
 （4） go tool pprof http://localhost:6060/debug/pprof/mutex
@@ -186,7 +185,7 @@ Showing nodes accounting for 837.48MB, 100% of 837.48MB total
 
 （1）新建 data/d_test.go，文件内容：
 
-```
+```go
 package data
 
 import "testing"
@@ -230,7 +229,7 @@ $ go tool pprof -http=:8080 cpu.prof
 ###### 方法二：
 
 ```
-$ go tool pprof cpu.prof 
+$ go tool pprof cpu.prof
 $ (pprof) web
 ```
 
@@ -240,21 +239,21 @@ $ (pprof) web
 
 （1）Top
 
-![image](https://i.imgur.com/RxJO0zH.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlsYD.jpg)
 
 （2）Graph
 
-![image](https://i.imgur.com/Bowv9PX.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlgld.jpg)
 
-框越大，线越粗代表它占用的时间越大哦 
+框越大，线越粗代表它占用的时间越大哦
 
 （3）Peek
 
-![image](https://i.imgur.com/V67zTDQ.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlROI.jpg)
 
 （4）Source
 
-![image](https://i.imgur.com/3K81wyn.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xl4Tf.jpg)
 
 通过 PProf 的可视化界面，我们能够更方便、更直观的看到 Go 应用程序的调用链、使用情况等，并且在 View 菜单栏中，还支持如上多种方式的切换
 
@@ -265,11 +264,12 @@ $ (pprof) web
 另一种可视化数据的方法是火焰图，需手动安装原生 PProf 工具：
 
 （1） 安装 PProf
+
 ```
 $ go get -u github.com/google/pprof
 ```
 
-（2） 启动 PProf 可视化界面: 
+（2） 启动 PProf 可视化界面:
 
 ```
 $ pprof -http=:8080 cpu.prof
@@ -281,8 +281,7 @@ $ pprof -http=:8080 cpu.prof
 
 它就是本次的目标之一，它的最大优点是动态的。调用顺序由上到下（A -> B -> C -> D），每一块代表一个函数，越大代表占用 CPU 的时间更长。同时它也支持点击块深入进行分析！
 
-![image](https://i.imgur.com/g58bQpg.jpg)
-
+![image](https://s2.ax1x.com/2020/02/15/1xlj00.jpg)
 
 ## 总结
 

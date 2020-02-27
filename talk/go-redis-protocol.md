@@ -51,7 +51,7 @@ myvalue
 "*3\r\n$3\r\nSET\r\n$5\r\nmykey\r\n$7\r\nmyvalue\r\n"
 ```
 
-这就是 Redis 的请求协议规范，按照范例1编写客户端逻辑，最终发送的是范例3，相信你已经有大致的概念了，Redis 的协议非常的简洁易懂，这也是好上手的原因之一，你可以想想协议这么定义的好处在哪？
+这就是 Redis 的请求协议规范，按照范例 1 编写客户端逻辑，最终发送的是范例 3，相信你已经有大致的概念了，Redis 的协议非常的简洁易懂，这也是好上手的原因之一，你可以想想协议这么定义的好处在哪？
 
 ### 回复
 
@@ -60,18 +60,16 @@ Redis 会根据你请求协议的不同（执行的命令结果也不同），�
 - 状态回复（status reply）的第一个字节是 "+"
 - 错误回复（error reply）的第一个字节是 "-"
 - 整数回复（integer reply）的第一个字节是 ":"
-- 批量回复（bulk reply）的第一个字节是 "$"
-- 多条批量回复（multi bulk reply）的第一个字节是 "*"
-
+- 批量回复（bulk reply）的第一个字节是 "\$"
+- 多条批量回复（multi bulk reply）的第一个字节是 "\*"
 
 有了回复的头部标识，结尾的 CRLF，你可以大致猜想出回复“协议”是怎么样的，但是实践才能得出真理，斎知道怕是你很快就忘记了 😀
-
 
 ## 实践
 
 ### 与 Redis 服务器交互
 
-```
+```go
 package main
 
 import (
@@ -102,36 +100,36 @@ func main() {
 	if len(args) <= 0 {
 		log.Fatalf("Os.Args <= 0")
 	}
-    
+
         // 获取请求协议
 	reqCommand := protocol.GetRequest(args)
-	
+
 	// 连接 Redis 服务器
 	redisConn, err := Conn(Network, Address)
 	if err != nil {
 		log.Fatalf("Conn err: %v", err)
 	}
 	defer redisConn.Close()
-    
+
         // 写入请求内容
 	_, err = redisConn.Write(reqCommand)
 	if err != nil {
 		log.Fatalf("Conn Write err: %v", err)
 	}
-    
+
         // 读取回复
 	command := make([]byte, 1024)
 	n, err := redisConn.Read(command)
 	if err != nil {
 		log.Fatalf("Conn Read err: %v", err)
 	}
-    
+
         // 处理回复
 	reply, err := protocol.GetReply(command[:n])
 	if err != nil {
 		log.Fatalf("protocol.GetReply err: %v", err)
 	}
-    
+
         // 处理后的回复内容
 	log.Printf("Reply: %v", reply)
 	// 原始的回复内容
@@ -157,7 +155,7 @@ func main() {
 
 ### 请求
 
-```
+```go
 func GetRequest(args []string) []byte {
 	req := []string{
 		"*" + strconv.Itoa(len(args)),
@@ -177,7 +175,7 @@ func GetRequest(args []string) []byte {
 
 ### 回复
 
-```
+```go
 func GetReply(reply []byte) (interface{}, error) {
 	replyType := reply[0]
 	switch replyType {

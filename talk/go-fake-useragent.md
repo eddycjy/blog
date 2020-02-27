@@ -30,7 +30,7 @@ $ go get github.com/EDDYCJY/fake-useragent
 
 ## 用法
 
-``` go
+```go
 package main
 
 import (
@@ -86,7 +86,7 @@ func main() {
 
 你可以调整抓取数据源的最大页数、时间间隔以及最大超时时间。 如果不填写，则为默认值。
 
-``` go
+```go
 client := browser.Client{
 	MaxPage: 3,
 	Delay: 200 * time.Millisecond,
@@ -100,18 +100,19 @@ random := b.Random()
 
 更新浏览器头的临时文件缓存
 
-``` go
+```go
 client := browser.Client{}
 cache := browser.Cache{
 	UpdateFile: true,
 }
 b := browser.NewBrowser(client, cache)
 ```
+
 **最后，建议常规用法就好，默认参数能够满足日常需求**
 
 ## 输出
 
-``` sh
+```sh
 Random: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36
 
 Chrome: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36
@@ -150,4 +151,3 @@ Mobile: Mozilla/5.0 (Linux; Android 7.0; Redmi Note 4 Build/NRD90M) AppleWebKit/
 ---
 
 项目地址：https://github.com/EDDYCJY/fake-useragent
-

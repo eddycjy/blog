@@ -19,12 +19,12 @@ Go 1.13 的发布为模块带来了大量的改进，所以模块的扶正就是
 - Go Modules 简介
 - 快速迁移项目至 Go Modules
 - 使用 Go Modules 时常遇见的坑
-    - 坑 1:判断项目是否启用了 Go Modules
-    - 坑 2:管理 Go 的环境变量
-    - 坑 3:从 dep、glide 等迁移至 Go Modules
-    - 坑 4:拉取私有模块
-    - 坑 5:更新现有的模块 
-    - 坑 6:主版本号 
+  - 坑 1:判断项目是否启用了 Go Modules
+  - 坑 2:管理 Go 的环境变量
+  - 坑 3:从 dep、glide 等迁移至 Go Modules
+  - 坑 4:拉取私有模块
+  - 坑 5:更新现有的模块
+  - 坑 6:主版本号
 - Go Module Proxy 简介
 - Goproxy 中国(goproxy.cn)
 
@@ -37,16 +37,21 @@ Go modules (前身 vgo) 是 Go team (Russ Cox) **强推**的一个**理想化**�
 ### 三个关键字
 
 #### 强推
+
 首先这并不是乱说的，因为 Go modules 确实是被强推出来的，如下：
+
 - 之前：大家都知道在 Go modules 之前还有一个叫 dep 的项目，它也是 Go 的一个官方的实验性项目，目的同样也是为了解决 Go 在依赖管理方面的短板。在 Russ Cox 还没有提出 Go modules 的时候，社区里面几乎所有的人都认为 dep 肯定就是未来 Go 官方的依赖管理解决方案了。
 - 后来：谁都没想到半路杀出个程咬金，Russ Cox 义无反顾地推出了 Go modules，这瞬间导致一石激起千层浪，让社区炸了锅。大家一致认为 Go team 实在是太霸道、太独裁了，连个招呼都不打一声。我记得当时有很多人在网上跟 Russ Cox 口水战，各种依赖管理解决方案的专家都冒出来发表意见，讨论范围甚至一度超出了 Go 语言的圈子触及到了其他语言的领域。
 
 #### 理想化
+
 从他强制要求使用语义化版本控制这一点来说就很理想化了，如下：
+
 - Go modules 狠到如果你的 Tag 没有遵循语义化版本控制那么它就会忽略你的 Tag，然后根据你的 Commit 时间和哈希值再为你生成一个假定的符合语义化版本控制的版本号。
 - Go modules 还默认认为，只要你的主版本号不变，那这个模块版本肯定就不包含 Breaking changes，因为语义化版本控制就是这么规定的啊。是不是很理想化。
 
 #### 类语言级：
+
 这个关键词其实是我自己瞎编的，我只是单纯地个人认为 Go modules 在设计上就像个语言级特性一样，比如如果你的主版本号发生变更，那么你的代码里的 import path 也得跟着变，它认为主版本号不同的两个模块版本是完全不同的两个模块。此外，Go moduels 在设计上跟 go 整个命令都结合得相当紧密，无处不在，所以我才说它是一个有点儿像语言级的特性，虽然不是太严谨。
 
 ### 推 Go Modules 的人是谁
@@ -90,11 +95,12 @@ require (
 )
 
 exclude example.com/banana v1.2.4
-replace example.com/apple v0.1.2 => example.com/rda v0.1.0 
+replace example.com/apple v0.1.2 => example.com/rda v0.1.0
 replace example.com/banana => example.com/hugebanana
 ```
 
- go.mod 是启用了 Go moduels 的项目所必须的最重要的文件，它描述了当前项目（也就是当前模块）的元信息，每一行都以一个动词开头，目前有以下 5 个动词:
+go.mod 是启用了 Go moduels 的项目所必须的最重要的文件，它描述了当前项目（也就是当前模块）的元信息，每一行都以一个动词开头，目前有以下 5 个动词:
+
 - module：用于定义当前项目的模块路径。
 - go：用于设置预期的 Go 版本。
 - require：用于设置一个特定的模块版本。
@@ -108,16 +114,16 @@ replace example.com/banana => example.com/hugebanana
 go.sum 是类似于比如 dep 的 Gopkg.lock 的一类文件，它详细罗列了当前项目直接或间接依赖的所有模块版本，并写明了那些模块版本的 SHA-256 哈希值以备 Go 在今后的操作中保证项目所依赖的那些模块版本不会被篡改。
 
 ```
-example.com/apple v0.1.2 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ= 
-example.com/apple v0.1.2/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU= example.com/banana v1.2.3 h1:qHgHjyoNFV7jgucU8QZUuU4gcdhfs8QW1kw68OD2Lag= 
-example.com/banana v1.2.3/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU= example.com/banana/v2 v2.3.4 h1:zl/OfRA6nftbBK9qTohYBJ5xvw6C/oNKizR7cZGl3cI= example.com/banana/v2 v2.3.4/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q= 
+example.com/apple v0.1.2 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
+example.com/apple v0.1.2/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU= example.com/banana v1.2.3 h1:qHgHjyoNFV7jgucU8QZUuU4gcdhfs8QW1kw68OD2Lag=
+example.com/banana v1.2.3/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU= example.com/banana/v2 v2.3.4 h1:zl/OfRA6nftbBK9qTohYBJ5xvw6C/oNKizR7cZGl3cI= example.com/banana/v2 v2.3.4/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
 ...
 ```
 
 我们可以看到一个模块路径可能有如下两种：
 
 ```
-example.com/apple v0.1.2 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ= 
+example.com/apple v0.1.2 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 example.com/apple v0.1.2/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 ```
 
@@ -151,13 +157,13 @@ example.com/apple v0.1.2/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 ### GOSUMDB
 
 它的值是一个 Go checksum database，用于使 Go 在拉取模块版本时(无论是从源站拉取还是通过 Go module proxy 拉取)保证拉取到的模块版本数据未经篡改，也可以是“off”即禁止 Go 在后续操作中校验模块版本
+
 - 格式 1：`<SUMDB_NAME>+<PUBLIC_KEY>`。
 - 格式 2：`<SUMDB_NAME>+<PUBLIC_KEY> <SUMDB_URL>`。
 
 - 拥有默认值：`sum.golang.org` (之所以没有按照上面的格式是因为 Go 对默认值做了特殊处理)。
 - 可被 Go module proxy 代理 (详见：Proxying a Checksum Database)。
 - `sum.golang.org` 在中国无法访问，故而更加建议将 GOPROXY 设置为 `goproxy.cn`，因为 `goproxy.cn` 支持代理 `sum.golang.org`。
-
 
 ### Go Checksum Database
 
@@ -166,7 +172,6 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 ![image](https://image.eddycjy.com/8a74a6aa59f5706c5c25836451538a12.jpg)
 
 如果有兴趣的小伙伴可以看看 [Proposal: Secure the Public Go Module Ecosystem](https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md#proxying-a-checksum-database)，有详细介绍其算法机制，如果想简单一点，查看 `go help module-auth` 也是一个不错的选择。
-
 
 ### GONOPROXY/GONOSUMDB/GOPRIVATE
 
@@ -182,37 +187,35 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 这个主要是针对 Go modules 的全局缓存数据说明，如下：
 
 - 同一个模块版本的数据只缓存一份，所有其他模块共享使用。
-- 目前所有模块版本数据均缓存在 `$GOPATH/pkg/mod`和 ​`$GOPATH/pkg/sum` 下，未来或将移至 `$GOCACHE/mod `和`$GOCACHE/sum` 下( 可能会在当 `$GOPATH` 被淘汰后)。
+- 目前所有模块版本数据均缓存在 `$GOPATH/pkg/mod`和 ​`$GOPATH/pkg/sum` 下，未来或将移至 `$GOCACHE/mod`和`$GOCACHE/sum` 下( 可能会在当 `$GOPATH` 被淘汰后)。
 - 可以使用 `go clean -modcache` 清理所有已缓存的模块版本数据。
 
 另外在 Go1.11 之后 GOCACHE 已经不允许设置为 off 了，我想着这也是为了模块数据缓存移动位置做准备，因此大家应该尽快做好适配。
-
 
 ## 快速迁移项目至 Go Modules
 
 - 第一步: 升级到 Go 1.13。
 - 第二步: 让 GOPATH 从你的脑海中完全消失，早一步踏入未来。
-    - 修改 GOBIN 路径（可选）：`go env -w GOBIN=$HOME/bin`。
-    - 打开 Go modules：`go env -w GO111MODULE=on`。
-    - 设置 GOPROXY：`go env -w GOPROXY=https://goproxy.cn,direct` # 在中国是必须的，因为它的默认值被墙了。
+  - 修改 GOBIN 路径（可选）：`go env -w GOBIN=$HOME/bin`。
+  - 打开 Go modules：`go env -w GO111MODULE=on`。
+  - 设置 GOPROXY：`go env -w GOPROXY=https://goproxy.cn,direct` # 在中国是必须的，因为它的默认值被墙了。
 - 第三步(可选): 按照你喜欢的目录结构重新组织你的所有项目。
 - 第四步: 在你项目的根目录下执行 `go mod init <OPTIONAL_MODULE_PATH>` 以生成 go.mod 文件。
 - 第五步: 想办法说服你身边所有的人都去走一下前四步。
-
 
 ## 迁移后 go get 行为的改变
 
 - 用 `go help module-get` 和 `go help gopath-get`分别去了解 Go modules 启用和未启用两种状态下的 go get 的行为
 - 用 `go get` 拉取新的依赖
-   - 拉取最新的版本(优先择取 tag)：`go get golang.org/x/text@latest`
-   - 拉取 `master` 分支的最新 commit：`go get golang.org/x/text@master`
-   - 拉取 tag 为 v0.3.2 的 commit：`go get golang.org/x/text@v0.3.2`
-   - 拉取 hash 为 342b231 的 commit，最终会被转换为 v0.3.2：`go get golang.org/x/text@342b2e`
-   - 用 `go get -u` 更新现有的依赖
-   - 用 `go mod download` 下载 go.mod 文件中指明的所有依赖
-   - 用 `go mod tidy` 整理现有的依赖
-   - 用 `go mod graph` 查看现有的依赖结构
-   - 用 `go mod init` 生成 go.mod 文件 (Go 1.13 中唯一一个可以生成 go.mod 文件的子命令)
+  - 拉取最新的版本(优先择取 tag)：`go get golang.org/x/text@latest`
+  - 拉取 `master` 分支的最新 commit：`go get golang.org/x/text@master`
+  - 拉取 tag 为 v0.3.2 的 commit：`go get golang.org/x/text@v0.3.2`
+  - 拉取 hash 为 342b231 的 commit，最终会被转换为 v0.3.2：`go get golang.org/x/text@342b2e`
+  - 用 `go get -u` 更新现有的依赖
+  - 用 `go mod download` 下载 go.mod 文件中指明的所有依赖
+  - 用 `go mod tidy` 整理现有的依赖
+  - 用 `go mod graph` 查看现有的依赖结构
+  - 用 `go mod init` 生成 go.mod 文件 (Go 1.13 中唯一一个可以生成 go.mod 文件的子命令)
 - 用 `go mod edit` 编辑 go.mod 文件
 - 用 `go mod vendor` 导出现有的所有依赖 (事实上 Go modules 正在淡化 Vendor 的概念)
 - 用 `go mod verify` 校验一个模块是否被篡改过
@@ -227,8 +230,6 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 ### 坑 1: 判断项目是否启用了 Go Modules
 
 ![image](https://image.eddycjy.com/0dda1c26b7aa3f9e8655c8e366f49116.jpg)
-
-
 
 ### 坑 2: 管理 Go 的环境变量
 
@@ -258,11 +259,9 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 
 ![image](https://image.eddycjy.com/d35e9f465d82a14c53fcca3ff5ebc557.jpg)
 
-### 坑 6:主版本号 
+### 坑 6:主版本号
 
 ![image](https://image.eddycjy.com/75778deb206803598e48693f6fea60b8.jpg)
-
-
 
 ## Go Module Proxy 简介
 
@@ -272,7 +271,7 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 
 ## Goproxy 中国(goproxy.cn)
 
-在这块主要介绍了  Goproxy 的实践操作以及 goproxy.cn 的一些 Q&A 和 近况，如下：
+在这块主要介绍了 Goproxy 的实践操作以及 goproxy.cn 的一些 Q&A 和 近况，如下：
 
 ### Q&A
 
@@ -280,25 +279,21 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 
 **A：**在 Go 1.13 中 GOPROXY 和 GOSUMDB 这两个环境变量都有了在中国无法 访问的默认值，尽管我在 golang.org/issue/31755 里努力尝 试过，但最终仍然无法为咱们中国的 Go 语言开发者谋得一个完美的解决方案。所以从今以后咱 们中国的所有 Go 语言开发者，只要是 使用了 Go modules 的，那么都必须先修改 GOPROXY 和 GOSUMDB 才能正常使用 Go 做开发，否则可能连一个最简单的程序都跑不起 来(只要它有依 赖第三方模 块)。
 
-
-
 **Q： 我创建 Goproxy 中国(goproxy.cn)的主要原因？**
 
 **A：**其实更早的时候，也就是今年年初我也曾 试图在 golang.org/issue/31020 中请求 Go team 能想办法避免那时的 GOPROXY 即将拥有的默认值可以在中国正常访问，但 Go team 似乎也无能为力，为此我才坚定了创建 goproxy.cn 的信念。既然别人没法儿帮忙，那咱们就 得自己动手，不为别的，就为了让大家以后能够更愉快地使用 Go 语言配合 Go modules 做开发。
 
-最初我先是和七牛云的 许叔(七牛云的 创始人兼 CEO 许式伟)提出了我打算 创建 goproxy.cn 的想法，本是抱着 试试看的目的，但没想 到 许叔几乎是没有超过一分钟的考虑便认可了我的想法并表示愿意一起推 动。那一阵子刚好赶上我在写毕业论文，所以项目开发完后就 一直没和七牛云做交接，一直跑在我的个人服 务器上。直到有一次 goproxy.cn 被攻击了，一下午的功夫 烧了我一百多美元，然后我才 意识到这种项目真不能个人来做。个人来做不靠 谱，万一依赖这个项目的人多了，项目再出什么事儿，那就会给大家􏰁成不必要的损 失。所以我赶紧和七牛云做了交接，把 goproxy.cn 完全交给了七牛云，甚至连域名都过户了去。
-
-
+最初我先是和七牛云的 许叔(七牛云的 创始人兼 CEO 许式伟)提出了我打算 创建 goproxy.cn 的想法，本是抱着 试试看的目的，但没想 到 许叔几乎是没有超过一分钟的考虑便认可了我的想法并表示愿意一起推 动。那一阵子刚好赶上我在写毕业论文，所以项目开发完后就 一直没和七牛云做交接，一直跑在我的个人服 务器上。直到有一次 goproxy.cn 被攻击了，一下午的功夫 烧了我一百多美元，然后我才 意识到这种项目真不能个人来做。个人来做不靠 谱，万一依赖这个项目的人多了，项目再出什么事儿，那就会给大家 􏰁 成不必要的损 失。所以我赶紧和七牛云做了交接，把 goproxy.cn 完全交给了七牛云，甚至连域名都过户了去。
 
 ### 近况
 
 ![image](https://image.eddycjy.com/7bf56751651d56edb989f7cfd64c0006.png)
 
 - Goproxy 中国 (goproxy.cn) 是目前中国最可靠的 Go module proxy (真不是在自卖自夸)。
-- 为中国 Go 语言开发者量身打􏰁，支持代理 GOSUMDB 的默认值，经过全球 CDN 加速，高可用，可 应用进公司复杂的开发环境中，亦可用作上游代理。
+- 为中国 Go 语言开发者量身打 􏰁，支持代理 GOSUMDB 的默认值，经过全球 CDN 加速，高可用，可 应用进公司复杂的开发环境中，亦可用作上游代理。
 - 由中国倍受信赖的云服务提供商七牛云无偿提供基础设施支持的开源的非营利性项目。
-- 目标是为中国乃至全世界的 Go 语言开发者提供一个免 费的、可靠的、持 续在线的且经过 CDN 加􏰀的 Go module proxy。
-- 域名已由七牛云进行了备案 (沪ICP备11037377号-56)。
+- 目标是为中国乃至全世界的 Go 语言开发者提供一个免 费的、可靠的、持 续在线的且经过 CDN 加 􏰀 的 Go module proxy。
+- 域名已由七牛云进行了备案 (沪 ICP 备 11037377 号-56)。
 
 ### 情况
 
@@ -310,10 +305,7 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 
 此时主要是展示了一下近期 goproxy.cn 的网络数据情况，我相信未来是会越来越高的，值得期待。
 
-
-
 ## Q&A
-
 
 **Q：如何解决 Go 1.13 在从 GitLab 拉取模块版本时遇到的，Go 错误地按照非期望值的路径寻找目标模块版本结果致使最终目标模块拉取失败的问题？**
 
@@ -339,18 +331,14 @@ Go checksum database 主要用于保护 Go 不会从任何源头拉到被篡改�
 
 举个例子，比如项目 A 直接依赖了模块 B 和模块 C，然后模块 B 也直接依赖了模块 C，那么你在项目 A 中的 go.mod 文件里的 replace c=>~/some/path/c 是只会影响项目 A 里写的代码中，而模块 B 所用到的还是你 replace 之前的那个 c，并不是你替换成的 ~/some/path/c 这个。
 
-
 ## 总结
 
 在 Go1.13 发布后，接触 Go modules 和 Go module proxy 的人越来越多，经常在各种群看到各种小伙伴在咨询，包括我自己也贡献了好几枚 “坑”，因此我觉得傲飞的这一次 《Go Modules、Go Module Proxy 和 goproxy.cn》的技术分享，非常的有实践意义。如果后续大家还有什么建议或问题，欢迎随时来讨论。
 
 最后，感谢 goproxy.cn 背后的人们（@七牛云 和 @盛傲飞）对中国 Go 语言社区的无私贡献和奉献。
 
-
 ## 进一步阅读
 
 - [night-reading-go/issues/468](https://github.com/developer-learning/night-reading-go/issues/468)
-- [B站：【Go 夜读】第 61 期 Go Modules、Go Module Proxy 和 goproxy.cn](https://www.bilibili.com/video/av69111199?from=search&seid=14251207475086319821)
+- [B 站：【Go 夜读】第 61 期 Go Modules、Go Module Proxy 和 goproxy.cn](https://www.bilibili.com/video/av69111199?from=search&seid=14251207475086319821)
 - [youtube：【Go 夜读】第 61 期 Go Modules、Go Module Proxy 和 goproxy.cn](https://www.youtube.com/watch?v=H3LVVwZ9zNY)
-
-

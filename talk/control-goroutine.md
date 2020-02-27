@@ -1,10 +1,10 @@
 # 1.6 来，控制一下 goroutine 的并发数量
 
-![image](https://i.imgur.com/dGQVT1x.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wnOsJ.jpg)
 
 ## 问题
 
-```
+```go
 func main() {
 	userCount := math.MaxInt64
 	for i := 0; i < userCount; i++ {
@@ -49,17 +49,17 @@ signal: killed
 
 ### 系统负载
 
-![image](https://i.imgur.com/bZjQ2ey.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wnxd1.jpg)
 
 ### CPU
 
-![image](https://i.imgur.com/zxXSgaP.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wuKW8.jpg)
 
 短时间内系统负载暴增
 
 ### 虚拟内存
 
-![image](https://i.imgur.com/xYZO9cE.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wu1yQ.jpg)
 
 短时间内占用的虚拟内存暴增
 
@@ -103,7 +103,7 @@ PID    COMMAND      %CPU  TIME     #TH   #WQ  #PORT MEM    PURG   CMPRS  PGRP  P
 
 ### 尝试 chan
 
-```
+```go
 func main() {
 	userCount := 10
 	ch := make(chan bool, 2)
@@ -111,7 +111,7 @@ func main() {
 		ch <- true
 		go Read(ch, i)
 	}
-	
+
 	//time.Sleep(time.Second)
 }
 
@@ -141,7 +141,7 @@ go func: 0
 
 ### 尝试 sync
 
-```
+```go
 ...
 var wg = sync.WaitGroup{}
 
@@ -169,7 +169,7 @@ func Read(i int) {
 
 ### 尝试 chan + sync
 
-```
+```go
 ...
 var wg = sync.WaitGroup{}
 
@@ -215,7 +215,7 @@ go func: 5, time: 1547911942
 
 在确立了简单使用 chan + sync 的方案是可行后，我们重新将流转逻辑封装为 [gsema](https://github.com/EDDYCJY/gsema)，主程序变成如下：
 
-```
+```go
 import (
 	"fmt"
 	"time"
@@ -257,15 +257,15 @@ func Read(i int) {
 #### 利
 
 - 适合**量不大、复杂度低**的使用场景
-   - 几百几千个、几十万个也是可以接受的（看具体业务场景）
-   - 实际业务逻辑在运行前就已经被阻塞等待了（因为并发数受限），基本实际业务逻辑损耗的性能比 goroutine 本身大
-   - goroutine 本身很轻便，仅损耗极少许的内存空间和调度。这种等待响应的情况都是躺好了，等待任务唤醒
+  - 几百几千个、几十万个也是可以接受的（看具体业务场景）
+  - 实际业务逻辑在运行前就已经被阻塞等待了（因为并发数受限），基本实际业务逻辑损耗的性能比 goroutine 本身大
+  - goroutine 本身很轻便，仅损耗极少许的内存空间和调度。这种等待响应的情况都是躺好了，等待任务唤醒
 - Semaphore 操作复杂度低且流转简单，容易控制
 
 #### 弊
 
 - 不适合**量很大、复杂度高**的使用场景
-   - 有几百万、几千万个 goroutine 的话，就浪费了大量调度 goroutine 和内存空间。恰好你的服务器也接受不了的话
+  - 有几百万、几千万个 goroutine 的话，就浪费了大量调度 goroutine 和内存空间。恰好你的服务器也接受不了的话
 - Semaphore 操作复杂度提高，要管理更多的状态
 
 ### 小结
@@ -289,7 +289,7 @@ func Read(i int) {
 
 ### 方案二：灵活 chan + sync
 
-```
+```go
 package main
 
 import (

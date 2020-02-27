@@ -1,13 +1,15 @@
 # 5.2 Hello World
 
-这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念
+这节将开始编写一个复杂的 Hello World，涉及到许多的知识，建议大家认真思考其中的概念
 
 ## 需求
+
 由于本实践偏向`Grpc`+`Grpc Gateway`的方面，我们的需求是**同一个服务端支持`Rpc`和`Restful Api`**，那么就意味着`http2`、`TLS`等等的应用，功能方面就是一个服务端能够接受来自`grpc`和`Restful Api`的请求并响应
 
 ## 一、初始化目录
 
-我们先在$GOPATH中新建`grpc-hello-world`文件夹，我们项目的初始目录目录如下：
+我们先在\$GOPATH 中新建`grpc-hello-world`文件夹，我们项目的初始目录目录如下：
+
 ```
 grpc-hello-world/
 ├── certs
@@ -19,6 +21,7 @@ grpc-hello-world/
 │   │   └── api
 └── server
 ```
+
 - `certs`：证书凭证
 - `client`：客户端
 - `cmd`：命令行
@@ -33,21 +36,26 @@ grpc-hello-world/
 进入`certs`目录，生成`TLS`所需的公钥密钥文件
 
 ### 私钥
+
 ```
 openssl genrsa -out server.key 2048
 
 openssl ecparam -genkey -name secp384r1 -out server.key
 ```
-- `openssl genrsa`：生成`RSA`私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认512
+
+- `openssl genrsa`：生成`RSA`私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认 512
 - `openssl ecparam`：生成`ECC`私钥，命令为椭圆曲线密钥参数生成及操作，本文中`ECC`曲线选择的是`secp384r1`
 
 ### 自签名公钥
+
 ```
 openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
 ```
+
 - `openssl req`：生成自签名证书，`-new`指生成证书请求、`-sha256`指使用`sha256`加密、`-key`指定私钥文件、`-x509`指输出证书、`-days 3650`为有效期，此后则输入证书拥有者信息
 
 ### 填写信息
+
 ```
 Country Name (2 letter code) [XX]:
 State or Province Name (full name) []:
@@ -57,7 +65,9 @@ Organizational Unit Name (eg, section) []:
 Common Name (eg, your name or your server's hostname) []:grpc server name
 Email Address []:
 ```
+
 ## 三、`proto`
+
 ### 编写
 
 1、 `google.api`
@@ -65,6 +75,7 @@ Email Address []:
 我们看到`proto`目录中有`google/api`目录，它用到了`google`官方提供的两个`api`描述文件，主要是针对`grpc-gateway`的`http`转换提供支持，定义了`Protocol Buffer`所扩展的`HTTP Option`
 
 `annotations.proto`文件：
+
 ```
 // Copyright (c) 2015, Google Inc.
 //
@@ -99,6 +110,7 @@ extend google.protobuf.MethodOptions {
 ```
 
 `http.proto`文件：
+
 ```
 // Copyright 2016 Google Inc.
 //
@@ -190,6 +202,7 @@ message CustomHttpPattern {
 2. `hello.proto`
 
 这一小节将编写`Demo`的`.proto`文件，我们在`proto`目录下新建`hello.proto`文件，写入文件内容：
+
 ```
 syntax = "proto3";
 
@@ -217,7 +230,7 @@ message HelloWorldResponse {
 
 在`hello.proto`文件中，引用了`google/api/annotations.proto`，达到支持`HTTP Option`的效果
 
-- 定义了一个`service`RPC服务`HelloWorld`，在其内部定义了一个`HTTP Option`的`POST`方法，`HTTP`响应路径为`/hello_world`
+- 定义了一个`service`RPC 服务`HelloWorld`，在其内部定义了一个`HTTP Option`的`POST`方法，`HTTP`响应路径为`/hello_world`
 - 定义`message`类型`HelloWorldRequest`、`HelloWorldResponse`，用于响应请求和返回结果
 
 ### 编译
@@ -239,33 +252,35 @@ protoc --grpc-gateway_out=logtostderr=true:. ./hello.proto
 
 执行完毕后将生成`hello.pb.go`和`hello.gw.pb.go`，分别针对`grpc`和`grpc-gateway`的功能支持
 
-
 ## 四、命令行模块 `cmd`
+
 ### 介绍
+
 这一小节我们编写命令行模块，为什么要独立出来呢，是为了将`cmd`和`server`两者解耦，避免混淆在一起。
 
-我们采用 [Cobra](https://github.com/spf13/cobra) 来完成这项功能，`Cobra`既是创建强大的现代CLI应用程序的库，也是生成应用程序和命令文件的程序。提供了以下功能：
+我们采用 [Cobra](https://github.com/spf13/cobra) 来完成这项功能，`Cobra`既是创建强大的现代 CLI 应用程序的库，也是生成应用程序和命令文件的程序。提供了以下功能：
 
 - 简易的子命令行模式
-- 完全兼容posix的命令行模式(包括短和长版本)
+- 完全兼容 posix 的命令行模式(包括短和长版本)
 - 嵌套的子命令
 - 全局、本地和级联`flags`
 - 使用`Cobra`很容易的生成应用程序和命令，使用`cobra create appname`和`cobra add cmdname`
 - 智能提示
-- 自动生成commands和flags的帮助信息
-- 自动生成详细的help信息`-h`，`--help`等等
-- 自动生成的bash自动完成功能
+- 自动生成 commands 和 flags 的帮助信息
+- 自动生成详细的 help 信息`-h`，`--help`等等
+- 自动生成的 bash 自动完成功能
 - 为应用程序自动生成手册
 - 命令别名
 - 定义您自己的帮助、用法等的灵活性。
-- 可选与[viper](https://github.com/spf13/viper)紧密集成的apps
+- 可选与[viper](https://github.com/spf13/viper)紧密集成的 apps
 
 ### 编写`server`
 
 在编写`cmd`时需要先用`server`进行测试关联，因此这一步我们先写`server.go`用于测试
 
 在`server`模块下 新建`server.go`文件，写入测试内容：
-```
+
+```go
 package server
 
 import (
@@ -281,21 +296,23 @@ var (
 
 func Serve() (err error){
     log.Println(ServerPort)
-    
+
     log.Println(CertName)
-    
+
     log.Println(CertPemPath)
-    
+
     log.Println(CertKeyPath)
-    
+
     return nil
 }
 
 ```
+
 ### 编写`cmd`
 
 在`cmd`模块下 新建`root.go`文件，写入内容：
-```
+
+```go
 package cmd
 
 import (
@@ -317,15 +334,17 @@ func Execute() {
     }
 }
 ```
+
 新建`server.go`文件，写入内容：
-```
+
+```go
 package cmd
 
 import (
 	"log"
 
 	"github.com/spf13/cobra"
-	
+
 	"grpc-hello-world/server"
 )
 
@@ -338,7 +357,7 @@ var serverCmd = &cobra.Command{
 				log.Println("Recover error : %v", err)
 			}
 		}()
-		
+
 		server.Serve()
 	},
 }
@@ -353,7 +372,8 @@ func init() {
 ```
 
 我们在`grpc-hello-world/`目录下，新建文件`main.go`，写入内容：
-```
+
+```go
 package main
 
 import (
@@ -373,6 +393,7 @@ func main() {
 `rootCmd`表示在没有任何子命令的情况下的基本命令
 
 2、`&cobra.Command`：
+
 - `Use`：`Command`的用法，`Use`是一个行用法消息
 - `Short`：`Short`是`help`命令输出中显示的简短描述
 - `Run`：运行:典型的实际工作功能。大多数命令只会实现这一点；另外还有`PreRun`、`PreRunE`、`PostRun`、`PostRunE`等等不同时期的运行命令，但比较少用，具体使用时再查看亦可
@@ -393,9 +414,10 @@ func main() {
 
 另外还有`Local Flag on Parent Commands`、`Bind Flags with Config`、`Required flags`等等，使用到再 [传送](https://github.com/spf13/cobra#local-flag-on-parent-commands) 了解即可
 
-
 ### 测试
+
 回到`grpc-hello-world/`目录下执行`go run main.go server`，查看输出是否为（此时应为默认值）：
+
 ```
 2018/02/25 23:23:21 50052
 2018/02/25 23:23:21 dev
@@ -404,6 +426,7 @@ func main() {
 ```
 
 执行`go run main.go server --port=8000 --cert-pem=test-pem --cert-key=test-key --cert-name=test-name`，检验命令行参数是否正确：
+
 ```
 2018/02/25 23:24:56 8000
 2018/02/25 23:24:56 test-name
@@ -415,10 +438,11 @@ func main() {
 
 ## 五、服务端模块 `server`
 
-
 ### 编写`hello.go`
+
 在`server`目录下新建文件`hello.go`，写入文件内容：
-```
+
+```go
 package server
 
 import (
@@ -440,14 +464,15 @@ func (h helloService) SayHelloWorld(ctx context.Context, r *pb.HelloWorldRequest
 }
 ```
 
-我们创建了`helloService`及其方法`SayHelloWorld`，对应`.proto`的`rpc SayHelloWorld`，这个方法需要有2个参数：`ctx context.Context`用于接受上下文参数、`r *pb.HelloWorldRequest`用于接受`protobuf`的`Request`参数（对应`.proto`的`message HelloWorldRequest`）
+我们创建了`helloService`及其方法`SayHelloWorld`，对应`.proto`的`rpc SayHelloWorld`，这个方法需要有 2 个参数：`ctx context.Context`用于接受上下文参数、`r *pb.HelloWorldRequest`用于接受`protobuf`的`Request`参数（对应`.proto`的`message HelloWorldRequest`）
 
+### \*编写`server.go`
 
-### *编写`server.go`
 这一小章节，我们编写最为重要的服务端程序部分，涉及到大量的`grpc`、`grpc-gateway`及一些网络知识的应用
 
 1、在`pkg`下新建`util`目录，新建`grpc.go`文件，写入内容：
-```
+
+```go
 package util
 
 import (
@@ -476,7 +501,8 @@ func GrpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 `GrpcHandlerFunc`函数是用于判断请求是来源于`Rpc`客户端还是`Restful Api`的请求，根据不同的请求注册不同的`ServeHTTP`服务；`r.ProtoMajor == 2`也代表着请求必须基于`HTTP/2`
 
 2、在`pkg`下的`util`目录下，新建`tls.go`文件，写入内容：
-```
+
+```go
 package util
 
 import (
@@ -491,12 +517,12 @@ func GetTLSConfig(certPemPath, certKeyPath string) *tls.Config {
     var certKeyPair *tls.Certificate
     cert, _ := ioutil.ReadFile(certPemPath)
     key, _ := ioutil.ReadFile(certKeyPath)
-    
+
     pair, err := tls.X509KeyPair(cert, key)
     if err != nil {
         log.Println("TLS KeyPair err: %v\n", err)
     }
-    
+
     certKeyPair = &pair
 
     return &tls.Config{
@@ -507,14 +533,16 @@ func GetTLSConfig(certPemPath, certKeyPath string) *tls.Config {
 ```
 
 `GetTLSConfig`函数是用于获取`TLS`配置，在内部，我们读取了`server.key`和`server.pem`这类证书凭证文件
+
 - `tls.X509KeyPair`：从一对`PEM`编码的数据中解析公钥/私钥对。成功则返回公钥/私钥对
-- `http2.NextProtoTLS`：`NextProtoTLS`是谈判期间的`NPN/ALPN`协议，用于**HTTP/2的TLS设置**
+- `http2.NextProtoTLS`：`NextProtoTLS`是谈判期间的`NPN/ALPN`协议，用于**HTTP/2 的 TLS 设置**
 - `tls.Certificate`：返回一个或多个证书，实质我们解析`PEM`调用的`X509KeyPair`的函数声明就是`func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error)`，返回值就是`Certificate`
 
 总的来说该函数是用于处理从证书凭证文件（PEM），最终获取`tls.Config`作为`HTTP2`的使用参数
 
 3、修改`server`目录下的`server.go`文件，该文件是我们服务里的核心文件，写入内容：
-```
+
+```go
 package server
 
 import (
@@ -527,7 +555,7 @@ import (
     "google.golang.org/grpc"
     "google.golang.org/grpc/credentials"
     "github.com/grpc-ecosystem/grpc-gateway/runtime"
-    
+
     pb "grpc-hello-world/proto"
     "grpc-hello-world/pkg/util"
 )
@@ -608,9 +636,10 @@ func createInternalServer(conn net.Listener, tlsConfig *tls.Config) (*http.Serve
 
 `net.Listen("tcp", EndPoint)`用于监听本地的网络地址通知，它的函数原型`func Listen(network, address string) (Listener, error)`
 
-参数：`network`必须传入`tcp`、`tcp4`、`tcp6`、`unix`、`unixpacket`，若`address`为空或为0则会自动选择一个端口号
+参数：`network`必须传入`tcp`、`tcp4`、`tcp6`、`unix`、`unixpacket`，若`address`为空或为 0 则会自动选择一个端口号
 返回值：通过查看源码我们可以得知其返回值为`Listener`，结构体原型：
-```
+
+```go
 type Listener interface {
     Accept() (Conn, error)
     Close() error
@@ -619,6 +648,7 @@ type Listener interface {
 ```
 
 通过分析得知，**最后`net.Listen`会返回一个监听器的结构体，返回给接下来的动作，让其执行下一步的操作**，它可以执行三类操作
+
 - `Accept`：接受等待并将下一个连接返回给`Listener`
 - `Close`：关闭`Listener`
 - `Addr`：返回`Listener`的网络地址
@@ -633,15 +663,15 @@ type Listener interface {
 
 程序采用的是`HTT2`、`HTTPS`也就是需要支持`TLS`，因此在启动`grpc.NewServer`前，我们要将认证的中间件注册进去
 
-
 而前面所获取的`tlsConfig`仅能给`HTTP`使用，因此**第一步**我们要创建`grpc`的`TLS`认证凭证
 
 **1、创建`grpc`的`TLS`认证凭证**
 
 新增引用`google.golang.org/grpc/credentials`的第三方包，它实现了`grpc`库支持的各种凭证，该凭证封装了客户机需要的所有状态，以便与服务器进行身份验证并进行各种断言，例如关于客户机的身份，角色或是否授权进行特定的呼叫
 
-我们调用`NewServerTLSFromFile`来达到我们的目的，它能够从输入证书文件和服务器的密钥文件**构造TLS证书凭证**
-```
+我们调用`NewServerTLSFromFile`来达到我们的目的，它能够从输入证书文件和服务器的密钥文件**构造 TLS 证书凭证**
+
+```go
 func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error) {
     //LoadX509KeyPair读取并解析来自一对文件的公钥/私钥对
     cert, err := tls.LoadX509KeyPair(certFile, keyFile)
@@ -657,24 +687,29 @@ func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error
 
 以`grpc.Creds(creds)`为例，其原型为`func Creds(c credentials.TransportCredentials) ServerOption`，该函数返回`ServerOption`，它为服务器连接设置凭据
 
-
 **3、创建`grpc`服务端**
 
 函数原型：
-```
+
+```go
 func NewServer(opt ...ServerOption) *Server
 ```
+
 我们在此处创建了一个没有注册服务的`grpc`服务端，还没有开始接受请求
-```
+
+```go
 grpcServer := grpc.NewServer(opts...)
 ```
+
 **4、注册`grpc`服务**
-```
+
+```go
 pb.RegisterHelloWorldServer(grpcServer, NewHelloService())
 ```
 
 **5、创建`grpc-gateway`关联组件**
-```
+
+```go
 ctx := context.Background()
 dcreds, err := credentials.NewClientTLSFromFile(CertPemPath, CertName)
 if err != nil {
@@ -682,13 +717,15 @@ if err != nil {
 }
 dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
 ```
+
 - `context.Background`：返回一个非空的空上下文。它没有被注销，没有值，没有过期时间。它通常由主函数、初始化和测试使用，并作为传入请求的**顶级上下文**
-- `credentials.NewClientTLSFromFile`：从客户机的输入证书文件构造TLS凭证
+- `credentials.NewClientTLSFromFile`：从客户机的输入证书文件构造 TLS 凭证
 - `grpc.WithTransportCredentials`：配置一个连接级别的安全凭据(例：`TLS`、`SSL`)，返回值为`type DialOption`
 - `grpc.DialOption`：`DialOption`选项配置我们如何设置连接（其内部具体由多个的`DialOption`组成，决定其设置连接的内容）
 
 **6、创建`HTTP NewServeMux`及注册`grpc-gateway`逻辑**
-```
+
+```go
 gwmux := runtime.NewServeMux()
 
 // register grpc-gateway pb
@@ -711,18 +748,22 @@ mux.Handle("/", gwmux)
 首先我们看看它们的原型是怎么样的
 
 （1）`http.NewServeMux()`
-```
+
+```go
 func NewServeMux() *ServeMux {
-        return new(ServeMux) 
+        return new(ServeMux)
 }
 ```
-```
+
+```go
 type Handler interface {
     ServeHTTP(ResponseWriter, *Request)
 }
 ```
+
 （2）`runtime.NewServeMux`？
-```
+
+```go
 func NewServeMux(opts ...ServeMuxOption) *ServeMux {
     serveMux := &ServeMux{
         handlers:               make(map[string][]handler),
@@ -733,26 +774,29 @@ func NewServeMux(opts ...ServeMuxOption) *ServeMux {
     return serveMux
 }
 ```
+
 （3）`http.NewServeMux()`的`Handle`方法
-```
+
+```go
 func (mux *ServeMux) Handle(pattern string, handler Handler)
 ```
 
-通过分析可得知，两者`NewServeMux`都是最终返回`serveMux`，`Handler`中导出的方法仅有`ServeHTTP`，功能是用于响应HTTP请求
+通过分析可得知，两者`NewServeMux`都是最终返回`serveMux`，`Handler`中导出的方法仅有`ServeHTTP`，功能是用于响应 HTTP 请求
 
 我们回到`Handle interface`中，可以得出结论就是任何结构体，只要实现了`ServeHTTP`方法，这个结构就可以称为`Handle`，`ServeMux`会使用该`Handler`调用`ServeHTTP`方法处理请求，这也就是**自定义`Handler`**
 
 而我们这里正是将`grpc-gateway`中注册好的`HTTP Handler`无缝的植入到`net/http`的`Handle`方法中
 
-
 **补充：在`go`中任何结构体只要实现了与接口相同的方法，就等同于实现了接口**
 
 **7、注册具体服务**
-```
+
+```go
 if err := pb.RegisterHelloWorldHandlerFromEndpoint(ctx, gwmux, EndPoint, dopts); err != nil {
     log.Println("Failed to register gw server: %v\n", err)
 }
 ```
+
 在这段代码中，我们利用了前几小节的
 
 - 上下文
@@ -763,7 +807,8 @@ if err := pb.RegisterHelloWorldHandlerFromEndpoint(ctx, gwmux, EndPoint, dopts);
 注册了`HelloWorld`这一个服务
 
 ##### 四、创建`tls.NewListener`
-```
+
+```go
 func NewListener(inner net.Listener, config *Config) net.Listener {
     l := new(listener)
     l.Listener = inner
@@ -771,11 +816,14 @@ func NewListener(inner net.Listener, config *Config) net.Listener {
     return l
 }
 ```
+
 `NewListener`将会创建一个`Listener`，它接受两个参数，第一个是来自内部`Listener`的监听器，第二个参数是`tls.Config`（必须包含至少一个证书）
 
 ##### 五、服务开始接受请求
+
 在最后我们调用`srv.Serve(tls.NewListener(conn, tlsConfig))`，可以得知它是`http.Server`的方法，并且需要一个`Listener`作为参数，那么`Serve`内部做了些什么事呢？
-```
+
+```go
 func (srv *Server) Serve(l net.Listener) error {
     defer l.Close()
     ...
@@ -794,13 +842,15 @@ func (srv *Server) Serve(l net.Listener) error {
 
 粗略的看，它创建了一个`context.Background()`上下文对象，并调用`Listener`的`Accept`方法开始接受外部请求，在获取到连接数据后使用`newConn`创建连接对象，在最后使用`goroutine`的方式处理连接请求，达到其目的
 
-**补充：对于`HTTP/2`支持，在调用`Serve`之前，应将`srv.TLSConfig`初始化为提供的`Listener`的TLS配置。如果`srv.TLSConfig`非零，并且在`Config.NextProtos`中不包含字符串`h2`，则不启用`HTTP/2`支持**
+**补充：对于`HTTP/2`支持，在调用`Serve`之前，应将`srv.TLSConfig`初始化为提供的`Listener`的 TLS 配置。如果`srv.TLSConfig`非零，并且在`Config.NextProtos`中不包含字符串`h2`，则不启用`HTTP/2`支持**
 
 ## 六、验证功能
 
 ### 编写测试客户端
+
 在`grpc-hello-world/`下新建目录`client`，新建`client.go`文件，新增内容：
-```
+
+```go
 package main
 
 import (
@@ -839,6 +889,7 @@ func main() {
 	log.Println(r.Message)
 }
 ```
+
 由于客户端只是展示测试用，就简单的来了，原本它理应归类到`cobra`的管控下，配置管理等等都应可控化
 
 在看这篇文章的你，可以试试将测试客户端归类好
@@ -846,6 +897,7 @@ func main() {
 ### 启动服务端
 
 回到`grpc-hello-world/`目录下，启动服务端`go run main.go server`，成功则仅返回
+
 ```
 2018/02/26 17:19:36 gRPC and https listen on: 50052
 ```
@@ -853,11 +905,13 @@ func main() {
 ### 执行测试客户端
 
 回到`client`目录下，启动客户端`go run client.go`，成功则返回
+
 ```
 2018/02/26 17:22:57 Grpc
 ```
 
-### 执行测试Restful Api
+### 执行测试 Restful Api
+
 ```
 curl -X POST -k https://localhost:50052/hello_world -d '{"referer": "restful_api"}'
 ```
@@ -867,6 +921,7 @@ curl -X POST -k https://localhost:50052/hello_world -d '{"referer": "restful_api
 ---
 
 ## 最终目录结构
+
 ```
 grpc-hello-world
 ├── certs
@@ -902,6 +957,7 @@ grpc-hello-world
 另外本节涉及了许多组件间的知识，值得大家细细的回味，非常有意义！
 
 ## 参考
-### 示例代码
-- [grpc-hello-world](https://github.com/EDDYCJY/grpc-hello-world)
 
+### 示例代码
+
+- [grpc-hello-world](https://github.com/EDDYCJY/grpc-hello-world)

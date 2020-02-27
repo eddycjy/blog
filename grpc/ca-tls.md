@@ -14,7 +14,6 @@
 
 根证书（root certificate）是属于根证书颁发机构（CA）的公钥证书。我们可以通过验证 CA 的签名从而信任 CA ，任何人都可以得到 CA 的证书（含公钥），用以验证它所签发的证书（客户端、服务端）
 
-
 它包含的文件如下：
 
 - 公钥
@@ -101,7 +100,7 @@ openssl x509 -req -sha256 -CA ca.pem -CAkey ca.key -CAcreateserial -days 3650 -i
 至此我们生成了一堆文件，请按照以下目录结构存放：
 
 ```
-$ tree conf 
+$ tree conf
 conf
 ├── ca.key
 ├── ca.pem
@@ -124,7 +123,7 @@ conf
 
 ### Server
 
-```
+```go
 package main
 
 import (
@@ -181,7 +180,7 @@ func main() {
 
 - tls.LoadX509KeyPair()：从证书相关文件中**读取**和**解析**信息，得到证书公钥、密钥对
 
-```
+```go
 func LoadX509KeyPair(certFile, keyFile string) (Certificate, error) {
 	certPEMBlock, err := ioutil.ReadFile(certFile)
 	if err != nil {
@@ -206,7 +205,7 @@ func LoadX509KeyPair(certFile, keyFile string) (Certificate, error) {
 
 （2）ClientAuth：要求必须校验客户端的证书。可以根据实际情况选用以下参数：
 
-```
+```go
 const (
 	NoClientCert ClientAuthType = iota
 	RequestClientCert
@@ -220,7 +219,7 @@ const (
 
 ### Client
 
-```
+```go
 package main
 
 import (
@@ -294,10 +293,12 @@ func main() {
 
 ## 总结
 
-在本章节，我们使用 CA 颁发的根证书对客户端、服务端的证书进行了签发。进一步的提高了两者的通讯安全 
+在本章节，我们使用 CA 颁发的根证书对客户端、服务端的证书进行了签发。进一步的提高了两者的通讯安全
 
 这回是真的大功告成了！
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

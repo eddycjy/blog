@@ -15,12 +15,11 @@
 - 普通方法：一元拦截器（grpc.UnaryInterceptor）
 - 流方法：流拦截器（grpc.StreamInterceptor）
 
-
 ## 看一看
 
 ### grpc.UnaryInterceptor
 
-```
+```go
 func UnaryInterceptor(i UnaryServerInterceptor) ServerOption {
 	return func(o *options) {
 		if o.unaryInt != nil {
@@ -30,8 +29,10 @@ func UnaryInterceptor(i UnaryServerInterceptor) ServerOption {
 	}
 }
 ```
+
 函数原型：
-```
+
+```go
 type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error)
 ```
 
@@ -39,16 +40,18 @@ type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *Una
 
 - ctx context.Context：请求上下文
 - req interface{}：RPC 方法的请求参数
-- info *UnaryServerInfo：RPC 方法的所有信息
+- info \*UnaryServerInfo：RPC 方法的所有信息
 - handler UnaryHandler：RPC 方法本身
 
 ### grpc.StreamInterceptor
 
-```
+```go
 func StreamInterceptor(i StreamServerInterceptor) ServerOption
 ```
+
 函数原型：
-```
+
+```go
 type StreamServerInterceptor func(srv interface{}, ss ServerStream, info *StreamServerInfo, handler StreamHandler) error
 ```
 
@@ -60,7 +63,7 @@ StreamServerInterceptor 与 UnaryServerInterceptor 形参的意义是一样，�
 
 关于这一点，你可以放心。采用开源项目 [go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware) 就可以解决这个问题，本章也会使用它。
 
-```
+```go
 import "github.com/grpc-ecosystem/go-grpc-middleware"
 
 myServer := grpc.NewServer(
@@ -84,7 +87,7 @@ myServer := grpc.NewServer(
 
 #### logging
 
-```
+```go
 func LoggingInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	log.Printf("gRPC method: %s, %v", info.FullMethod, req)
 	resp, err := handler(ctx, req)
@@ -95,7 +98,7 @@ func LoggingInterceptor(ctx context.Context, req interface{}, info *grpc.UnarySe
 
 #### recover
 
-```
+```go
 func RecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -110,7 +113,7 @@ func RecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryS
 
 ### Server
 
-```
+```go
 import (
 	"context"
 	"crypto/tls"
@@ -166,7 +169,7 @@ func main() {
 
 ```
 $ go run server.go
-2018/10/02 13:46:35 gRPC method: /proto.SearchService/Search, request:"gRPC" 
+2018/10/02 13:46:35 gRPC method: /proto.SearchService/Search, request:"gRPC"
 2018/10/02 13:46:35 gRPC method: /proto.SearchService/Search, response:"gRPC Server"
 ```
 
@@ -202,5 +205,7 @@ main.RecoveryInterceptor.func1(0xc420223a10)
 通过本章节，你可以学会最常见的拦截器使用方法。接下来其它“新”需求只要举一反三即可。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

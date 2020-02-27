@@ -15,33 +15,32 @@
 
 ## ctrl + c
 
->内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生`SIGPIPE`信号
+> 内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生`SIGPIPE`信号
 
 在终端执行特定的组合键可以使系统发送特定的信号给此进程，完成一系列的动作
 
-
-命令 | 信号 | 含义
----|---|---
-ctrl + c | SIGINT| 强制进程结束
-ctrl + z | SIGTSTP | 任务中断，进程挂起
-ctrl + \ | SIGQUIT | 进程结束 和 `dump core`
-ctrl + d | | EOF
-| | SIGHUP | 终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程） |
+| 命令      | 信号    | 含义                                                                                                    |
+| --------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| ctrl + c  | SIGINT  | 强制进程结束                                                                                            |
+| ctrl + z  | SIGTSTP | 任务中断，进程挂起                                                                                      |
+| ctrl + \  | SIGQUIT | 进程结束 和 `dump core`                                                                                 |
+| ctrl + d  |         | EOF                                                                                                     |
+|           | SIGHUP  | 终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程） |
 
 因此在我们执行`ctrl + c`关闭`gin`服务端时，**会强制进程结束，导致正在访问的用户等出现问题**
 
 常见的 `kill -9 pid` 会发送 `SIGKILL` 信号给进程，也是类似的结果
 
-### 信号 
+### 信号
 
 本段中反复出现**信号**是什么呢？
-
 
 信号是 `Unix` 、类 `Unix` 以及其他 `POSIX` 兼容的操作系统中进程间通讯的一种有限制的方式
 
 它是一种异步的通知机制，用来提醒进程一个事件（硬件异常、程序执行异常、外部发出信号）已经发生。当一个信号发送给一个进程，操作系统中断了进程正常的控制流程。此时，任何非原子操作都将被中断。如果进程定义了信号的处理函数，那么它将被执行，否则就执行默认的处理函数
 
 ### 所有信号
+
 ```
 $ kill -l
  1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
@@ -59,17 +58,17 @@ $ kill -l
 63) SIGRTMAX-1	64) SIGRTMAX
 ```
 
-
 ## 怎样算优雅
 
 ### 目的
+
 - 不关闭现有连接（正在运行中的程序）
 - 新的进程启动并替代旧进程
 - 新的进程接管新的连接
 - 连接要随时响应用户的请求，当用户仍在请求旧进程时要保持连接，新用户应请求新进程，不可以出现拒绝请求的情况
 
-
 ### 流程
+
 1、替换可执行文件或修改配置文件
 
 2、发送信号量 `SIGHUP`
@@ -84,15 +83,16 @@ $ kill -l
 
 7、旧进程处理完所有旧连接后正常结束
 
-
 ## 实现优雅重启
 
 ### endless
+
 > Zero downtime restarts for golang HTTP and HTTPS servers. (for golang 1.3+)
 
 我们借助 [fvbock/endless](https://github.com/fvbock/endless) 来实现 `Golang HTTP/HTTPS` 服务重新启动的零停机
 
 `endless server` 监听以下几种信号量：
+
 - syscall.SIGHUP：触发 `fork` 子进程和重新启动
 - syscall.SIGUSR1/syscall.SIGTSTP：被监听，但不会触发任何动作
 - syscall.SIGUSR2：触发 `hammerTime`
@@ -101,12 +101,16 @@ $ kill -l
 `endless` 正正是依靠监听这些**信号量**，完成管控的一系列动作
 
 #### 安装
+
 ```
 go get -u github.com/fvbock/endless
 ```
+
 #### 编写
+
 打开 [gin-blog](https://github.com/EDDYCJY/go-gin-example) 的 `main.go`文件，修改文件：
-```
+
+```go
 package main
 
 import (
@@ -141,18 +145,24 @@ func main() {
 `endless.NewServer` 返回一个初始化的 `endlessServer` 对象，在 `BeforeBegin` 时输出当前进程的 `pid`，调用 `ListenAndServe` 将实际“启动”服务
 
 #### 验证
+
 ##### **编译**
+
 ```
-$ go build main.go 
+$ go build main.go
 ```
+
 ##### **执行**
+
 ```
 $ ./main
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
 ...
 Actual pid is 48601
 ```
+
 启动成功后，输出了`pid`为 48601；在另外一个终端执行 `kill -1 48601` ，检验先前服务的终端效果
+
 ```
 [root@localhost go-gin-example]# ./main
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
@@ -185,7 +195,7 @@ Server err: accept tcp [::]:8000: use of closed network connection
 Server err: accept tcp [::]:8000: use of closed network connection
 ```
 
-大致意思为主进程（`pid`为48601）接受到 `SIGTERM` 信号量，关闭主进程的监听并且等待正在执行的请求完成；这与我们先前的描述一致
+大致意思为主进程（`pid`为 48601）接受到 `SIGTERM` 信号量，关闭主进程的监听并且等待正在执行的请求完成；这与我们先前的描述一致
 
 ##### **唤醒**
 
@@ -206,18 +216,17 @@ $ [GIN] 2018/03/15 - 13:00:16 | 200 |     188.096µs |   192.168.111.1 | GET    
 
 这就完成了一次正向的流转了
 
-你想想，每次更新发布、或者修改配置文件等，只需要给该进程发送**SIGTERM信号**，而不需要强制结束应用，是多么便捷又安全的事！
+你想想，每次更新发布、或者修改配置文件等，只需要给该进程发送**SIGTERM 信号**，而不需要强制结束应用，是多么便捷又安全的事！
 
 #### 问题
 
 `endless` 热更新是采取创建子进程后，将原进程退出的方式，这点不符合守护进程的要求
 
-
 ### http.Server - Shutdown()
 
 如果你的`Golang >= 1.8`，也可以考虑使用 `http.Server` 的 [Shutdown](https://golang.org/pkg/net/http/#Server.Shutdown) 方法
 
-```
+```go
 package main
 
 import (
@@ -250,7 +259,7 @@ func main() {
             log.Printf("Listen: %s\n", err)
         }
     }()
-	
+
     quit := make(chan os.Signal)
     signal.Notify(quit, os.Interrupt)
     <- quit
@@ -271,12 +280,14 @@ func main() {
 
 在日常的服务中，优雅的重启（热更新）是非常重要的一环。而 `Golang` 在 `HTTP` 服务方面的热更新也有不少方案了，我们应该根据实际应用场景挑选最合适的
 
-
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ### 拓展阅读
+
 - [manners](https://github.com/braintree/manners)
 - [graceful](https://github.com/tylerb/graceful)
 - [grace](https://github.com/facebookgo/grace)
@@ -286,13 +297,13 @@ func main() {
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

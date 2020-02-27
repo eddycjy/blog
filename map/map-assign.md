@@ -20,7 +20,7 @@
 
 ### 桶/溢出桶
 
-```
+```go
 type hmap struct {
 	...
 	buckets    unsafe.Pointer
@@ -45,7 +45,7 @@ type mapextra struct {
 
 ## 赋值
 
-```
+```go
 m := make(map[int32]string)
 m[0] = "EDDYCJY"
 ```
@@ -54,7 +54,7 @@ m[0] = "EDDYCJY"
 
 在 map 的赋值动作中，依旧是针对 32/64 位、string、pointer 类型有不同的转换处理，总的函数原型如下：
 
-```
+```go
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer
 func mapaccess1_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer
 func mapaccess2_fast32(t *maptype, h *hmap, key uint32) (unsafe.Pointer, bool)
@@ -77,7 +77,7 @@ func mapassign_faststr(t *maptype, h *hmap, s string) unsafe.Pointer
 
 #### 第一阶段：校验和初始化
 
-```
+```go
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h == nil {
 		panic(plainError("assignment to entry in nil map"))
@@ -94,7 +94,7 @@ func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h.buckets == nil {
 		h.buckets = newobject(t.bucket) // newarray(t.bucket, 1)
 	}
-    ...	
+    ...
 }
 ```
 
@@ -106,7 +106,7 @@ func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 
 #### 第二阶段：寻找可插入位和更新既有值
 
-```
+```go
 ...
 again:
 	bucket := hash & bucketMask(h.B)
@@ -169,7 +169,7 @@ again:
 
 #### 第三阶段：申请新的插入位和插入新值
 
-```
+```go
     ...
 	if inserti == nil {
 		newb := h.newoverflow(t, b)
@@ -203,7 +203,7 @@ done:
 
 但是这里又疑惑了？最后为什么是返回内存地址。这是因为隐藏的最后一步写入动作（将值拷贝到指定内存区域）是通过底层汇编配合来完成的，在 runtime 中只完成了绝大部分的动作
 
-```
+```go
 func main() {
 	m := make(map[int32]int32)
 	m[0] = 6666666
@@ -240,7 +240,7 @@ func main() {
 
 ### 什么时候扩容
 
-```
+```go
 if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 	hashGrow(t, h)
 	goto again
@@ -261,15 +261,15 @@ if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.n
 
 ### 因子关系
 
-loadFactor | %overflow | bytes/entry | hitprobe | missprobe
----|---|---|---|---
-4.00 | 2.13 | 20.77 | 3.00 | 4.00
-4.50 | 4.05 | 17.30 | 3.25 | 4.50
-5.00 | 6.85 | 14.77 | 3.50 | 5.00
-5.50 | 10.55 | 12.94 | 3.75 | 5.50
-6.00 | 15.27 | 11.67 | 4.00 | 6.00
-6.50 | 20.90 | 10.79 | 4.25 | 6.50
-7.00 | 27.14 | 10.15 | 4.50 | 7.00
+| loadFactor | %overflow | bytes/entry | hitprobe | missprobe |
+| ---------- | --------- | ----------- | -------- | --------- |
+| 4.00       | 2.13      | 20.77       | 3.00     | 4.00      |
+| 4.50       | 4.05      | 17.30       | 3.25     | 4.50      |
+| 5.00       | 6.85      | 14.77       | 3.50     | 5.00      |
+| 5.50       | 10.55     | 12.94       | 3.75     | 5.50      |
+| 6.00       | 15.27     | 11.67       | 4.00     | 6.00      |
+| 6.50       | 20.90     | 10.79       | 4.25     | 6.50      |
+| 7.00       | 27.14     | 10.15       | 4.50     | 7.00      |
 
 - loadFactor：负载因子
 - %overflow：溢出率，具有溢出桶 `overflow buckets` 的桶的百分比
@@ -281,7 +281,7 @@ loadFactor | %overflow | bytes/entry | hitprobe | missprobe
 
 ### 源码剖析
 
-```
+```go
 func hashGrow(t *maptype, h *hmap) {
 	bigger := uint8(1)
 	if !overLoadFactor(h.count+1, h.B) {
@@ -319,7 +319,7 @@ func hashGrow(t *maptype, h *hmap) {
 
 在上小节有讲到扩容的依据有两种，在 `hashGrow` 开头就进行了划分。如下：
 
-```
+```go
 if !overLoadFactor(h.count+1, h.B) {
 	bigger = 0
 	h.flags |= sameSizeGrow
@@ -328,7 +328,7 @@ if !overLoadFactor(h.count+1, h.B) {
 
 若不是负载因子 `load factor` 超过当前界限，也就是属于溢出桶 `overflow buckets` 过多的情况。因此本次扩容规则将是 `sameSizeGrow`，即是**不改变大小的扩容动作**。那要是前者的情况呢？
 
-```
+```go
 bigger := uint8(1)
 ...
 newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
@@ -340,7 +340,7 @@ newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
 
 主要是针对扩容的相关数据**前置处理**，涉及 buckets/oldbuckets、overflow/oldoverflow 之类与存储相关的字段
 
-```
+```go
 ...
 oldbuckets := h.buckets
 newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
@@ -373,7 +373,7 @@ if nextOverflow != nil {
 
 在源码中，发现第三阶段的流转并没有显式展示。这是因为流转由底层去做控制了。但通过分析代码和注释，可得知由第三阶段涉及 `growWork` 和 `evacuate` 方法。如下：
 
-```
+```go
 func growWork(t *maptype, h *hmap, bucket uintptr) {
 	evacuate(t, h, bucket&h.oldbucketmask())
 
@@ -383,7 +383,7 @@ func growWork(t *maptype, h *hmap, bucket uintptr) {
 }
 ```
 
-在该方法中，主要是两个  `evacuate` 函数的调用。他们在调用上又分别有什么区别呢？如下：
+在该方法中，主要是两个 `evacuate` 函数的调用。他们在调用上又分别有什么区别呢？如下：
 
 - evacuate(t, h, bucket&h.oldbucketmask()): 将 oldbucket 中的元素迁移 rehash 到扩容后的新 bucket
 - evacuate(t, h, h.nevacuate): 如果当前正在进行扩容，则再进行多一次迁移
@@ -406,13 +406,13 @@ func growWork(t *maptype, h *hmap, bucket uintptr) {
 
 这时候又想到，既然迁移是逐步进行的。那如果在途中又要扩容了，怎么办？
 
-```
+```go
 again:
 	bucket := hash & bucketMask(h.B)
     ...
 	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 		hashGrow(t, h)
-		goto again 
+		goto again
 	}
 ```
 
@@ -422,12 +422,12 @@ again:
 
 在扩容的完整闭环中，包含着迁移的动作，又称 “搬迁”。因此我们继续深入研究 `evacuate` 函数。接下来一起打开迁移世界的大门。如下：
 
-```
+```go
 type evacDst struct {
-	b *bmap          
-	i int            
-	k unsafe.Pointer 
-	v unsafe.Pointer 
+	b *bmap
+	i int
+	k unsafe.Pointer
+	v unsafe.Pointer
 }
 ```
 
@@ -438,7 +438,7 @@ type evacDst struct {
 - k: 指向当前 key 的内存地址
 - v: 指向当前 value 的内存地址
 
-```
+```go
 func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
 	newbit := h.noldbuckets()

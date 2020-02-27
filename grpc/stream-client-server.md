@@ -38,7 +38,7 @@ gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
 
 在同步完成后，也有人马上会去查阅数据，为了新的一天筹备。也符合实时性。
 
-两者相较下，这个场景下更适合使用 Streaming RPC 
+两者相较下，这个场景下更适合使用 Streaming RPC
 
 ## gRPC
 
@@ -47,7 +47,7 @@ gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
 ### 目录结构
 
 ```
-$ tree go-grpc-example 
+$ tree go-grpc-example
 go-grpc-example
 ├── client
 │   ├── simple_client
@@ -108,7 +108,7 @@ message StreamResponse {
 
 #### Server
 
-```
+```go
 package main
 
 import (
@@ -118,7 +118,7 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/EDDYCJY/go-grpc-example/proto"
-	
+
 )
 
 type StreamService struct{}
@@ -156,12 +156,12 @@ func (s *StreamService) Route(stream pb.StreamService_RouteServer) error {
 
 #### Client
 
-```
+```go
 package main
 
 import (
     "log"
-    
+
 	"google.golang.org/grpc"
 
 	pb "github.com/EDDYCJY/go-grpc-example/proto"
@@ -220,7 +220,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 #### Server
 
-```
+```go
 func (s *StreamService) List(r *pb.StreamRequest, stream pb.StreamService_ListServer) error {
 	for n := 0; n <= 6; n++ {
 		err := stream.Send(&pb.StreamResponse{
@@ -240,7 +240,7 @@ func (s *StreamService) List(r *pb.StreamRequest, stream pb.StreamService_ListSe
 
 在 Server，主要留意 `stream.Send` 方法。它看上去能发送 N 次？有没有大小限制？
 
-```
+```go
 type StreamService_ListServer interface {
 	Send(*StreamResponse) error
 	grpc.ServerStream
@@ -261,7 +261,7 @@ func (x *streamServiceListServer) Send(m *StreamResponse) error {
 
 #### Client
 
-```
+```go
 func printLists(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 	stream, err := client.List(context.Background(), r)
 	if err != nil {
@@ -286,7 +286,7 @@ func printLists(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 在 Client，主要留意 `stream.Recv()` 方法。什么情况下 `io.EOF` ？什么情况下存在错误信息呢?
 
-```
+```go
 type StreamService_ListClient interface {
 	Recv() (*StreamResponse, error)
 	grpc.ClientStream
@@ -314,7 +314,7 @@ RecvMsg 会从流中读取完整的 gRPC 消息体，另外通过阅读源码可
 - transport.ConnectionError
 - google.golang.org/grpc/codes
 
-同时需要注意，默认的 MaxReceiveMessageSize 值为 1024 * 1024 * 4，建议不要超出
+同时需要注意，默认的 MaxReceiveMessageSize 值为 1024 _ 1024 _ 4，建议不要超出
 
 #### 验证
 
@@ -327,7 +327,7 @@ $ go run server.go
 运行 stream_client/client.go：
 
 ```
-$ go run client.go 
+$ go run client.go
 2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2018
 2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2019
 2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2020
@@ -345,7 +345,7 @@ $ go run client.go
 
 #### Server
 
-```
+```go
 func (s *StreamService) Record(stream pb.StreamService_RecordServer) error {
 	for {
 		r, err := stream.Recv()
@@ -369,7 +369,7 @@ func (s *StreamService) Record(stream pb.StreamService_RecordServer) error {
 
 #### Client
 
-```
+```go
 func printRecord(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 	stream, err := client.Record(context.Background())
 	if err != nil {
@@ -433,7 +433,7 @@ $ go run server.go
 
 #### Server
 
-```
+```go
 func (s *StreamService) Route(stream pb.StreamService_RouteServer) error {
 	n := 0
 	for {
@@ -466,7 +466,7 @@ func (s *StreamService) Route(stream pb.StreamService_RouteServer) error {
 
 #### Client
 
-```
+```go
 func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 	stream, err := client.Route(context.Background())
 	if err != nil {
@@ -530,5 +530,7 @@ $ go run client.go
 在本文共介绍了三类流的交互方式，可以根据实际的业务场景去选择合适的方式。会事半功倍哦 🎑
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

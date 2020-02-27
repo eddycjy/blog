@@ -1,6 +1,6 @@
 # 1.9 我要在栈上。不，你应该在堆上
 
-![image](https://i.imgur.com/ixyP3XP.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wK39K.jpg)
 
 我们在写代码的时候，有时候会想这个变量到底分配到哪里了？这时候可能会有人说，在栈上，在堆上。信我准没错...
 
@@ -8,7 +8,7 @@
 
 ## 问题
 
-```
+```go
 type User struct {
 	ID     int64
 	Name   string
@@ -86,7 +86,7 @@ $ go tool compile -S main.go
 
 第一个案例是一开始抛出的问题，现在你再看看，想想，如下：
 
-```
+```go
 type User struct {
 	ID     int64
 	Name   string
@@ -113,7 +113,7 @@ $ go build -gcflags '-m -l' main.go
 通过查看分析结果，可得知 `&User` 逃到了堆里，也就是分配到堆上了。这是不是有问题啊...再看看汇编代码确定一下，如下：
 
 ```
-$ go tool compile -S main.go                
+$ go tool compile -S main.go
 "".GetUserInfo STEXT size=190 args=0x8 locals=0x18
 	0x0000 00000 (main.go:9)	TEXT	"".GetUserInfo(SB), $24-8
 	...
@@ -141,7 +141,7 @@ $ go tool compile -S main.go
 
 那你可能会想，那就是所有指针对象，都应该在堆上？并不。如下：
 
-```
+```go
 func main() {
 	str := new(string)
 	*str = "EDDYCJY"
@@ -160,7 +160,7 @@ $ go build -gcflags '-m -l' main.go
 
 ### 案例二：未确定类型
 
-```
+```go
 func main() {
 	str := new(string)
 	*str = "EDDYCJY"
@@ -185,7 +185,7 @@ $ go build -gcflags '-m -l' main.go
 
 相对案例一，案例二只加了一行代码 `fmt.Println(str)`，问题肯定出在它身上。其原型：
 
-```
+```go
 func Println(a ...interface{}) (n int, err error)
 ```
 
@@ -195,7 +195,7 @@ func Println(a ...interface{}) (n int, err error)
 
 ### 案例三、泄露参数
 
-```
+```go
 type User struct {
 	ID     int64
 	Name   string
@@ -226,7 +226,7 @@ $ go build -gcflags '-m -l' main.go
 
 那你再想想怎么样才能让它分配到堆上？结合案例一，举一反三。修改如下：
 
-```
+```go
 type User struct {
 	ID     int64
 	Name   string

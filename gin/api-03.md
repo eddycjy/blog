@@ -1,12 +1,12 @@
-# Gin搭建Blog API's （三）
+# Gin 搭建 Blog API's （三）
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
 ## 涉及知识点
 
-- [Gin](https://github.com/gin-gonic/gin)：Golang的一个微框架，性能极佳。
-- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的beego的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
-- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的ORM框架，[英文文档](http://gorm.io/docs/)
+- [Gin](https://github.com/gin-gonic/gin)：Golang 的一个微框架，性能极佳。
+- [beego-validation](https://github.com/astaxie/beego/tree/master/validation)：本节采用的 beego 的表单验证库，[中文文档](https://beego.me/docs/mvc/controller/validation.md)。
+- [gorm](https://github.com/jinzhu/gorm)，对开发人员友好的 ORM 框架，[英文文档](http://gorm.io/docs/)
 - [com](https://github.com/Unknwon/com)，一个小而美的工具包。
 
 ## 本文目标
@@ -24,8 +24,10 @@
 - 删除指定文章：DELETE("/articles/:id")
 
 ## 编写路由逻辑
-在`routers`的v1版本下，新建`article.go`文件，写入内容：
-```
+
+在`routers`的 v1 版本下，新建`article.go`文件，写入内容：
+
+```go
 package v1
 
 import (
@@ -54,12 +56,13 @@ func DeleteArticle(c *gin.Context) {
 ```
 
 我们打开`routers`下的`router.go`文件，修改文件内容为：
-```
+
+```go
 package routers
 
 import (
     "github.com/gin-gonic/gin"
-    
+
     "github.com/EDDYCJY/go-gin-example/routers/api/v1"
     "github.com/EDDYCJY/go-gin-example/pkg/setting"
 )
@@ -86,6 +89,7 @@ func InitRouter() *gin.Engine {
 ```
 
 当前目录结构：
+
 ```
 go-gin-example/
 ├── conf
@@ -112,13 +116,15 @@ go-gin-example/
 ├── runtime
 
 ```
+
 在基础的路由规则配置结束后，我们**开始编写我们的接口**吧！
 
 ---
 
-##编写models逻辑
+##编写 models 逻辑
 创建`models`目录下的`article.go`，写入文件内容：
-```
+
+```go
 package models
 
 import (
@@ -161,13 +167,13 @@ func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
 2. `Tag`字段，实际是一个嵌套的`struct`，它利用`TagID`与`Tag`模型相互关联，在执行查询的时候，能够达到`Article`、`Tag`关联查询的功能
 3. `time.Now().Unix()` 返回当前的时间戳
 
-
 接下来，请确保已对上一章节的内容通读且了解，由于逻辑偏差不会太远，我们本节直接编写这五个接口
 
 ---
 
 打开`models`目录下的`article.go`，修改文件内容：
-```
+
+```go
 package models
 
 import (
@@ -218,7 +224,7 @@ func GetArticle(id int) (article Article) {
 	db.Where("id = ?", id).First(&article)
 	db.Model(&article).Related(&article.Tag)
 
-	return 
+	return
 }
 
 func EditArticle(id int, data interface {}) bool {
@@ -259,26 +265,27 @@ func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
 }
 ```
 
-
 在这里，我们拿出三点不同来讲，如下：
 
 **1、 我们的`Article`是如何关联到`Tag`？**
 
-```
+```go
 func GetArticle(id int) (article Article) {
 	db.Where("id = ?", id).First(&article)
 	db.Model(&article).Related(&article.Tag)
 
-	return 
+	return
 }
 ```
+
 能够达到关联，首先是`gorm`本身做了大量的约定俗成
-- `Article`有一个结构体成员是`TagID`，就是外键。`gorm`会通过类名+ID的方式去找到这两个类之间的关联关系
+
+- `Article`有一个结构体成员是`TagID`，就是外键。`gorm`会通过类名+ID 的方式去找到这两个类之间的关联关系
 - `Article`有一个结构体成员是`Tag`，就是我们嵌套在`Article`里的`Tag`结构体，我们可以通过`Related`进行关联查询
 
 **2、 `Preload`是什么东西，为什么查询可以得出每一项的关联`Tag`？**
 
-```
+```go
 func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Article) {
 	db.Preload("Tag").Where(maps).Offset(pageNum).Limit(pageSize).Find(&articles)
 
@@ -286,9 +293,10 @@ func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Artic
 }
 ```
 
-`Preload`就是一个预加载器，它会执行两条SQL，分别是`SELECT * FROM blog_articles;`和`SELECT * FROM blog_tag WHERE id IN (1,2,3,4);`，那么在查询出结构后，`gorm`内部处理对应的映射逻辑，将其填充到`Article`的`Tag`中，会特别方便，并且避免了循环查询
+`Preload`就是一个预加载器，它会执行两条 SQL，分别是`SELECT * FROM blog_articles;`和`SELECT * FROM blog_tag WHERE id IN (1,2,3,4);`，那么在查询出结构后，`gorm`内部处理对应的映射逻辑，将其填充到`Article`的`Tag`中，会特别方便，并且避免了循环查询
 
 那么有没有别的办法呢，大致是两种
+
 - `gorm`的`Join`
 - 循环`Related`
 
@@ -296,12 +304,13 @@ func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Artic
 
 **3、 `v.(I)` 是什么？**
 
-`v`表示一个接口值，`I`表示接口类型。这个实际就是Golang中的**类型断言**，用于判断一个接口值的实际类型是否为某个类型，或一个非接口值的类型是否实现了某个接口类型
+`v`表示一个接口值，`I`表示接口类型。这个实际就是 Golang 中的**类型断言**，用于判断一个接口值的实际类型是否为某个类型，或一个非接口值的类型是否实现了某个接口类型
 
 ---
 
-打开`routers`目录下v1版本的`article.go`文件，修改文件内容：
-```
+打开`routers`目录下 v1 版本的`article.go`文件，修改文件内容：
+
+```go
 package v1
 
 import (
@@ -367,7 +376,7 @@ func GetArticles(c *gin.Context) {
         maps["tag_id"] = tagId
 
         valid.Min(tagId, 1, "tag_id").Message("标签ID必须大于0")
-    } 
+    }
 
     code := e.INVALID_PARAMS
     if ! valid.HasErrors() {
@@ -416,7 +425,7 @@ func AddArticle(c *gin.Context) {
             data["content"] = content
             data["created_by"] = createdBy
             data["state"] = state
-            
+
             models.AddArticle(data)
             code = e.SUCCESS
         } else {
@@ -530,6 +539,7 @@ func DeleteArticle(c *gin.Context) {
 ```
 
 当前目录结构：
+
 ```
 go-gin-example/
 ├── conf
@@ -556,10 +566,13 @@ go-gin-example/
 │   └── router.go
 ├── runtime
 ```
+
 ## 验证功能
+
 我们重启服务，执行`go run main.go`，检查控制台输出结果
+
 ```
-$ go run main.go 
+$ go run main.go
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
@@ -583,24 +596,25 @@ $ go run main.go
 - PUT：http://127.0.0.1:8000/api/v1/articles/1?tag_id=1&title=test-edit1&desc=test-desc-edit&content=test-content-edit&modified_by=test-created-edit&state=0
 - DELETE：http://127.0.0.1:8000/api/v1/articles/1
 
-
-至此，我们的API's编写就到这里，下一节我们将介绍另外的一些技巧！
+至此，我们的 API's 编写就到这里，下一节我们将介绍另外的一些技巧！
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

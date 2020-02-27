@@ -1,4 +1,4 @@
-# 4.2 gRPC Client and Server 
+# 4.2 gRPC Client and Server
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 
@@ -48,7 +48,7 @@ go get -u github.com/golang/protobuf/protoc-gen-go
 
 安装环境若有问题，可参考我先前的文章 [《介绍与环境安装》](https://segmentfault.com/a/1190000013339403) 内有详细介绍，不再赘述
 
-## gRPC 
+## gRPC
 
 本小节开始正式编写 gRPC 相关的程序，一起上车吧 😄
 
@@ -59,7 +59,7 @@ go get -u github.com/golang/protobuf/protoc-gen-go
 ### 目录结构
 
 ```
-$ tree go-grpc-example 
+$ tree go-grpc-example
 go-grpc-example
 ├── client
 ├── proto
@@ -121,7 +121,7 @@ $ protoc --go_out=. *.proto
 
 执行完毕命令后，将得到一个 .pb.go 文件，文件内容如下：
 
-```
+```go
 type SearchRequest struct {
 	Request              string   `protobuf:"bytes,1,opt,name=request" json:"request,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -152,7 +152,7 @@ func (m *SearchRequest) GetRequest() string {
 - 生成 Rest 方法，便于将 Protobuf 结构体恢复为零值
 - Repeated 转换为切片
 
-```
+```go
 type SearchRequest struct {
 	Request              string   `protobuf:"bytes,1,opt,name=request" json:"request,omitempty"`
 }
@@ -189,12 +189,11 @@ var fileDescriptor_search_8b45f79ee13ff6a3 = []byte{
 
 而这一部分代码主要是围绕 `fileDescriptor` 进行，在这里 `fileDescriptor_search_8b45f79ee13ff6a3` 表示一个编译后的 proto 文件，而每一个方法都包含 Descriptor 方法，代表着这一个方法在 `fileDescriptor` 中具体的 Message Field
 
-
 ### Server
 
 这一小节将编写 gRPC Server 的基础模板，完成一个方法的调用。对 server.go 写入如下内容：
 
-```
+```go
 package main
 
 import (
@@ -237,7 +236,7 @@ func main() {
 
 接下来编写 gRPC Go Client 的基础模板，打开 client/client.go 文件，写入以下内容：
 
-```
+```go
 package main
 
 import (
@@ -279,7 +278,7 @@ func main() {
 
 ### 启动 Server
 
-``` sh
+```sh
 $ pwd
 $GOPATH/github.com/EDDYCJY/go-grpc-example
 $ go run server.go
@@ -287,10 +286,10 @@ $ go run server.go
 
 ### 启动 Client
 
-``` sh
-$ pwd             
+```sh
+$ pwd
 $GOPATH/github.com/EDDYCJY/go-grpc-example/client
-$ go run client.go 
+$ go run client.go
 2018/09/23 11:06:23 resp: gRPC Server
 ```
 
@@ -299,5 +298,7 @@ $ go run client.go
 在本章节，我们对 Protobuf、gRPC Client/Server 分别都进行了介绍。希望你结合文中讲述内容再写一个 Demo 进行深入了解，肯定会更棒 🤔
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

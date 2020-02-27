@@ -12,7 +12,7 @@
 
 ## 功能代码
 
-```
+```go
 ...
 type Person struct {
 	Name   string `json:"name"`
@@ -70,7 +70,7 @@ func JsonIteratorToStruct(data []byte, againPerson []AgainPerson) ([]AgainPerson
 
 ## 测试代码
 
-```
+```go
 ...
 func BenchmarkForStruct(b *testing.B) {
 	person := InitPerson()
@@ -136,13 +136,13 @@ BenchmarkJsonIteratorToStruct-4   	     300	   4116491 ns/op	 3694017 B/op	   30
 
 ## 性能对比
 
-![image](https://i.imgur.com/yEdUayK.png)
+![image](https://s2.ax1x.com/2020/02/27/3wuywR.png)
 
 ### for-loop
 
 在测试结果中，`for range` 在性能上相较 `for` 差。这是为什么呢？在这里我们可以参见 `for range` 的 [实现](https://github.com/gcc-mirror/gcc/blob/master/gcc/go/gofrontend/statements.cc)，伪实现如下：
 
-```
+```go
 for_temp := range
 len_temp := len(for_temp)
 for index_temp = 0; index_temp < len_temp; index_temp++ {
@@ -165,7 +165,7 @@ RangeClause = [ ExpressionList "=" | IdentifierList ":=" ] "range" Expression .
 
 #### Copy
 
-```
+```go
 ...
 value_temp = for_temp[index_temp]
 index = index_temp
@@ -189,7 +189,7 @@ json 互转是在三种方案中最慢的，这是为什么呢？
 
 众所皆知，官方的 `encoding/json` 标准库，是通过大量反射来实现的。那么 “慢”，也是必然的。可参见下述代码：
 
-```
+```go
 ...
 func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
     ...
@@ -245,7 +245,7 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 
 利用 [modern-go/reflect2](https://github.com/modern-go/reflect2) 减少运行时调度开销
 
-```
+```go
 ...
 type StructDescriptor struct {
 	Type   reflect2.Type
@@ -277,7 +277,7 @@ type Extension interface {
 
 类型为 struct 时，只需要反射一次 Name 和 Type，会缓存 struct Encoder 和 Decoder
 
-```
+```go
 var typeDecoders = map[string]ValDecoder{}
 var fieldDecoders = map[string]ValDecoder{}
 var typeEncoders = map[string]ValEncoder{}
