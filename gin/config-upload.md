@@ -314,7 +314,7 @@ func GetExt(fileName string) string {
 	return path.Ext(fileName)
 }
 
-func CheckExist(src string) bool {
+func CheckNotExist(src string) bool {
 	_, err := os.Stat(src)
 
 	return os.IsNotExist(err)
@@ -359,7 +359,7 @@ func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 
 - GetSize：获取文件大小
 - GetExt：获取文件后缀
-- CheckExist：检查文件是否存在
+- CheckNotExist：检查文件是否存在
 - CheckPermission：检查文件权限
 - IsNotExistMkDir：如果不存在则新建文件夹
 - MkDir：新建文件夹
