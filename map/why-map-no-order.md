@@ -6,7 +6,7 @@
 
 ## 前言
 
-```
+```go
 func main() {
 	m := make(map[int32]string)
 	m[0] = "EDDYCJY1"
@@ -22,7 +22,6 @@ func main() {
 ```
 
 假设运行这段代码，输出结果是按顺序？还是无序输出呢？
-
 
 ```
 2019/04/03 23:27:29 k: 3, v: EDDYCJY4
@@ -74,7 +73,7 @@ func main() {
 
 ## 看一下转换后
 
-```
+```go
 var hiter map_iteration_struct
 for mapiterinit(type, range, &hiter); hiter.key != nil; mapiternext(&hiter) {
     index_temp = *hiter.key
@@ -91,7 +90,7 @@ for mapiterinit(type, range, &hiter); hiter.key != nil; mapiternext(&hiter) {
 
 ### runtime.mapiterinit
 
-```
+```go
 func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	...
 	it.t = t
@@ -123,7 +122,7 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 
 咱们关注到源码中 `fastrand` 的部分，这个方法名，是不是迷之眼熟。没错，它是一个生成随机数的方法。再看看上下文：
 
-```
+```go
 ...
 // decide where to start
 r := uintptr(fastrand())
@@ -143,7 +142,7 @@ it.bucket = it.startBucket
 
 ### runtime.mapiternext
 
-```
+```go
 func mapiternext(it *hiter) {
     ...
     for ; i < bucketCnt; i++ {
@@ -165,7 +164,7 @@ func mapiternext(it *hiter) {
 			it.value = rv
 		}
 		it.bucket = bucket
-		if it.bptr != b { 
+		if it.bptr != b {
 			it.bptr = b
 		}
 		it.i = i + 1

@@ -1,4 +1,4 @@
-# 4.1 gRPC及相关介绍
+# 4.1 gRPC 及相关介绍
 
 项目地址：https://github.com/EDDYCJY/go-grpc-example
 
@@ -8,12 +8,13 @@
 
 ## 一、RPC
 
-### 什么是 RPC 
+### 什么是 RPC
 
 RPC 代指远程过程调用（Remote Procedure Call），它的调用包含了传输协议和编码（对象序列号）协议等等。允许运行于一台计算机的程序调用另一台计算机的子程序，而开发人员无需额外地为这个交互作用编程
 
 #### 实际场景：
-有两台服务器，分别是A、B。在 A 上的应用 C 想要调用 B 服务器上的应用 D，它们可以直接本地调用吗？  
+
+有两台服务器，分别是 A、B。在 A 上的应用 C 想要调用 B 服务器上的应用 D，它们可以直接本地调用吗？  
 答案是不能的，但走 RPC 的话，十分方便。因此常有人称使用 RPC，就跟本地调用一个函数一样简单
 
 ### RPC 框架
@@ -32,12 +33,12 @@ RPC 代指远程过程调用（Remote Procedure Call），它的调用包含了�
 
 ### 比较一下
 
- \ | 跨语言 | 多 IDL | 服务治理 | 注册中心 | 服务管理
----|---|---|---|---|---
-gRPC | 	√ | × | × | × | × 
-Thrift | √ | × | × | × | × 
-Rpcx | × | √ | √ | √ | √ 
-Dubbo | × | √ | √ | √ | √ 
+| \      | 跨语言 | 多 IDL | 服务治理 | 注册中心 | 服务管理 |
+| ------ | ------ | ------ | -------- | -------- | -------- |
+| gRPC   | √      | ×      | ×        | ×        | ×        |
+| Thrift | √      | ×      | ×        | ×        | ×        |
+| Rpcx   | ×      | √      | √        | √        | √        |
+| Dubbo  | ×      | √      | √        | √        | √        |
 
 ### 为什么要 RPC
 
@@ -57,7 +58,7 @@ Protocol Buffers 是一种与语言、平台无关，可扩展的序列化结构
 
 ### 语法
 
-```
+```go
 syntax = "proto3";
 
 service SearchService {
@@ -81,31 +82,30 @@ message SearchResponse {
 
 3、定义 `SearchRequest`、`SearchResponse` 消息，前者定义了三个字段，每一个字段包含三个属性：类型、字段名称、字段编号
 
-4、Protobuf 编译器会根据选择的语言不同，生成相应语言的 Service Interface Code  和 Stubs
+4、Protobuf 编译器会根据选择的语言不同，生成相应语言的 Service Interface Code 和 Stubs
 
 最后，这里只是简单的语法介绍，详细的请右拐 [
 Language Guide (proto3)](https://developers.google.com/protocol-buffers/docs/proto3)
 
 ### 数据类型
 
-
-.proto Type | C++ Type | Java Type | Go Type | PHP Type
----|---|---|---|---
-double | double | double | float64 | float
-float | float | float | float32 | float
-int32 | int32 | int | int32 | integer
-int64 | int64 | long | int64 | integer/string
-uint32 | uint32 | int | uint32 | integer
-uint64 | uint64 | long | uint64 | integer/string
-sint32 | int32 | int | int32 | integer
-sint64 | int64 | long | int64 | integer/string
-fixed32 | uint32 | int | uint32 | integer
-fixed64 | uint64 | long | uint64 | integer/string
-sfixed32 | int32 | int | int32 | integer
-sfixed64 | int64 | long | int64 | integer/string
-bool | bool | boolean | bool | boolean
-string | string | String | string | string
-bytes | string | ByteString | []byte | string
+| .proto Type | C++ Type | Java Type  | Go Type | PHP Type       |
+| ----------- | -------- | ---------- | ------- | -------------- |
+| double      | double   | double     | float64 | float          |
+| float       | float    | float      | float32 | float          |
+| int32       | int32    | int        | int32   | integer        |
+| int64       | int64    | long       | int64   | integer/string |
+| uint32      | uint32   | int        | uint32  | integer        |
+| uint64      | uint64   | long       | uint64  | integer/string |
+| sint32      | int32    | int        | int32   | integer        |
+| sint64      | int64    | long       | int64   | integer/string |
+| fixed32     | uint32   | int        | uint32  | integer        |
+| fixed64     | uint64   | long       | uint64  | integer/string |
+| sfixed32    | int32    | int        | int32   | integer        |
+| sfixed64    | int64    | long       | int64   | integer/string |
+| bool        | bool     | boolean    | bool    | boolean        |
+| string      | string   | String     | string  | string         |
+| bytes       | string   | ByteString | []byte  | string         |
 
 ### v2 和 v3 主要区别
 
@@ -123,11 +123,11 @@ bytes | string | ByteString | []byte | string
 
 以上是日常涉及的常见功能，如果还想详细了解可阅读 [Protobuf Version 3.0.0](https://github.com/protocolbuffers/protobuf/releases?after=v3.2.1)
 
-### 相较 Protobuf，为什么不使用XML？
+### 相较 Protobuf，为什么不使用 XML？
 
 - 更简单
-- 数据描述文件只需原来的1/10至1/3
-- 解析速度是原来的20倍至100倍
+- 数据描述文件只需原来的 1/10 至 1/3
+- 解析速度是原来的 20 倍至 100 倍
 - 减少了二义性
 - 生成了更易使用的数据访问类
 
@@ -156,7 +156,7 @@ gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2
 
 2、Protobuf
 
-3、客户端、服务端基于同一份 IDL 
+3、客户端、服务端基于同一份 IDL
 
 4、移动网络的良好支持
 
@@ -168,7 +168,7 @@ gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2
 
 ### 讲解
 
-1、客户端（gRPC Sub）调用 A 方法，发起 RPC 调用 
+1、客户端（gRPC Sub）调用 A 方法，发起 RPC 调用
 
 2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）
 
@@ -184,7 +184,7 @@ gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2
 
 #### 构建和启动服务端
 
-``` 
+```go
 lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 if err != nil {
         log.Fatalf("failed to listen: %v", err)
@@ -206,7 +206,7 @@ grpcServer.Serve(lis)
 
 #### 创建客户端
 
-```
+```go
 var opts []grpc.DialOption
 ...
 conn, err := grpc.Dial(*serverAddr, opts...)
@@ -221,7 +221,7 @@ client := pb.NewSearchClient(conn)
 
 1、创建 gRPC Channel 与 gRPC Server 进行通信（需服务器地址和端口作为参数）
 
-2、设置 DialOptions 凭证（例如，TLS，GCE凭据，JWT凭证）
+2、设置 DialOptions 凭证（例如，TLS，GCE 凭据，JWT 凭证）
 
 3、创建 Search Client Stub
 
@@ -237,7 +237,6 @@ client := pb.NewSearchClient(conn)
 
 在开篇内容中，我利用了尽量简短的描述给你介绍了接下来所必须、必要的知识点
 希望你能够有所收获，建议能到我给的参考资料处进行深入学习，是最好的了
-
 
 ## 参考资料
 

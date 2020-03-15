@@ -5,6 +5,7 @@
 `Golang` 中存在各种运行方式，如何**正确的引用文件路径**成为一个值得商议的问题
 
 以 [gin-blog](https://github.com/EDDYCJY/go-gin-example) 为例，当我们在项目根目录下，执行 `go run main.go` 时能够正常运行（`go build`也是正常的）
+
 ```
 [$ gin-blog]# go run main.go
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
@@ -15,12 +16,13 @@
 ...
 ```
 
-
 那么在不同的目录层级下，不同的方式运行，又是怎么样的呢，带着我们的疑问去学习
 
 ## 问题
+
 1、 go run
 我们上移目录层级，到 `$GOPATH/src` 下，执行 `go run gin-blog/main.go`
+
 ```
 [$ src]# go run gin-blog/main.go
 2018/03/12 16:06:13 Fail to parse 'conf/app.ini': open conf/app.ini: no such file or directory
@@ -28,6 +30,7 @@ exit status 1
 ```
 
 2、 go build，执行 `./gin-blog/main`
+
 ```
 [$ src]# ./gin-blog/main
 2018/03/12 16:49:35 Fail to parse 'conf/app.ini': open conf/app.ini: no such file or directory
@@ -35,10 +38,9 @@ exit status 1
 
 这时候你要打一个大大的问号，就是我的程序读取到什么地方去了
 
---- 
+---
 
 我们通过分析得知，**`Golang`的相对路径是相对于执行命令时的目录**；自然也就读取不到了
-
 
 ## 思考
 
@@ -49,7 +51,8 @@ exit status 1
 ## 实践
 
 我们编写**获取当前可执行文件路径的方法**
-```
+
+```go
 import (
 	"path/filepath"
 	"os"
@@ -65,18 +68,23 @@ func GetAppPath() string {
     return path[:index]
 }
 ```
+
 将其放到启动代码处查看路径
-```
+
+```go
 log.Println(GetAppPath())
 ```
 
 我们分别执行以下两个命令，查看输出结果
-1、 go run 
+1、 go run
+
 ```
 $ go run main.go
 2018/03/12 18:45:40 /tmp/go-build962610262/b001/exe
 ```
+
 2、 go build
+
 ```
 $ ./main
 2018/03/12 18:49:44 $GOPATH/src/gin-blog
@@ -88,6 +96,7 @@ $ ./main
 我们聚焦在 `go run` 的输出结果上，发现它是一个临时文件的地址，这是为什么呢？
 
 在`go help run`中，我们可以看到
+
 ```
 Run compiles and runs the main package comprising the named Go source files.
 A Go source file is defined to be a file ending in a literal ".go" suffix.
@@ -105,16 +114,15 @@ A Go source file is defined to be a file ending in a literal ".go" suffix.
 - `go run` 和 `go build` 不一样，一个到临时目录下执行，一个可手动在编译后的目录下执行，路径的处理方式会不同
 - 不断`go run`，不断产生新的临时文件
 
-
 这其实就是**根本原因**了，因为 `go run` 和 `go build` 的编译文件执行路径并不同，执行的层级也有可能不一样，自然而然就出现各种读取不到的奇怪问题了
-
 
 ## 解决方案
 
 **一、获取编译后的可执行文件路径**
 
 1、 将配置文件的相对路径与`GetAppPath()`的结果相拼接，可解决`go build main.go`的可执行文件跨目录执行的问题（如：`./src/gin-blog/main`）
-```
+
+```go
 import (
 	"path/filepath"
 	"os"
@@ -131,10 +139,11 @@ func GetAppPath() string {
 }
 ```
 
-但是这种方式，对于`go run`依旧无效，这时候就需要2来补救
+但是这种方式，对于`go run`依旧无效，这时候就需要 2 来补救
 
 2、 通过传递参数指定路径，可解决`go run`的问题
-```
+
+```go
 package main
 
 import (
@@ -149,7 +158,9 @@ func main() {
     fmt.Printf("App path: %s", appPath)
 }
 ```
+
 运行
+
 ```
 go run main.go --app-path "Your project address"
 ```
@@ -159,7 +170,6 @@ go run main.go --app-path "Your project address"
 参见 [beego](https://github.com/astaxie/beego/blob/master/config.go#L133-L146) 读取 `app.conf` 的代码
 
 该写法可兼容 `go build` 和在项目根目录执行 `go run` ，但是若跨目录执行 `go run` 就不行
-
 
 **三、配置全局系统变量**
 
@@ -177,7 +187,7 @@ go run main.go --app-path "Your project address"
 
 这样子就能更加固定的存放配置文件，**不需要额外去设置一个环境变量**
 
-（这点今早与一位SFer讨论了一波，感谢）
+（这点今早与一位 SFer 讨论了一波，感谢）
 
 ## 拓展
 
@@ -194,4 +204,3 @@ go run main.go --app-path "Your project address"
 建议大家不要强依赖读取配置文件的模块，应当将其“堆积木”化，**需要什么配置才去注册什么配置变量**，可以解决一部分的问题
 
 大家又有什么想法呢，一起讨论一波？
-

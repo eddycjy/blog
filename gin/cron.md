@@ -1,4 +1,4 @@
-# Cron定时任务
+# Cron 定时任务
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
@@ -16,28 +16,28 @@
 
 ### Cron 表达式格式
 
-字段名   | 是否必填 | 允许的值  | 允许的特殊字符
-----------   | ---------- | --------------  | --------------------------
-秒（Seconds）      | Yes        | 0-59            | * / , -
-分（Minutes）      | Yes        | 0-59            | * / , -
-时（Hours）        | Yes        | 0-23            | * / , -
-一个月中的某天（Day of month） | Yes        | 1-31            | * / , - ?
-月（Month）        | Yes        | 1-12 or JAN-DEC | * / , -
-星期几（Day of week）  | Yes        | 0-6 or SUN-SAT  | * / , - ?
+| 字段名                         | 是否必填 | 允许的值        | 允许的特殊字符 |
+| ------------------------------ | -------- | --------------- | -------------- |
+| 秒（Seconds）                  | Yes      | 0-59            | \* / , -       |
+| 分（Minutes）                  | Yes      | 0-59            | \* / , -       |
+| 时（Hours）                    | Yes      | 0-23            | \* / , -       |
+| 一个月中的某天（Day of month） | Yes      | 1-31            | \* / , - ?     |
+| 月（Month）                    | Yes      | 1-12 or JAN-DEC | \* / , -       |
+| 星期几（Day of week）          | Yes      | 0-6 or SUN-SAT  | \* / , - ?     |
 
-Cron表达式表示一组时间，使用 6 个空格分隔的字段
+Cron 表达式表示一组时间，使用 6 个空格分隔的字段
 
 可以留意到 Golang 的 Cron 比 Crontab 多了一个秒级，以后遇到秒级要求的时候就省事了
 
 ### Cron 特殊字符
 
-1、星号 ( * ) 
+1、星号 ( \* )
 
 星号表示将匹配字段的所有值
 
 2、斜线 ( / )
 
-斜线用户 描述范围的增量，表现为 “N-MAX/x”，first-last/x 的形式，例如 3-59/15 表示此时的第三分钟和此后的每 15 分钟，到59分钟为止。即从 N 开始，使用增量直到该特定范围结束。它不会重复
+斜线用户 描述范围的增量，表现为 “N-MAX/x”，first-last/x 的形式，例如 3-59/15 表示此时的第三分钟和此后的每 15 分钟，到 59 分钟为止。即从 N 开始，使用增量直到该特定范围结束。它不会重复
 
 3、逗号 ( , )
 
@@ -49,16 +49,17 @@ Cron表达式表示一组时间，使用 6 个空格分隔的字段
 
 5、问号 ( ? )
 
-不指定值，用于代替 “ * ”，类似 “ _ ” 的存在，不难理解
+不指定值，用于代替 “ \* ”，类似 “ \_ ” 的存在，不难理解
 
 ### 预定义的 Cron 时间表
-输入                  | 简述                                | 相当于
------                  | -----------                                | -------------
-@yearly (or @annually) | 1月1日午夜运行一次      | 0 0 0 1 1 *
-@monthly               | 每个月的午夜，每个月的第一个月运行一次 | 0 0 0 1 * *
-@weekly                | 每周一次，周日午夜运行一次       | 0 0 0 * * 0
-@daily (or @midnight)  | 每天午夜运行一次                  | 0 0 0 * * *
-@hourly                | 每小时运行一次        | 0 0 * * * *
+
+| 输入                   | 简述                                   | 相当于          |
+| ---------------------- | -------------------------------------- | --------------- |
+| @yearly (or @annually) | 1 月 1 日午夜运行一次                  | 0 0 0 1 1 \*    |
+| @monthly               | 每个月的午夜，每个月的第一个月运行一次 | 0 0 0 1 \* \*   |
+| @weekly                | 每周一次，周日午夜运行一次             | 0 0 0 \* \* 0   |
+| @daily (or @midnight)  | 每天午夜运行一次                       | 0 0 0 \* \* \*  |
+| @hourly                | 每小时运行一次                         | 0 0 \* \* \* \* |
 
 ## 安装
 
@@ -68,7 +69,7 @@ $ go get -u github.com/robfig/cron
 
 ## 实践
 
-在上一章节 [Gin实践 连载十 定制 GORM Callbacks](https://segmentfault.com/a/1190000014393602) 中，我们使用了 GORM 的回调实现了软删除，同时也引入了另外一个问题
+在上一章节 [Gin 实践 连载十 定制 GORM Callbacks](https://segmentfault.com/a/1190000014393602) 中，我们使用了 GORM 的回调实现了软删除，同时也引入了另外一个问题
 
 就是我怎么硬删除，我什么时候硬删除？这个往往与业务场景有关系，大致为
 
@@ -79,11 +80,11 @@ $ go get -u github.com/robfig/cron
 
 ### 编写硬删除代码
 
-打开 models 目录下的 tag.go、article.go文件，分别添加以下代码
+打开 models 目录下的 tag.go、article.go 文件，分别添加以下代码
 
 1、tag.go
 
-```
+```go
 func CleanAllTag() bool {
 	db.Unscoped().Where("deleted_on != ? ", 0).Delete(&Tag{})
 
@@ -93,7 +94,7 @@ func CleanAllTag() bool {
 
 2、article.go
 
-```
+```go
 func CleanAllArticle() bool {
 	db.Unscoped().Where("deleted_on != ? ", 0).Delete(&Article{})
 
@@ -104,11 +105,11 @@ func CleanAllArticle() bool {
 
 注意硬删除要使用 `Unscoped()`，这是 GORM 的约定
 
-### 编写Cron
+### 编写 Cron
 
 在 项目根目录下新建 cron.go 文件，用于编写定时任务的代码，写入文件内容
 
-```
+```go
 package main
 
 import (
@@ -151,7 +152,7 @@ func main() {
 
 会根据本地时间创建一个新（空白）的 Cron job runner
 
-```
+```go
 func New() *Cron {
 	return NewWithLocation(time.Now().Location())
 }
@@ -174,7 +175,7 @@ func NewWithLocation(location *time.Location) *Cron {
 
 AddFunc 会向 Cron job runner 添加一个 func ，以按给定的时间表运行
 
-```
+```go
 func (c *Cron) AddJob(spec string, cmd Job) error {
 	schedule, err := Parse(spec)
 	if err != nil {
@@ -187,7 +188,7 @@ func (c *Cron) AddJob(spec string, cmd Job) error {
 
 会首先解析时间表，如果填写有问题会直接 err，无误则将 func 添加到 Schedule 队列中等待执行
 
-```
+```go
 func (c *Cron) Schedule(schedule Schedule, cmd Job) {
 	entry := &Entry{
 		Schedule: schedule,
@@ -206,7 +207,7 @@ func (c *Cron) Schedule(schedule Schedule, cmd Job) {
 
 在当前执行的程序中启动 Cron 调度程序。其实这里的主体是 goroutine + for + select + timer 的调度控制哦
 
-```
+```go
 func (c *Cron) Run() {
 	if c.running {
 		return
@@ -232,7 +233,7 @@ func (c *Cron) Run() {
 
 会重置定时器，让它重新开始计时
 
-注：本文适用于 “t.C已经取走，可直接使用 Reset”。
+注：本文适用于 “t.C 已经取走，可直接使用 Reset”。
 
 ---
 
@@ -243,7 +244,7 @@ func (c *Cron) Run() {
 ## 验证
 
 ```
-$ go run cron.go 
+$ go run cron.go
 2018/04/29 17:03:34 [info] replacing callback `gorm:update_time_stamp` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:56
 2018/04/29 17:03:34 [info] replacing callback `gorm:update_time_stamp` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:57
 2018/04/29 17:03:34 [info] replacing callback `gorm:delete` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:58
@@ -256,7 +257,7 @@ $ go run cron.go
 2018/04/29 17:03:37 Run models.CleanAllArticle...
 ```
 
-检查输出日志正常，模拟已软删除的数据，定时任务工作OK
+检查输出日志正常，模拟已软删除的数据，定时任务工作 OK
 
 ## 小结
 
@@ -269,20 +270,22 @@ $ go run cron.go
 如果你手动修改计算机的系统时间，是会导致定时任务错乱的，所以一般不要乱来。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月02日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 02 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

@@ -49,7 +49,7 @@ Email Address []:
 生成证书结束后，将证书相关文件放到 conf/ 下，目录结构：
 
 ```
-$ tree go-grpc-example 
+$ tree go-grpc-example
 go-grpc-example
 ├── client
 ├── conf
@@ -63,13 +63,13 @@ go-grpc-example
 
 由于本文偏向 gRPC，详解可参见 [《制作证书》](https://segmentfault.com/a/1190000013408485#articleHeader3)。后续番外可能会展开细节描述 👌
 
-## 为什么之前不需要证书 
+## 为什么之前不需要证书
 
 在 simple_server 中，为什么“啥事都没干”就能在不需要证书的情况下运行呢？
 
 ### Server
 
-```
+```go
 grpc.NewServer()
 ```
 
@@ -77,13 +77,13 @@ grpc.NewServer()
 
 ### Client
 
-```
+```go
 conn, err := grpc.Dial(":"+PORT, grpc.WithInsecure())
 ```
 
 在客户端留意到 `grpc.WithInsecure()` 方法
 
-```
+```go
 func WithInsecure() DialOption {
 	return newFuncDialOption(func(o *dialOptions) {
 		o.insecure = true
@@ -95,15 +95,15 @@ func WithInsecure() DialOption {
 
 那么它“最终”又是在哪里处理的呢，我们把视线移到 `grpc.Dial()` 方法内
 
-```
+```go
 func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *ClientConn, err error) {
     ...
-    
+
     for _, opt := range opts {
 		opt.apply(&cc.dopts)
 	}
     ...
-    
+
     if !cc.dopts.insecure {
 		if cc.dopts.copts.TransportCredentials == nil {
 			return nil, errNoTransportSecurity
@@ -119,7 +119,7 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 		}
 	}
 	...
-	
+
 	creds := cc.dopts.copts.TransportCredentials
 	if creds != nil && creds.Info().ServerName != "" {
 		cc.authority = creds.Info().ServerName
@@ -140,7 +140,7 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 
 ### TLS Server
 
-```
+```go
 package main
 
 import (
@@ -178,7 +178,7 @@ func main() {
 
 - credentials.NewServerTLSFromFile：根据服务端输入的证书文件和密钥构造 TLS 凭证
 
-```
+```go
 func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -190,7 +190,7 @@ func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error
 
 - grpc.Creds()：返回一个 ServerOption，用于设置服务器连接的凭据。用于 `grpc.NewServer(opt ...ServerOption)` 为 gRPC Server 设置连接选项
 
-```
+```go
 func Creds(c credentials.TransportCredentials) ServerOption {
 	return func(o *options) {
 		o.creds = c
@@ -202,7 +202,7 @@ func Creds(c credentials.TransportCredentials) ServerOption {
 
 ### TLS Client
 
-```
+```go
 package main
 
 import (
@@ -243,7 +243,7 @@ func main() {
 
 - credentials.NewClientTLSFromFile()：根据客户端输入的证书文件和密钥构造 TLS 凭证。serverNameOverride 为服务名称
 
-```
+```go
 func NewClientTLSFromFile(certFile, serverNameOverride string) (TransportCredentials, error) {
 	b, err := ioutil.ReadFile(certFile)
 	if err != nil {
@@ -259,7 +259,7 @@ func NewClientTLSFromFile(certFile, serverNameOverride string) (TransportCredent
 
 - grpc.WithTransportCredentials()：返回一个配置连接的 DialOption 选项。用于 `grpc.Dial(target string, opts ...DialOption)` 设置连接选项
 
-```
+```go
 func WithTransportCredentials(creds credentials.TransportCredentials) DialOption {
 	return newFuncDialOption(func(o *dialOptions) {
 		o.copts.TransportCredentials = creds
@@ -297,5 +297,7 @@ $ go run client.go
 我们将在下一章节解决这个问题，保证其可靠性 🙂
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

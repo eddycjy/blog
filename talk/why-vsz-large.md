@@ -1,4 +1,4 @@
-# Go 应用内存占用太多，让排查？（VSZ篇）
+# Go 应用内存占用太多，让排查？（VSZ 篇）
 
 前段时间，某同学说某服务的容器因为超出内存限制，不断地重启，问我们是不是有内存泄露，赶紧排查，然后解决掉，省的出问题。我们大为震惊，赶紧查看监控+报警系统和性能分析，发现应用指标压根就不高，不像有泄露的样子。
 
@@ -15,7 +15,7 @@ PID       VSZ    RSS   ... COMMAND
 
 ## 基础知识
 
-### 什么是 VSZ 
+### 什么是 VSZ
 
 VSZ 是该进程所能使用的虚拟内存总大小，它包括进程可以访问的所有内存，其中包括了被换出的内存（Swap）、已分配但未使用的内存以及来自共享库的内存。
 
@@ -50,8 +50,6 @@ VSZ 是该进程所能使用的虚拟内存总大小，它包括进程可以访�
 - 虚拟内存它是有各式各样内存交互的地方，它包含的不仅仅是 "自己"，**而在本文中，我们只需要关注 VSZ，也就是进程虚拟内存，它包含了你的代码、数据、堆、栈段和共享库**。
 - 虚拟内存作为内存保护的工具，能够保证进程之间的内存空间独立，不受其他进程的影响，因此每一个进程的 VSZ 大小都不一样，互不影响。
 - 虚拟内存的存在，系统给各进程分配的内存之和是可以大于实际可用的物理内存的，因此你也会发现你进程的物理内存总是比虚拟内存低的多的多。
-
-
 
 ## 排查问题
 
@@ -129,12 +127,12 @@ MALLOC metadata        000000010669b000-000000010669c000 [    4K     4K     4K  
 ...
 __TEXT                 00007fff76c31000-00007fff76c5f000 [  184K   168K     0K     0K] r-x/r-x SM=COW          /usr/lib/system/libxpc.dylib
 __LINKEDIT             00007fffe7232000-00007ffff32cb000 [192.6M  17.4M     0K     0K] r--/r-- SM=COW          dyld shared cache combined __LINKEDIT
-...        
+...
 
 ==== Writable regions for process 67459
 REGION TYPE                      START - END             [ VSIZE  RSDNT  DIRTY   SWAP] PRT/MAX SHRMOD PURGE    REGION DETAIL
 __DATA                 000000010667b000-0000000106682000 [   28K    28K    28K     0K] rw-/rwx SM=COW          /bin/zsh
-...   
+...
 __DATA                 0000000106716000-000000010671e000 [   32K    28K    28K     4K] rw-/rwx SM=COW          /usr/lib/zsh/5.3/zsh/zle.so
 __DATA                 000000010671e000-000000010671f000 [    4K     4K     4K     0K] rw-/rwx SM=COW          /usr/lib/zsh/5.3/zsh/zle.so
 __DATA                 0000000106745000-0000000106747000 [    8K     8K     8K     0K] rw-/rwx SM=COW          /usr/lib/zsh/5.3/zsh/complete.so
@@ -143,8 +141,6 @@ __DATA                 000000010675a000-000000010675b000 [    4K     4K     4K  
 ```
 
 这块主要是利用 macOS 的 `vmmap` 命令去查看内存映射情况，这样就可以知道这个进程的内存映射情况，从输出分析来看，**这些关联共享库占用的空间并不大，导致 VSZ 过高的根本原因不在共享库和二进制文件上，但是并没有发现大量保留内存空间的行为，这是一个问题点**。
-
-
 
 注：若是 Linux 系统，可使用 `cat /proc/PID/maps` 或 `cat /proc/PID/smaps` 查看。
 
@@ -179,8 +175,6 @@ $ sudo dtruss -a ./awesomeProject
 
 在此比较可疑的是 `mmap` 方法，它在 `dtruss` 的最终统计中一共调用了 10 余次，我们可以相信它在 Go Runtime 的时候进行了大量的虚拟内存申请，我们再接着往下看，看看到底是在什么阶段进行了虚拟内存空间的申请。
 
-
-
 注：若是 Linux 系统，可使用 `strace` 命令。
 
 ### 查看 Go Runtime
@@ -202,7 +196,7 @@ H --> I(在新创建的 p 和 m 上运行 runtime-main)
 ```
 
 - runtime-osinit：获取 CPU 核心数。
-- runtime-schedinit：初始化程序运行环境（包括栈、内存分配器、垃圾回收、P等）。
+- runtime-schedinit：初始化程序运行环境（包括栈、内存分配器、垃圾回收、P 等）。
 - runtime-newproc：创建一个新的 G 和 绑定 runtime.main。
 - runtime-mstart：启动线程 M。
 
@@ -212,7 +206,7 @@ H --> I(在新创建的 p 和 m 上运行 runtime-main)
 
 显然，我们要研究的是 runtime 里的 `schedinit` 方法，如下：
 
-```
+```go
 func schedinit() {
 	...
 	stackinit()
@@ -243,7 +237,7 @@ func schedinit() {
 
 接下来我们正式的分析一下 `mallocinit` 方法，在引导流程中， `mallocinit` 主要承担 Go 程序的内存分配器的初始化动作，而今天主要是针对虚拟内存地址这块进行拆解，如下：
 
-```
+```go
 func mallocinit() {
 	...
 	if sys.PtrSize == 8 {
@@ -279,9 +273,9 @@ func mallocinit() {
 - 判断当前 `GOARCH`、`GOOS` 或是否开启了竞态检查，根据不同的情况申请不同大小的连续内存地址，而这里的 `p` 是即将要要申请的连续内存地址的开始地址。
 - 保存刚刚计算的 arena 的信息到 `arenaHint` 中。
 
-可能会有小伙伴问，为什么要判断是 32 位还是 64 位的系统，这是因为不同位数的虚拟内存的寻址范围是不同的，因此要进行区分，否则会出现高位的虚拟内存映射问题。而在申请保留空间时，我们会经常提到 `arenaHint` 结构体，它是 `arenaHints `链表里的一个节点，结构如下：
+可能会有小伙伴问，为什么要判断是 32 位还是 64 位的系统，这是因为不同位数的虚拟内存的寻址范围是不同的，因此要进行区分，否则会出现高位的虚拟内存映射问题。而在申请保留空间时，我们会经常提到 `arenaHint` 结构体，它是 `arenaHints`链表里的一个节点，结构如下：
 
-```
+```go
 type arenaHint struct {
 	addr uintptr
 	down bool
@@ -303,11 +297,11 @@ type arenaHint struct {
 
 在这里的话，你需要理解 arean 区域在 Go 内存里的作用就可以了。
 
-##### mmap 
+##### mmap
 
 我们刚刚通过上述的分析，已经知道 `mallocinit` 的用途了，但是你可能还是会有疑惑，就是我们之前所看到的 `mmap` 系统调用，和它又有什么关系呢，怎么就关联到一起了，接下来我们先一起来看看更下层的代码，如下：
 
-```
+```go
 func sysAlloc(n uintptr, sysStat *uint64) unsafe.Pointer {
 	p, err := mmap(nil, n, _PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
 	...
@@ -336,7 +330,7 @@ func sysMap(v unsafe.Pointer, n uintptr, sysStat *uint64) {
 
 看上去好像很有道理的样子，但是 `mallocinit` 方法在初始化时，到底是在哪里涉及了 `mmap` 方法呢，表面看不出来，如下：
 
-```
+```go
 for i := 0x7f; i >= 0; i-- {
 	...
 	hint := (*arenaHint)(mheap_.arenaHintAlloc.alloc())
@@ -345,9 +339,9 @@ for i := 0x7f; i >= 0; i-- {
 }
 ```
 
-实际上在调用 `mheap_.arenaHintAlloc.alloc()` 时，调用的是 `mheap`  下的 `sysAlloc` 方法，而 `sysAlloc` 又会与 `mmap` 方法产生调用关系，并且这个方法与常规的 `sysAlloc` 还不大一样，如下：
+实际上在调用 `mheap_.arenaHintAlloc.alloc()` 时，调用的是 `mheap` 下的 `sysAlloc` 方法，而 `sysAlloc` 又会与 `mmap` 方法产生调用关系，并且这个方法与常规的 `sysAlloc` 还不大一样，如下：
 
-```
+```go
 var mheap_ mheap
 ...
 func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
@@ -376,12 +370,12 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 在本节中，我们先写了一个测试程序，然后根据非常规的排查思路进行了一步步的跟踪怀疑，整体流程如下：
 
 - 通过 `top` 或 `ps` 等命令，查看进程运行情况，分析基础指标。
-- 通过 `pprof` 或 `runtime.MemStats ` 等工具链查看应用运行情况，分析应用层面是否有泄露或者哪儿高。
+- 通过 `pprof` 或 `runtime.MemStats` 等工具链查看应用运行情况，分析应用层面是否有泄露或者哪儿高。
 - 通过 `vmmap` 命令，查看进程的内存映射情况，分析是不是进程虚拟空间内的某个区域比较高，例如：共享库等。
-- 通过 `dtruss` 命令，查看程序的系统调用情况，分析可能出现的一些特殊行为，例如：在分析中我们发现  `mmap` 方法调用的比例是比较高的，那我们有充分的理由怀疑 Go 在启动时就进行了大量的内存空间保留。
+- 通过 `dtruss` 命令，查看程序的系统调用情况，分析可能出现的一些特殊行为，例如：在分析中我们发现 `mmap` 方法调用的比例是比较高的，那我们有充分的理由怀疑 Go 在启动时就进行了大量的内存空间保留。
 - 通过上述的分析，确定可能是在哪个环节申请了那么多的内存空间后，再到 Go Runtime 中去做进一步的源码分析，因为源码面前，了无秘密，没必要靠猜。
 
-从结论上而言，VSZ（进程虚拟内存大小）与共享库等没有太大的关系，主要与 Go Runtime 存在直接关联，也就是在前图中表示的运行时堆（malloc）。转换到 Go Runtime 里，就是在 `mallocinit`  这个内存分配器的初始化阶段里进行了一定量的虚拟空间的保留。
+从结论上而言，VSZ（进程虚拟内存大小）与共享库等没有太大的关系，主要与 Go Runtime 存在直接关联，也就是在前图中表示的运行时堆（malloc）。转换到 Go Runtime 里，就是在 `mallocinit` 这个内存分配器的初始化阶段里进行了一定量的虚拟空间的保留。
 
 而保留虚拟内存空间时，受什么影响，又是一个哲学问题。从源码上来看，主要如下：
 
@@ -396,7 +390,7 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 - VSZ 并不会给 GC 带来压力，GC 管理的是进程实际使用的物理内存，而 VSZ 在你实际使用它之前，它并没有过多的代价。
 - VSZ 基本都是不可访问的内存映射，也就是它并没有内存的访问权限（不允许读、写和执行）。
 
-看到这里舒一口气，因为 Go VSZ 的高，并不会对我们产生什么非常实质性的问题，但是又仔细一想，为什么 Go 要申请那么多的虚拟内存呢，到底有啥用呢，考虑如下：Go 的设计是考虑到 `arena` 和  `bitmap` 的后续使用，先提早保留了整个内存地址空间。 然后随着 Go Runtime 和应用的逐步使用，肯定也会开始实际的申请和使用内存，这时候 `arena` 和 `bitmap` 的内存分配器就只需要将事先申请好的内存地址空间保留更改为实际可用的物理内存就好了，这样子可以极大的提高效能。
+看到这里舒一口气，因为 Go VSZ 的高，并不会对我们产生什么非常实质性的问题，但是又仔细一想，为什么 Go 要申请那么多的虚拟内存呢，到底有啥用呢，考虑如下：Go 的设计是考虑到 `arena` 和 `bitmap` 的后续使用，先提早保留了整个内存地址空间。 然后随着 Go Runtime 和应用的逐步使用，肯定也会开始实际的申请和使用内存，这时候 `arena` 和 `bitmap` 的内存分配器就只需要将事先申请好的内存地址空间保留更改为实际可用的物理内存就好了，这样子可以极大的提高效能。
 
 ## 参考
 
@@ -407,4 +401,3 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 - [GO MEMORY MANAGEMENT](https://povilasv.me/go-memory-management/)
 - [GoBigVirtualSize](https://utcc.utoronto.ca/~cks/space/blog/programming/GoBigVirtualSize)
 - [GoProgramMemoryUse](https://utcc.utoronto.ca/~cks/space/blog/programming/GoProgramMemoryUse)
-

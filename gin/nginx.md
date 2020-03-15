@@ -1,4 +1,4 @@
-# 用Nginx部署Go应用
+# 用 Nginx 部署 Go 应用
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
@@ -15,18 +15,17 @@
 
 在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 [go-gin-example](https://github.com/EDDYCJY/go-gin-example) 的部署，会实现反向代理和简单负载均衡的功能。
 
-
 ## Nginx
 
 ### 是什么
 
 Nginx 是一个 Web Server，可以用作反向代理、负载均衡、邮件代理、TCP / UDP、HTTP 服务器等等，它拥有很多吸引人的特性，例如：
 
-- 以较低的内存占用率处理 10,000 多个并发连接（每10k非活动HTTP保持活动连接约2.5 MB ）
+- 以较低的内存占用率处理 10,000 多个并发连接（每 10k 非活动 HTTP 保持活动连接约 2.5 MB ）
 - 静态服务器（处理静态文件）
 - 正向、反向代理
 - 负载均衡
-- 通过OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持
+- 通过 OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持
 - FastCGI、SCGI、uWSGI 的支持
 - WebSockets、HTTP/1.1 的支持
 - Nginx + Lua
@@ -78,7 +77,7 @@ nginx: configuration file /usr/local/etc/nginx/nginx.conf test is successful
 
 反向代理是指以代理服务器来接受网络上的连接请求，然后将请求转发给内部网络上的服务器，并将从服务器上得到的结果返回给请求连接的客户端，此时代理服务器对外就表现为一个反向代理服务器。（来自[百科](https://baike.baidu.com/item/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/7793488?fr=aladdin)）
 
-![image](https://i.imgur.com/Gx6ctv7.png)
+![image](https://s2.ax1x.com/2020/02/15/1xlQe0.png)
 
 #### 配置 hosts
 
@@ -126,22 +125,22 @@ http {
 
 回到 [go-gin-example](github.com/EDDYCJY/go-gin-example) 的项目下，执行 make，再运行 ./go-gin-exmaple
 
-``` sh
+```sh
 $ make
 github.com/EDDYCJY/go-gin-example
 $ ls
 LICENSE        README.md      conf           go-gin-example middleware     pkg            runtime        vendor
 Makefile       README_ZH.md   docs           main.go        models         routers        service
-$ ./go-gin-example 
+$ ./go-gin-example
 ...
 [GIN-debug] DELETE /api/v1/articles/:id      --> github.com/EDDYCJY/go-gin-example/routers/api/v1.DeleteArticle (4 handlers)
 [GIN-debug] POST   /api/v1/articles/poster/generate --> github.com/EDDYCJY/go-gin-example/routers/api/v1.GenerateArticlePoster (4 handlers)
 Actual pid is 14672
 ```
 
-##### 重启 nginx 
+##### 重启 nginx
 
-``` sh
+```sh
 $ nginx -t
 nginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /usr/local/etc/nginx/nginx.conf test is successful
@@ -150,13 +149,13 @@ $ nginx -s reload
 
 ##### 访问接口
 
-![image](https://i.imgur.com/3AD99W4.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlEFS.jpg)
 
-如此，就实现了一个简单的反向代理了，是不是很简单呢 
+如此，就实现了一个简单的反向代理了，是不是很简单呢
 
 ### 负载均衡
 
-负载均衡，英文名称为Load Balance（常称 LB），其意思就是分摊到多个操作单元上进行执行（来自百科）
+负载均衡，英文名称为 Load Balance（常称 LB），其意思就是分摊到多个操作单元上进行执行（来自百科）
 
 你能从运维口中经常听见，XXX 负载怎么突然那么高。 那么它到底是什么呢？
 
@@ -164,7 +163,7 @@ $ nginx -s reload
 
 #### 如何演示
 
-前提条件为多个后端服务，那么势必需要多个 [go-gin-example](https://github.com/EDDYCJY/go-gin-example)，为了演示我们可以启动多个端口，达到模拟的效果 
+前提条件为多个后端服务，那么势必需要多个 [go-gin-example](https://github.com/EDDYCJY/go-gin-example)，为了演示我们可以启动多个端口，达到模拟的效果
 
 为了便于演示，分别在启动前将 conf/app.ini 的应用端口修改为 8001 和 8002（也可以做成传入参数的模式），达到启动 2 个监听 8001 和 8002 的后端服务
 
@@ -203,9 +202,9 @@ http {
 }
 ```
 
-##### 重启 nginx 
+##### 重启 nginx
 
-``` sh
+```sh
 $ nginx -t
 nginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /usr/local/etc/nginx/nginx.conf test is successful
@@ -218,9 +217,9 @@ $ nginx -s reload
 
 目前 Nginx 没有进行特殊配置，那么它是轮询策略，而 go-gin-example 默认开着 debug 模式，看看请求 log 就明白了
 
-![image](https://i.imgur.com/L9IitGq.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlZWQ.jpg)
 
-![image](https://i.imgur.com/Bv5dCn0.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xlnQs.jpg)
 
 ## 总结
 
@@ -229,20 +228,22 @@ $ nginx -s reload
 怎么简单部署，知道了吧。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

@@ -6,7 +6,7 @@
 
 ### 一、为什么会中止运行
 
-```
+```go
 func main() {
 	panic("EDDYCJY.")
 }
@@ -28,7 +28,7 @@ exit status 2
 
 ### 二、为什么不会中止运行
 
-```
+```go
 func main() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -43,7 +43,7 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go 
+$ go run main.go
 2019/05/11 23:39:47 recover: EDDYCJY.
 ```
 
@@ -53,7 +53,7 @@ $ go run main.go
 
 上面问题二是 `defer` + `recover` 组合，那我去掉 `defer` 是不是也可以呢？如下：
 
-```
+```go
 func main() {
 	if err := recover(); err != nil {
 		log.Printf("recover: %v", err)
@@ -83,7 +83,7 @@ exit status 2
 
 ### 四、为什么起个 goroutine 就不行
 
-```
+```go
 func main() {
 	go func() {
 		defer func() {
@@ -100,7 +100,7 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go 
+$ go run main.go
 panic: EDDYCJY.
 
 goroutine 1 [running]:
@@ -117,13 +117,13 @@ exit status 2
 
 ### 数据结构
 
-```
+```go
 type _panic struct {
 	argp      unsafe.Pointer
-	arg       interface{} 
-	link      *_panic 
+	arg       interface{}
+	link      *_panic
 	recovered bool
-	aborted   bool 
+	aborted   bool
 }
 ```
 
@@ -141,7 +141,7 @@ type _panic struct {
 
 ### 恐慌 panic
 
-```
+```go
 func main() {
 	panic("EDDYCJY.")
 }
@@ -175,7 +175,7 @@ $ go tool compile -S main.go
 
 显然汇编代码直指内部实现是 `runtime.gopanic`，我们一起来看看这个方法做了什么事，如下（省略了部分）：
 
-```
+```go
 func gopanic(e interface{}) {
 	gp := getg()
 	...
@@ -183,7 +183,7 @@ func gopanic(e interface{}) {
 	p.arg = e
 	p.link = gp._panic
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
-    
+
 	for {
 		d := gp._defer
 		if d == nil {
@@ -224,7 +224,7 @@ func gopanic(e interface{}) {
 
 ### 无法恢复的恐慌 fatalpanic
 
-```
+```go
 func fatalpanic(msgs *_panic) {
 	pc := getcallerpc()
 	sp := getcallersp()
@@ -250,7 +250,7 @@ func fatalpanic(msgs *_panic) {
 
 我们看到在异常处理的最后会执行该方法，似乎它承担了所有收尾工作。实际呢，它是在最后对程序执行 `exit` 指令来达到中止运行的作用，但在结束前它会通过 `printpanics` 递归输出所有的异常消息及参数。代码如下：
 
-```
+```go
 func printpanics(p *_panic) {
 	if p.link != nil {
 		printpanics(p.link)
@@ -269,7 +269,7 @@ func printpanics(p *_panic) {
 
 ### 恢复 recover
 
-```
+```go
 func main() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -284,7 +284,7 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go 
+$ go run main.go
 2019/05/11 23:39:47 recover: EDDYCJY.
 ```
 
@@ -318,6 +318,7 @@ $ go tool compile -S main.go
 ```
 
 通过分析底层调用，可得知主要是如下几个方法：
+
 - runtime.deferproc
 - runtime.gopanic
 - runtime.deferreturn
@@ -325,8 +326,7 @@ $ go tool compile -S main.go
 
 在上小节中，我们讲述了简单的流程，`gopanic` 方法会调用当前 `Goroutine` 下的 `defer` 链表，若 `reflectcall` 执行中遇到 `recover` 就会调用 `gorecover` 进行处理，该方法代码如下：
 
-
-```
+```go
 func gorecover(argp uintptr) interface{} {
 	gp := getg()
 	p := gp._panic
@@ -340,8 +340,7 @@ func gorecover(argp uintptr) interface{} {
 
 这代码，看上去挺简单的，核心就是修改 `recovered` 字段。该字段是用于标识当前 `panic` 是否已经被 `recover` 处理。但是这和我们想象的并不一样啊，程序是怎么从 `panic` 流转回去的呢？是不是在核心方法里处理了呢？我们再看看 `gopanic` 的代码，如下：
 
-
-```
+```go
 func gopanic(e interface{}) {
 	...
 	for {
@@ -350,7 +349,7 @@ func gopanic(e interface{}) {
 		pc := d.pc
 		sp := unsafe.Pointer(d.sp) // must be pointer so it gets adjusted during stack copy
 		freedefer(d)
-		
+
 		// recover...
 		if p.recovered {
 			atomic.Xadd(&runningPanicDefers, -1)
@@ -359,14 +358,14 @@ func gopanic(e interface{}) {
 			for gp._panic != nil && gp._panic.aborted {
 				gp._panic = gp._panic.link
 			}
-			if gp._panic == nil { 
+			if gp._panic == nil {
 				gp.sig = 0
 			}
 
 			gp.sigcode0 = uintptr(sp)
 			gp.sigcode1 = pc
 			mcall(recovery)
-			throw("recovery failed") 
+			throw("recovery failed")
 		}
 	}
     ...
@@ -382,7 +381,7 @@ func gopanic(e interface{}) {
 
 从流程来看，最核心的是 `recovery` 方法。它承担了异常流转控制的职责。代码如下：
 
-```
+```go
 func recovery(gp *g) {
 	sp := gp.sigcode0
 	pc := gp.sigcode1
@@ -402,12 +401,11 @@ func recovery(gp *g) {
 
 粗略一看，似乎就是很简单的设置了一些值？但实际上设置的是编译器中伪寄存器的值，常常被用于维护上下文等。在这里我们需要结合 `gopanic` 方法一同观察 `recovery` 方法。它所使用的栈指针 `sp` 和程序计数器 `pc` 是由当前 `defer` 在调用流程中的 `deferproc` 传递下来的，因此实际上最后是通过 `gogo` 方法跳回了 `deferproc` 方法。另外我们注意到：
 
-```
+```go
 gp.sched.ret = 1
 ```
 
 在底层中程序将 `gp.sched.ret` 设置为了 1，也就是**没有实际调用** `deferproc` 方法，直接修改了其返回值。意味着默认它已经处理完成。直接转移到 `deferproc` 方法的下一条指令去。至此为止，异常状态的流转控制就已经结束了。接下来就是继续走 `defer` 的流程了
-
 
 为了验证这个想法，我们可以看一下核心的跳转方法 `gogo` ，代码如下：
 
@@ -435,7 +433,7 @@ TEXT runtime·gogo(SB),NOSPLIT,$8-4
 
 通过查看代码可得知其主要作用是从 `Gobuf` 恢复状态。简单来讲就是将寄存器的值修改为对应 `Goroutine(g)` 的值，而在文中讲了很多次的 `Gobuf`，如下：
 
-```
+```go
 type gobuf struct {
 	sp   uintptr
 	pc   uintptr
@@ -451,7 +449,7 @@ type gobuf struct {
 
 ## 拓展
 
-```
+```go
 const(
 	OPANIC       // panic(Left)
 	ORECOVER     // recover()

@@ -4,13 +4,13 @@
 
 ## 前言
 
-如果你平时有翻看源码的习惯，你肯定会发现。咦，怎么有的方法上面总是写着 `//go:`  这类指令呢。他们到底是干嘛用的？
+如果你平时有翻看源码的习惯，你肯定会发现。咦，怎么有的方法上面总是写着 `//go:` 这类指令呢。他们到底是干嘛用的？
 
 今天我们一同揭开他们的面纱，我将简单给你介绍一下，它们都负责些什么
 
 ## go:linkname
 
-```
+```go
 //go:linkname localname importpath.name
 ```
 
@@ -21,13 +21,15 @@
 ### 案例
 
 #### time/time.go
-```
+
+```go
 ...
 func now() (sec int64, nsec int32, mono int64)
 ```
 
 #### runtime/timestub.go
-```
+
+```go
 import _ "unsafe" // for go:linkname
 
 //go:linkname time_now time.now
@@ -43,7 +45,7 @@ func time_now() (sec int64, nsec int32, mono int64) {
 
 ## go:noescape
 
-```
+```go
 //go:noescape
 ```
 
@@ -53,7 +55,7 @@ func time_now() (sec int64, nsec int32, mono int64) {
 
 ### 案例
 
-```
+```go
 // memmove copies n bytes from "from" to "to".
 // in memmove_*.s
 //go:noescape
@@ -62,21 +64,20 @@ func memmove(to, from unsafe.Pointer, n uintptr)
 
 我们观察一下这个案例，它满足了该指令的常见特性。如下：
 
-- memmove_*.s：只有声明，没有主体。其主体是由底层汇编实现的
+- memmove\_\*.s：只有声明，没有主体。其主体是由底层汇编实现的
 - memmove：函数功能，在栈上处理性能会更好
 
 ## go:nosplit
 
-```
+```go
 //go:nosplit
 ```
 
 该指令指定文件中声明的下一个函数不得包含堆栈溢出检查。简单来讲，就是这个函数跳过堆栈溢出的检查
 
-
 ### 案例
 
-```
+```go
 //go:nosplit
 func key32(p *uintptr) *uint32 {
 	return (*uint32)(unsafe.Pointer(p))
@@ -85,7 +86,7 @@ func key32(p *uintptr) *uint32 {
 
 ## go:nowritebarrierrec
 
-```
+```go
 //go:nowritebarrierrec
 ```
 
@@ -93,7 +94,7 @@ func key32(p *uintptr) *uint32 {
 
 ### 案例
 
-```
+```go
 //go:nowritebarrierrec
 func gcFlushBgCredit(scanWork int64) {
     ...
@@ -102,7 +103,7 @@ func gcFlushBgCredit(scanWork int64) {
 
 ## go:yeswritebarrierrec
 
-```
+```go
 //go:yeswritebarrierrec
 ```
 
@@ -110,7 +111,7 @@ func gcFlushBgCredit(scanWork int64) {
 
 ### 案例
 
-```
+```go
 //go:yeswritebarrierrec
 func gchelper() {
 	...
@@ -123,7 +124,7 @@ func gchelper() {
 
 ### 案例
 
-```
+```go
 //go:noinline
 func unexportedPanicForTesting(b []byte, i int) byte {
 	return b[i]
@@ -136,7 +137,7 @@ func unexportedPanicForTesting(b []byte, i int) byte {
 
 ## go:norace
 
-```
+```go
 //go:norace
 ```
 
@@ -144,7 +145,7 @@ func unexportedPanicForTesting(b []byte, i int) byte {
 
 ### 案例
 
-```
+```go
 //go:norace
 func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
     ...
@@ -153,7 +154,7 @@ func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr
 
 ## go:notinheap
 
-```
+```go
 //go:notinheap
 ```
 
@@ -161,7 +162,7 @@ func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr
 
 ### 案例
 
-```
+```go
 // notInHeap is off-heap memory allocated by a lower-level allocator
 // like sysAlloc or persistentAlloc.
 //

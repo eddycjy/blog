@@ -8,28 +8,32 @@
 
 我们的目标站点是 [豆瓣电影 Top250](https://movie.douban.com/top250)，估计大家都很眼熟了
 
-本次爬取8个字段，用于简单的概括分析。具体的字段如下：
+本次爬取 8 个字段，用于简单的概括分析。具体的字段如下：
 
 ![image](https://i.loli.net/2018/03/20/5ab11596b8810.png)
 
 简单的分析一下目标源
-- 一页共25条
-- 含分页（共10页）且分页规则是正常的
+
+- 一页共 25 条
+- 含分页（共 10 页）且分页规则是正常的
 - 每一项的数据字段排序都是规则且不变
 
 ## 开始
 
 由于量不大，我们的爬取步骤如下
+
 - 分析页面，获取所有的分页
 - 分析页面，循环爬取所有页面的电影信息
 - 爬取的电影信息入库
 
 ### 安装
+
 ```
 $ go get -u github.com/PuerkitoBio/goquery
 ```
 
 ### 运行
+
 ```
 $ go run main.go
 ```
@@ -37,7 +41,8 @@ $ go run main.go
 ### 代码片段
 
 #### 1、获取所有分页
-```
+
+```go
 func ParsePages(doc *goquery.Document) (pages []Page) {
 	pages = append(pages, Page{Page: 1, Url: ""})
 	doc.Find("#content > div > div.article > div.paginator > a").Each(func(i int, s *goquery.Selection) {
@@ -55,7 +60,8 @@ func ParsePages(doc *goquery.Document) (pages []Page) {
 ```
 
 #### 2、分析豆瓣电影信息
-```
+
+```go
 func ParseMovies(doc *goquery.Document) (movies []Movie) {
 	doc.Find("#content > div > div.article > ol > li").Each(func(i int, s *goquery.Selection) {
 		title := s.Find(".hd a span").Eq(0).Text()
@@ -86,8 +92,8 @@ func ParseMovies(doc *goquery.Document) (movies []Movie) {
 }
 ```
 
-
 ### 数据
+
 ![image](https://i.loli.net/2018/03/21/5ab1309594741.png)
 
 ![image](https://i.loli.net/2018/03/21/5ab131ca582f8.png)

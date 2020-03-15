@@ -16,7 +16,7 @@
 
 首先要指定导出的 Excel 文件的存储路径，在 app.ini 中增加配置：
 
-```
+```ini
 [app]
 ...
 
@@ -25,11 +25,11 @@ ExportSavePath = export/
 
 修改 setting.go 的 App struct：
 
-``` go
+```go
 type App struct {
 	JwtSecret       string
 	PageSize        int
-	PrefixUrl string
+	PrefixUrl       string
 
 	RuntimeRootPath string
 
@@ -46,7 +46,7 @@ type App struct {
 }
 ```
 
-在这里需增加 ExportSavePath 配置项，另外将先前 ImagePrefixUrl 改为 PrefixUrl 用于支撑两者的 HOST 获取 
+在这里需增加 ExportSavePath 配置项，另外将先前 ImagePrefixUrl 改为 PrefixUrl 用于支撑两者的 HOST 获取
 
 （注意修改 image.go 的 GetImageFullUrl 方法）
 
@@ -54,7 +54,7 @@ type App struct {
 
 新建 pkg/export/excel.go 文件，如下：
 
-```
+```go
 package export
 
 import "github.com/EDDYCJY/go-gin-example/pkg/setting"
@@ -76,7 +76,7 @@ func GetExcelFullPath() string {
 
 ## 尝试一下标准库
 
-```
+```go
 f, err := os.Create(export.GetExcelFullPath() + "test.csv")
 if err != nil {
 	panic(err)
@@ -107,7 +107,7 @@ w.WriteAll(data)
 
 3、csv.NewWriter：
 
-```
+```go
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{
 		Comma: ',',
@@ -118,7 +118,7 @@ func NewWriter(w io.Writer) *Writer {
 
 4、w.WriteAll：
 
-```
+```go
 func (w *Writer) WriteAll(records [][]string) error {
 	for _, record := range records {
 		err := w.Write(record)
@@ -138,7 +138,7 @@ WriteAll 实际是对 Write 的封装，需要注意在最后调用了 `w.w.Flus
 
 打开 service/tag.go，增加 Export 方法，如下：
 
-```
+```go
 func (t *Tag) Export() (string, error) {
 	tags, err := t.GetAll()
 	if err != nil {
@@ -194,7 +194,7 @@ func (t *Tag) Export() (string, error) {
 
 打开 routers/api/v1/tag.go，增加如下方法：
 
-```
+```go
 func ExportTag(c *gin.Context) {
 	appG := app.Gin{C: c}
 	name := c.PostForm("name")
@@ -225,7 +225,7 @@ func ExportTag(c *gin.Context) {
 
 在 routers/router.go 文件中增加路由方法，如下
 
-```
+```go
 apiv1 := r.Group("/api/v1")
 apiv1.Use(jwt.JWT())
 {
@@ -239,14 +239,14 @@ apiv1.Use(jwt.JWT())
 
 访问 `http://127.0.0.1:8000/tags/export`，结果如下：
 
-```
+```json
 {
-    "code": 200,
-    "data": {
-        "export_save_url": "export/tags-1528903393.xlsx",
-        "export_url": "http://127.0.0.1:8000/export/tags-1528903393.xlsx"
-    },
-    "msg": "ok"
+  "code": 200,
+  "data": {
+    "export_save_url": "export/tags-1528903393.xlsx",
+    "export_url": "http://127.0.0.1:8000/export/tags-1528903393.xlsx"
+  },
+  "msg": "ok"
 }
 ```
 
@@ -258,7 +258,7 @@ apiv1.Use(jwt.JWT())
 
 打开 router.go 文件，增加代码如下：
 
-```
+```go
 r.StaticFS("/export", http.Dir(export.GetExcelFullPath()))
 ```
 
@@ -274,7 +274,7 @@ r.StaticFS("/export", http.Dir(export.GetExcelFullPath()))
 
 打开 service/tag.go，增加 Import 方法，如下：
 
-```
+```go
 func (t *Tag) Import(r io.Reader) error {
 	xlsx, err := excelize.OpenReader(r)
 	if err != nil {
@@ -301,7 +301,7 @@ func (t *Tag) Import(r io.Reader) error {
 
 打开 routers/api/v1/tag.go，增加如下方法：
 
-```
+```go
 func ImportTag(c *gin.Context) {
 	appG := app.Gin{C: c}
 
@@ -328,7 +328,7 @@ func ImportTag(c *gin.Context) {
 
 在 routers/router.go 文件中增加路由方法，如下
 
-```
+```go
 apiv1 := r.Group("/api/v1")
 apiv1.Use(jwt.JWT())
 {
@@ -340,10 +340,9 @@ apiv1.Use(jwt.JWT())
 
 ### 验证
 
-![image](https://i.imgur.com/awRs9HA.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xKtSA.jpg)
 
-在这里我们将先前导出的 Excel 文件作为入参，访问 `http://127.0.0.01:8000/tags/import`，检查返回和数据是否正确入库 
-
+在这里我们将先前导出的 Excel 文件作为入参，访问 `http://127.0.0.01:8000/tags/import`，检查返回和数据是否正确入库
 
 ## 总结
 
@@ -354,32 +353,31 @@ apiv1.Use(jwt.JWT())
 
 你可以细细阅读一下它的实现和使用方式，对你的把控更有帮助 🤔
 
-
 ## 课外
 
 - tag：导出使用 excelize 的方式去实现（可能你会发现更简单哦）
 - tag：导入去重功能实现
 - artice ：导入、导出功能实现
 
-
 也不失为你很好的练手机会，如果有兴趣，可以试试
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月02日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 02 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)
-

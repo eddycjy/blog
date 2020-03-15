@@ -1,6 +1,6 @@
 # 请入门 Makefile
 
-项目地址：https://github.com/EDDYCJY/go-gin-example 
+项目地址：https://github.com/EDDYCJY/go-gin-example
 
 ## 知识点
 
@@ -55,7 +55,7 @@ Makefile 由多条规则组成，每条规则都以一个 target（目标）开�
 
 #### 编写
 
-```
+```makefile
 .PHONY: build clean tool lint help
 
 all: build
@@ -108,7 +108,7 @@ make 默认会打印每条命令，再执行。这个行为被定义为**回声*
 
 可以在对应命令前加上 @，可指定该命令不被打印到标准输出上
 
-```
+```makefile
 build:
 	@go build -v .
 ```
@@ -120,20 +120,22 @@ build:
 这是一篇比较简洁的文章，希望可以让您对 Makefile 有一个基本了解。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

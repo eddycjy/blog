@@ -22,7 +22,7 @@ Deadlines 意指截止时间，在 gRPC 中强调 TL;DR（Too long, Don't read�
 
 ### Client
 
-```
+```go
 func main() {
     ...
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(5 * time.Second)))
@@ -49,7 +49,7 @@ func main() {
 
 - context.WithDeadline：会返回最终上下文截止时间。第一个形参为父上下文，第二个形参为调整的截止时间。若父级时间早于子级时间，则以父级时间为准，否则以子级时间为最终截止时间
 
-```
+```go
 func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 	if cur, ok := parent.Deadline(); ok && cur.Before(d) {
 		// The current deadline is already sooner than the new one.
@@ -78,7 +78,7 @@ func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 
 - context.WithTimeout：很常见的另外一个方法，是便捷操作。实际上是对于 WithDeadline 的封装
 
-```
+```go
 func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
 	return WithDeadline(parent, time.Now().Add(timeout))
 }
@@ -88,7 +88,7 @@ func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
 
 ### Server
 
-```
+```go
 type SearchService struct{}
 
 func (s *SearchService) Search(ctx context.Context, r *pb.SearchRequest) (*pb.SearchResponse, error) {
@@ -134,9 +134,12 @@ exit status 1
 你要清楚地明白到，gRPC Deadlines 是很重要的，否则这小小的功能点就会要了你生产的命 🤫
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)
 
 ### 资料
+
 - [gRPC and Deadlines
-](https://grpc.io/blog/deadlines)
+  ](https://grpc.io/blog/deadlines)

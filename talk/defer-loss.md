@@ -1,6 +1,6 @@
 # 1.10 Go defer 会有性能损耗，尽量不要用？
 
-![image](https://i.imgur.com/YlKjnSH.jpg)
+![image](https://s2.ax1x.com/2020/02/27/3wuUYV.jpg)
 
 上个月在 @polaris @轩脉刃 的全栈技术群里看到一个小伙伴问 **“说 defer 在栈退出时执行，会有性能损耗，尽量不要用，这个怎么解？”**。
 
@@ -8,7 +8,7 @@
 
 ## 测试
 
-```
+```go
 func DoDefer(key, value string) {
 	defer func(key, value string) {
 		_ = key + value
@@ -22,7 +22,7 @@ func DoNotDefer(key, value string) {
 
 基准测试：
 
-```
+```go
 func BenchmarkDoDefer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		DoDefer("煎鱼", "https://github.com/EDDYCJY/blog")
@@ -54,7 +54,7 @@ ok  	github.com/EDDYCJY/awesomeDefer	3.234s
 ## 想一下
 
 ```
-$ go tool compile -S main.go 
+$ go tool compile -S main.go
 "".main STEXT size=163 args=0x0 locals=0x40
     ...
     0x0059 00089 (main.go:6)    MOVQ    AX, 16(SP)
@@ -91,7 +91,7 @@ $ go tool compile -S main.go
 
 这是一个比较类似 “教科书” 式的说法，在一些入门教程中会潜移默化的告诉你在资源控制后加个 `defer` 延迟关闭一下。例如：
 
-```
+```go
 resp, err := http.Get(...)
 if err != nil {
     return err
@@ -101,8 +101,7 @@ defer resp.Body.Close()
 
 但是一定得这么写吗？其实并不，很多人给出的理由都是 “怕你忘记” 这种说辞，这没有毛病。但需要认清场景，假设我的应用场景如下：
 
-
-```
+```go
 resp, err := http.Get(...)
 if err != nil {
     return err

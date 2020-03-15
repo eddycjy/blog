@@ -16,9 +16,9 @@
 
 ### Logger
 
-```
+```go
 type Logger struct {
-	mu     sync.Mutex 
+	mu     sync.Mutex
 	prefix string
 	flag   int
 	out    io.Writer
@@ -30,7 +30,7 @@ type Logger struct {
 2. prefix：每行需写入的日志前缀内容
 3. flag：设置日志辅助信息（时间、文件名、行号）的写入。可选如下标识位：
 
-```
+```go
 const (
 	Ldate         = 1 << iota       // value: 1
 	Ltime                           // value: 2
@@ -55,7 +55,7 @@ const (
 
 ### New
 
-```
+```go
 func New(out io.Writer, prefix string, flag int) *Logger {
 	return &Logger{out: out, prefix: prefix, flag: flag}
 }
@@ -65,7 +65,7 @@ var std = New(os.Stderr, "", LstdFlags)
 
 New 方法用于初始化 Logger，接受三个初始参数，可以定制化而在 log 包内默认会初始一个 std，它指向标准输入流。而默认的标准输出、标准错误就是显示器（输出到屏幕上），标准输入就是键盘。辅助的时间信息默认为 `Ldate | Ltime`，也就是 `2009/01/23 01:23:23`
 
-```
+```go
 // os
 var (
 	Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
@@ -89,9 +89,9 @@ var (
 - SetPrefix
 - SetOutput
 
-### Print*, Fatal*, Panic*
+### Print*, Fatal*, Panic\*
 
-```
+```go
 func Print(v ...interface{}) {
 	std.Output(2, fmt.Sprint(v...))
 }
@@ -124,7 +124,7 @@ func Panic(v ...interface{}) {
 
 #### Logger.Output
 
-```
+```go
 func (l *Logger) Output(calldepth int, s string) error {
 	now := time.Now() // get this early.
 	var file string
@@ -157,7 +157,7 @@ Output 方法，简单来讲就是将写入的日志事件信息组装并输出�
 
 #### Logger.formatHeader
 
-```
+```go
 func (l *Logger) formatHeader(buf *[]byte, t time.Time, file string, line int) {
 	*buf = append(*buf, l.prefix...)
 	if l.flag&(Ldate|Ltime|Lmicroseconds) != 0 {
@@ -216,7 +216,7 @@ func (l *Logger) formatHeader(buf *[]byte, t time.Time, file string, line int) {
 
 #### Logger.itoa
 
-```
+```go
 func itoa(buf *[]byte, i int, wid int) {
 	// Assemble decimal in reverse order.
 	var b [20]byte
@@ -234,19 +234,19 @@ func itoa(buf *[]byte, i int, wid int) {
 }
 ```
 
-该方法主要用于将整数转换为定长的十进制 ASCII，同时给出负数宽度避免左侧补 0。另外会以相反的顺序组合十进制 
+该方法主要用于将整数转换为定长的十进制 ASCII，同时给出负数宽度避免左侧补 0。另外会以相反的顺序组合十进制
 
 ### 如何定制化 Logger
 
 在标准库内，可通过其开放的 New 方法来实现各种各样的自定义 Logger 组件，但是为什么也可以直接 `log.Print*` 等方法呢？
 
-```
+```go
 func New(out io.Writer, prefix string, flag int) *Logger
 ```
 
 其实是在标准库内，如果你刚刚细心的看了前面的小节，不难发现其默认实现了一个 Logger 组件
 
-```
+```go
 var std = New(os.Stderr, "", LstdFlags)
 ```
 

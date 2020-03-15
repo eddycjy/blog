@@ -8,11 +8,12 @@
 
 ## 本文目标
 
-在前面几节中，我们已经基本的完成了API's的编写，但是，还存在一些非常严重的问题，例如，我们现在的API是可以随意调用的，这显然还不安全全，在本文中我们通过 [jwt-go](https://github.com/dgrijalva/jwt-go) （[GoDoc](https://godoc.org/github.com/dgrijalva/jwt-go)）的方式来简单解决这个问题。
+在前面几节中，我们已经基本的完成了 API's 的编写，但是，还存在一些非常严重的问题，例如，我们现在的 API 是可以随意调用的，这显然还不安全全，在本文中我们通过 [jwt-go](https://github.com/dgrijalva/jwt-go) （[GoDoc](https://godoc.org/github.com/dgrijalva/jwt-go)）的方式来简单解决这个问题。
 
 ## 下载依赖包
 
-首先，我们下载 jwt-go的依赖包，如下：
+首先，我们下载 jwt-go 的依赖包，如下：
+
 ```
 go get -u github.com/dgrijalva/jwt-go
 ```
@@ -20,7 +21,8 @@ go get -u github.com/dgrijalva/jwt-go
 ## 编写 jwt 工具包
 
 我们需要编写一个`jwt`的工具包，我们在`pkg`下的`util`目录新建`jwt.go`，写入文件内容：
-```
+
+```go
 package util
 
 import (
@@ -73,15 +75,16 @@ func ParseToken(token string) (*Claims, error) {
 }
 ```
 
-
 在这个工具包，我们涉及到
-- `NewWithClaims(method SigningMethod, claims Claims)`，`method`对应着`SigningMethodHMAC  struct{}`，其包含`SigningMethodHS256`、`SigningMethodHS384`、`SigningMethodHS512`三种`crypto.Hash`方案
+
+- `NewWithClaims(method SigningMethod, claims Claims)`，`method`对应着`SigningMethodHMAC struct{}`，其包含`SigningMethodHS256`、`SigningMethodHS384`、`SigningMethodHS512`三种`crypto.Hash`方案
 - `func (t *Token) SignedString(key interface{})` 该方法内部生成签名字符串，再用于获取完整、已签名的`token`
 - `func (p *Parser) ParseWithClaims` 用于解析鉴权的声明，[方法内部](https://gowalker.org/github.com/dgrijalva/jwt-go#Parser_ParseWithClaims)主要是具体的解码和校验的过程，最终返回`*Token`
 - `func (m MapClaims) Valid()` 验证基于时间的声明`exp, iat, nbf`，注意如果没有任何声明在令牌中，仍然会被认为是有效的。并且对于时区偏差没有计算方法
 
 有了`jwt`工具包，接下来我们要编写要用于`Gin`的中间件，我们在`middleware`下新建`jwt`目录，新建`jwt.go`文件，写入内容：
-```
+
+```go
 package jwt
 
 import (
@@ -132,10 +135,11 @@ func JWT() gin.HandlerFunc {
 
 那么我们如何调用它呢，我们还要获取`Token`呢？
 
-1、 我们要新增一个获取`Token`的API
+1、 我们要新增一个获取`Token`的 API
 
 在`models`下新建`auth.go`文件，写入内容：
-```
+
+```go
 package models
 
 type Auth struct {
@@ -156,7 +160,8 @@ func CheckAuth(username, password string) bool {
 ```
 
 在`routers`下的`api`目录新建`auth.go`文件，写入内容：
-```
+
+```go
 package api
 
 import (
@@ -194,7 +199,7 @@ func GetAuth(c *gin.Context) {
 				code = e.ERROR_AUTH_TOKEN
 			} else {
 				data["token"] = token
-				
+
 				code = e.SUCCESS
 			}
 
@@ -215,13 +220,14 @@ func GetAuth(c *gin.Context) {
 }
 ```
 
-我们打开`routers`目录下的`router.go`文件，修改文件内容（新增获取token的方法）：
-```
+我们打开`routers`目录下的`router.go`文件，修改文件内容（新增获取 token 的方法）：
+
+```go
 package routers
 
 import (
     "github.com/gin-gonic/gin"
-    
+
     "github.com/EDDYCJY/go-gin-example/routers/api"
     "github.com/EDDYCJY/go-gin-example/routers/api/v1"
     "github.com/EDDYCJY/go-gin-example/pkg/setting"
@@ -249,10 +255,11 @@ func InitRouter() *gin.Engine {
 
 ## 验证`Token`
 
-获取`token`的API方法就到这里啦，让我们来测试下是否可以正常使用吧！
+获取`token`的 API 方法就到这里啦，让我们来测试下是否可以正常使用吧！
 
 重启服务后，用`GET`方式访问`http://127.0.0.1:8000/auth?username=test&password=test123456`，查看返回值是否正确
-```
+
+```json
 {
   "code": 200,
   "data": {
@@ -262,20 +269,20 @@ func InitRouter() *gin.Engine {
 }
 ```
 
-
-我们有了`token`的API，也调用成功了
+我们有了`token`的 API，也调用成功了
 
 ## 将中间件接入`Gin`
 
 2、 接下来我们将中间件接入到`Gin`的访问流程中
 
 我们打开`routers`目录下的`router.go`文件，修改文件内容（新增引用包和中间件引用）
-```
+
+```go
 package routers
 
 import (
     "github.com/gin-gonic/gin"
-    
+
     "github.com/EDDYCJY/go-gin-example/routers/api"
     "github.com/EDDYCJY/go-gin-example/routers/api/v1"
     "github.com/EDDYCJY/go-gin-example/pkg/setting"
@@ -304,6 +311,7 @@ func InitRouter() *gin.Engine {
 ```
 
 当前目录结构：
+
 ```
 go-gin-example/
 ├── conf
@@ -341,11 +349,13 @@ go-gin-example/
 ## 验证功能
 
 我们来测试一下，再次访问
+
 - http://127.0.0.1:8000/api/v1/articles
 - http://127.0.0.1:8000/api/v1/articles?token=23131
 
 正确的反馈应该是
-```
+
+```json
 {
   "code": 400,
   "data": null,
@@ -361,7 +371,8 @@ go-gin-example/
 ```
 
 我们需要访问`http://127.0.0.1:8000/auth?username=test&password=test123456`，得到`token`
-```
+
+```json
 {
   "code": 200,
   "data": {
@@ -371,10 +382,11 @@ go-gin-example/
 }
 ```
 
-再用包含`token`的URL参数去访问我们的应用API，
+再用包含`token`的 URL 参数去访问我们的应用 API，
 
 访问`http://127.0.0.1:8000/api/v1/articles?token=eyJhbGci...`，检查接口返回值
-```
+
+```json
 {
   "code": 200,
   "data": {
@@ -408,20 +420,22 @@ go-gin-example/
 返回正确，至此我们的`jwt-go`在`Gin`中的验证就完成了！
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

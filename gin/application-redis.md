@@ -1,4 +1,4 @@
-# 优化你的应用结构和实现Redis缓存
+# 优化你的应用结构和实现 Redis 缓存
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
@@ -6,21 +6,22 @@
 
 之前就在想，不少教程或示例的代码设计都是一步到位的（也没问题）
 
-但实际操作的读者真的能够理解透彻为什么吗？左思右想，有了今天这一章的内容，我认为实际经历过一遍印象会更加深刻 
+但实际操作的读者真的能够理解透彻为什么吗？左思右想，有了今天这一章的内容，我认为实际经历过一遍印象会更加深刻
 
 ## 本文目标
 
 在本章节，将介绍以下功能的整理：
-- 抽离、分层业务逻辑：减轻 routers/*.go 内的 api方法的逻辑（但本文暂不分层 repository，这块逻辑还不重）。
+
+- 抽离、分层业务逻辑：减轻 routers/\*.go 内的 api 方法的逻辑（但本文暂不分层 repository，这块逻辑还不重）。
 - 增加容错性：对 gorm 的错误进行判断。
-- Redis缓存：对获取数据类的接口增加缓存设置。
+- Redis 缓存：对获取数据类的接口增加缓存设置。
 - 减少重复冗余代码。
 
 ## 问题在哪？
 
 在规划阶段我们发现了一个问题，这是目前的伪代码：
 
-```
+```go
 if ! HasErrors() {
 	if ExistArticleByID(id) {
 		DeleteArticle(id)
@@ -43,7 +44,7 @@ c.JSON(http.StatusOK, gin.H{
 
 如果加上规划内的功能逻辑呢，伪代码会变成：
 
-```
+```go
 if ! HasErrors() {
     exists, err := ExistArticleByID(id)
     if err == nil {
@@ -87,13 +88,11 @@ c.JSON(http.StatusOK, gin.H{
 
 2、除了宽度外还有长度，有的代码的 if-else 里的 if-else 里的 if-else 的代码太多，读到中间你都不知道中间的代码是经过了什么样的层层检查才来到这里的
 
-总而言之，“箭头型代码”如果嵌套太多，代码太长的话，会相当容易让维护代码的人（包括自己）迷失在代码中，因为看到最内层的代码时，你已经不知道前面的那一层一层的条件判断是什么样的，代码是怎么运行到这里的，所以，箭头型代码是非常难以维护和Debug的。
-
+总而言之，“箭头型代码”如果嵌套太多，代码太长的话，会相当容易让维护代码的人（包括自己）迷失在代码中，因为看到最内层的代码时，你已经不知道前面的那一层一层的条件判断是什么样的，代码是怎么运行到这里的，所以，箭头型代码是非常难以维护和 Debug 的。
 
 简单的来说，就是**让出错的代码先返回，前面把所有的错误判断全判断掉，然后就剩下的就是正常的代码了**
 
 （注意：本段引用自耗子哥的 [如何重构“箭头型”代码](https://coolshell.cn/articles/17757.html)，建议细细品尝）
-
 
 ## 落实
 
@@ -101,7 +100,7 @@ c.JSON(http.StatusOK, gin.H{
 
 第一步：完成 Redis 的基础设施建设（需要你先装好 Redis）
 
-第二步：对现有代码进行拆解、分层（不会贴上具体步骤的代码，希望你能够实操一波，加深理解🤔）
+第二步：对现有代码进行拆解、分层（不会贴上具体步骤的代码，希望你能够实操一波，加深理解 🤔）
 
 ### Redis
 
@@ -109,7 +108,7 @@ c.JSON(http.StatusOK, gin.H{
 
 打开 conf/app.ini 文件，新增配置：
 
-```
+```ini
 ...
 [redis]
 Host = 127.0.0.1:6379
@@ -123,7 +122,7 @@ IdleTimeout = 200
 
 打开 pkg/e 目录，新建 cache.go，写入内容：
 
-```
+```go
 package e
 
 const (
@@ -148,7 +147,7 @@ const (
 
 打开 pkg 目录，新建 gredis/redis.go，写入内容：
 
-```
+```go
 package gredis
 
 import (
@@ -290,13 +289,14 @@ func LikeDeletes(key string) error {
 
 （5）`redis.Strings(reply interface{}, err error)`：将命令返回转为 []string
 
-在 [redigo](https://godoc.org/github.com/gomodule/redigo/redis) 中包含大量类似的方法，万变不离其宗，建议熟悉其使用规则和 [Redis命令](http://doc.redisfans.com/index.html) 即可
+在 [redigo](https://godoc.org/github.com/gomodule/redigo/redis) 中包含大量类似的方法，万变不离其宗，建议熟悉其使用规则和 [Redis 命令](http://doc.redisfans.com/index.html) 即可
 
 到这里为止，Redis 就可以愉快的调用啦。另外受篇幅限制，这块的深入讲解会另外开设！
 
 ### 拆解、分层
 
 在先前规划中，引出几个方法去优化我们的应用结构
+
 - 错误提前返回
 - 统一返回方法
 - 抽离 Service，减轻 routers/api 的逻辑，进行分层
@@ -308,7 +308,7 @@ func LikeDeletes(key string) error {
 
 1、打开 pkg 目录，新建 app/request.go，写入文件内容：
 
-```
+```go
 package app
 
 import (
@@ -328,7 +328,7 @@ func MarkErrors(errors []*validation.Error) {
 
 2、打开 pkg 目录，新建 app/response.go，写入文件内容：
 
-```
+```go
 package app
 
 import (
@@ -356,10 +356,9 @@ func (g *Gin) Response(httpCode, errCode int, data interface{}) {
 
 #### 修改既有逻辑
 
-
 打开 routers/api/v1/article.go，查看修改 GetArticle 方法后的代码为：
 
-``` go
+```go
 func GetArticle(c *gin.Context) {
 	appG := app.Gin{c}
 	id := com.StrTo(c.Param("id")).MustInt()
@@ -397,7 +396,7 @@ func GetArticle(c *gin.Context) {
 
 例如 service/article_service 下的 `articleService.Get()` 方法：
 
-```
+```go
 func (a *Article) Get() (*models.Article, error) {
 	var cacheArticle *models.Article
 
@@ -425,7 +424,7 @@ func (a *Article) Get() (*models.Article, error) {
 
 而对于 gorm 的 错误返回设置，只需要修改 models/article.go 如下:
 
-```
+```go
 func GetArticle(id int) (*Article, error) {
 	var article Article
 	err := db.Where("id = ? AND deleted_on = ? ", id, 0).First(&article).Related(&article.Tag).Error
@@ -439,7 +438,6 @@ func GetArticle(id int) (*Article, error) {
 
 习惯性增加 .Error，把控绝大部分的错误。另外需要注意一点，在 gorm 中，查找不到记录也算一种 “错误” 哦
 
-
 ## 最后
 
 显然，本章节并不是你跟着我敲系列。我给你的课题是 “实现 Redis 缓存并优化既有的业务逻辑代码”
@@ -448,25 +446,27 @@ func GetArticle(id int) (*Article, error) {
 
 如果有疑惑，可以到 [go-gin-example](https://github.com/EDDYCJY/go-gin-example) 看看我是怎么写的，你是怎么写的，又分别有什么优势、劣势，取长补短一波？
 
-
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ### 推荐阅读
+
 - [如何重构“箭头型”代码](https://coolshell.cn/articles/17757.html)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

@@ -10,12 +10,11 @@
 2. [基于 CA 的 TLS 证书认证](https://github.com/EDDYCJY/blog/blob/master/grpc/ca-tls.md)
 3. [Unary and Stream interceptor](https://github.com/EDDYCJY/blog/blob/master/grpc/interceptor.md)
 
-
 而在实际需求中，常常会对某些模块的 RPC 方法做特殊认证或校验。今天将会讲解、实现这块的功能点
 
 ## 课前知识
 
-```
+```go
 type PerRPCCredentials interface {
     GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error)
     RequireTransportSecurity() bool
@@ -53,7 +52,7 @@ go-grpc-example
 
 ### Client
 
-```
+```go
 package main
 
 import (
@@ -107,7 +106,7 @@ func main() {
 
 ### Server
 
-```
+```go
 package main
 
 import (
@@ -207,5 +206,7 @@ exit status 1
 本章节比较简单，主要是针对 RPC 方法的自定义认证进行了介绍，如果是想做全局的，建议是举一反三从拦截器下手哦。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)

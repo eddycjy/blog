@@ -1,4 +1,4 @@
-# 将Golang应用部署到Docker
+# 将 Golang 应用部署到 Docker
 
 项目地址：https://github.com/EDDYCJY/go-gin-example
 
@@ -15,11 +15,11 @@
 
 ## Docker
 
-在这里简单介绍下Docker，建议深入学习
+在这里简单介绍下 Docker，建议深入学习
 
 ![image](https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1521800047226&di=28b2764fccca8a943aea7d79ad8aed98&imgtype=0&src=http%3A%2F%2Fwww.cww.net.cn%2FupLoadFile%2F2014%2F6%2F13%2F201461382247734.png)
 
-Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持Docker的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境
+Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持 Docker 的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境
 
 - 简化配置
 - 代码流水线管理
@@ -33,7 +33,7 @@ Docker 是一个开源的轻量级容器技术，让开发者可以打包他们�
 
 ## Golang
 
-### 一、编写Dockerfile 
+### 一、编写 Dockerfile
 
 在 `go-gin-example` 项目根目录创建 Dockerfile 文件，写入内容
 
@@ -53,7 +53,7 @@ ENTRYPOINT ["./go-gin-example"]
 
 `golang:latest` 镜像为基础镜像，将工作目录设置为 `$GOPATH/src/go-gin-example`，并将当前上下文目录的内容复制到 `$GOPATH/src/go-gin-example` 中
 
-在进行 `go build` 编译完毕后，将容器启动程序设置为 `./go-gin-example`，也就是我们所编译的可执行文件 
+在进行 `go build` 编译完毕后，将容器启动程序设置为 `./go-gin-example`，也就是我们所编译的可执行文件
 
 注意 `go-gin-example` 在 `docker` 容器里编译，并没有在宿主机现场编译
 
@@ -88,14 +88,14 @@ Dockerfile 文件是用于定义 Docker 镜像生成流程的配置文件，文�
 
 格式：`RUN` <命令>
 
-
 **5、EXPOSE**
 
-格式为 `EXPOSE` <端口1> [<端口2>...]
+格式为 `EXPOSE` <端口 1> [<端口 2>...]
 
 `EXPOSE` 指令是**声明运行时容器提供服务端口，这只是一个声明**，在运行时并不会因为这个声明应用就会开启这个端口的服务
 
 在 Dockerfile 中写入这样的声明有两个好处
+
 - 帮助镜像使用者理解这个镜像服务的守护端口，以方便配置映射
 - 运行时使用随机端口映射时，也就是 `docker run -P` 时，会自动随机映射 `EXPOSE` 的端口
 
@@ -104,17 +104,18 @@ Dockerfile 文件是用于定义 Docker 镜像生成流程的配置文件，文�
 `ENTRYPOINT` 的格式和 `RUN` 指令格式一样，分为两种格式
 
 - `exec` 格式：
+
 ```
 <ENTRYPOINT> "<CMD>"
 ```
 
 - `shell` 格式：
+
 ```
 ENTRYPOINT [ "curl", "-s", "http://ip.cn" ]
 ```
 
 `ENTRYPOINT` 指令是**指定容器启动程序及参数**
-
 
 ### 二、构建镜像
 
@@ -182,10 +183,9 @@ Actual pid is 1
 
 运行成功，你以为大功告成了吗？
 
-你想太多了，仔细看看控制台的输出了一条错误 `dial tcp 127.0.0.1:3306: connect: connection refused` 
+你想太多了，仔细看看控制台的输出了一条错误 `dial tcp 127.0.0.1:3306: connect: connection refused`
 
 我们研判一下，发现是 `Mysql` 的问题，接下来第二项我们将解决这个问题
-
 
 ## Mysql
 
@@ -199,7 +199,7 @@ $ docker pull mysql
 
 ### 二、创建并运行一个新容器
 
-运行 `Mysql` 容器，并设置执行成功后返回容器ID
+运行 `Mysql` 容器，并设置执行成功后返回容器 ID
 
 ```
 $ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -d mysql
@@ -212,12 +212,12 @@ $ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -d mysql
 
 ![image](https://i.loli.net/2018/03/23/5ab4caab04cf1.png)
 
-
 ## Golang + Mysql
 
 ### 一、删除镜像
 
 由于原本的镜像存在问题，我们需要删除它，此处有几种做法
+
 - 删除原本有问题的镜像，重新构建一个新镜像
 - 重新构建一个不同 `name`、`tag` 的新镜像
 
@@ -238,7 +238,8 @@ Deleted: sha256:56294f978c5dfcfa4afa8ad033fd76b755b7ecb5237c6829550741a4d2ce10bc
 ### 二、修改配置文件
 
 将项目的配置文件 `conf/app.ini`，内容修改为
-```
+
+```ini
 #debug or release
 RUN_MODE = debug
 
@@ -271,7 +272,7 @@ TABLE_PREFIX = blog_
 
 Q：我们需要将 `Golang` 容器和 `Mysql` 容器关联起来，那么我们需要怎么做呢？
 
-A：增加命令 `--link mysql:mysql` 让 `Golang` 容器与 `Mysql` 容器互联；通过 `--link`，**可以在容器内直接使用其关联的容器别名进行访问**，而不通过IP，但是`--link`只能解决单机容器间的关联，在分布式多机的情况下，需要通过别的方式进行连接
+A：增加命令 `--link mysql:mysql` 让 `Golang` 容器与 `Mysql` 容器互联；通过 `--link`，**可以在容器内直接使用其关联的容器别名进行访问**，而不通过 IP，但是`--link`只能解决单机容器间的关联，在分布式多机的情况下，需要通过别的方式进行连接
 
 ## 运行
 
@@ -298,23 +299,25 @@ Actual pid is 1
 
 虽然应用已经能够跑起来了
 
-但如果对 `Golang` 和 `Docker` 有一定的了解，我希望你能够想到至少2个问题
+但如果对 `Golang` 和 `Docker` 有一定的了解，我希望你能够想到至少 2 个问题
+
 - 为什么 `gin-blog-docker` 占用空间这么大？（可用 `docker ps -as | grep gin-blog-docker` 查看）
 - `Mysql` 容器直接这么使用，数据存储到哪里去了？
 
-### 创建超小的Golang镜像
+### 创建超小的 Golang 镜像
 
 Q：第一个问题，为什么这么镜像体积这么大？
 
-A：`FROM golang:latest` 拉取的是官方 `golang` 镜像，包含Golang的编译和运行环境，外加一堆GCC、build工具，相当齐全
+A：`FROM golang:latest` 拉取的是官方 `golang` 镜像，包含 Golang 的编译和运行环境，外加一堆 GCC、build 工具，相当齐全
 
-这是有问题的，**我们可以不在Golang容器中现场编译的**，压根用不到那些东西，我们只需要一个能够运行可执行文件的环境即可
+这是有问题的，**我们可以不在 Golang 容器中现场编译的**，压根用不到那些东西，我们只需要一个能够运行可执行文件的环境即可
 
-#### 构建Scratch镜像
+#### 构建 Scratch 镜像
 
-Scratch镜像，简洁、小巧，基本是个空镜像
+Scratch 镜像，简洁、小巧，基本是个空镜像
 
-##### 一、修改Dockerfile
+##### 一、修改 Dockerfile
+
 ```
 FROM scratch
 
@@ -326,6 +329,7 @@ CMD ["./go-gin-example"]
 ```
 
 ##### 二、编译可执行文件
+
 ```
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 ```
@@ -333,11 +337,12 @@ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
 编译所生成的可执行文件会依赖一些库，并且是动态链接。在这里因为使用的是 `scratch` 镜像，它是空镜像，因此我们需要将生成的可执行文件静态链接所依赖的库
 
 ##### 三、构建镜像
+
 ```
 $ docker build -t gin-blog-docker-scratch .
 Sending build context to Docker daemon 133.1 MB
 Step 1/5 : FROM scratch
- ---> 
+ --->
 Step 2/5 : WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
  ---> Using cache
  ---> ee07e166a638
@@ -355,9 +360,10 @@ Removing intermediate container eebc0d8628ae
 Successfully built 5310bebeb86a
 ```
 
-注意，假设你的Golang应用没有依赖任何的配置等文件，是可以直接把可执行文件给拷贝进去即可，其他都不必关心
+注意，假设你的 Golang 应用没有依赖任何的配置等文件，是可以直接把可执行文件给拷贝进去即可，其他都不必关心
 
-这里可以有好几种解决方案 
+这里可以有好几种解决方案
+
 - 依赖文件统一管理挂载
 - go-bindata 一下
 
@@ -366,6 +372,7 @@ Successfully built 5310bebeb86a
 因此这里如果**解决了文件依赖的问题**后，就不需要把目录给 `COPY` 进去了
 
 ##### 四、运行
+
 ```
 $ docker run --link mysql:mysql -p 8000:8000 gin-blog-docker-scratch
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
@@ -379,6 +386,7 @@ $ docker run --link mysql:mysql -p 8000:8000 gin-blog-docker-scratch
 成功运行，程序也正常接收请求
 
 接下来我们再看看占用大小，执行 `docker ps -as` 命令
+
 ```
 $ docker ps -as
 CONTAINER ID        IMAGE                     COMMAND                  ...         SIZE
@@ -388,8 +396,7 @@ CONTAINER ID        IMAGE                     COMMAND                  ...      
 
 从结果而言，占用大小以`Scratch`镜像为基础的容器完胜，完成目标
 
-
-### Mysql挂载数据卷
+### Mysql 挂载数据卷
 
 倘若不做任何干涉，在每次启动一个 `Mysql` 容器时，数据库都是空的。另外容器删除之后，数据就丢失了（还有各类意外情况），非常糟糕！
 
@@ -407,7 +414,7 @@ CONTAINER ID        IMAGE                     COMMAND                  ...      
 
 - 数据卷 默认会一直存在，即使容器被删除
 
-> 注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会隐藏掉，能显示看的是挂载的 数据卷。   
+> 注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会隐藏掉，能显示看的是挂载的 数据卷。
 
 #### 如何挂载
 
@@ -426,25 +433,27 @@ $ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -v /data/
 
 我已验证完毕，你呢？
 
-
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ### 书籍
+
 - [Docker —— 从入门到实践](https://www.gitbook.com/book/yeasy/docker_practice/details)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月01日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 01 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

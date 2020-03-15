@@ -42,7 +42,7 @@
 
 在 go-ini 中可以采用 MapTo 的方式来映射结构体，例如：
 
-``` go
+```go
 type Server struct {
 	RunMode string
 	HttpPort int
@@ -57,7 +57,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Fail to parse 'conf/app.ini': %v", err)
 	}
-	
+
 	err = Cfg.Section("server").MapTo(ServerSetting)
 	if err != nil {
 		log.Fatalf("Cfg.MapTo ServerSetting err: %v", err)
@@ -67,7 +67,7 @@ func main() {
 
 在这段代码中，可以注意 ServerSetting 取了地址，为什么 MapTo 必须地址入参呢？
 
-```
+```go
 // MapTo maps section to given struct.
 func (s *Section) MapTo(v interface{}) error {
 	typ := reflect.TypeOf(v)
@@ -88,7 +88,6 @@ func (s *Section) MapTo(v interface{}) error {
 更往内探究，可以认为是 `field.Set` 的原因，当执行 `val := reflect.ValueOf(v)` ，函数通过传递 `v` 拷贝创建了 `val`，但是 `val` 的改变并不能更改原始的 `v`，要想 `val` 的更改能作用到 `v`，则必须传递 `v` 的地址
 
 显然 go-ini 里也是包含修改原始值这一项功能的，你觉得是什么原因呢？
-
 
 #### 配置统管
 
@@ -113,7 +112,7 @@ func (s *Section) MapTo(v interface{}) error {
 
 打开 conf/app.ini 将配置文件修改为大驼峰命名，另外我们增加了 5 个配置项用于上传图片的功能，4 个文件日志方面的配置项
 
-```
+```ini
 [app]
 PageSize = 10
 JwtSecret = 233
@@ -155,7 +154,7 @@ TablePrefix = blog_
 
 打开 pkg/setting/setting.go 文件，修改如下：
 
-```
+```go
 package setting
 
 import (
@@ -249,7 +248,7 @@ func Setup() {
 
 在这一步我们要设置初始化的流程，打开 main.go 文件，修改内容：
 
-```
+```go
 func main() {
 	setting.Setup()
 	models.Setup()
@@ -271,6 +270,7 @@ func main() {
 	}
 }
 ```
+
 修改完毕后，就成功将多模块的初始化函数放到启动流程中了（先后顺序也可以控制）
 
 ##### 验证
@@ -279,7 +279,7 @@ func main() {
 
 顺带留个基础问题，大家可以思考下
 
-```
+```go
 ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
 ServerSetting.WriteTimeout = ServerSetting.ReadTimeout * time.Second
 ```
@@ -294,7 +294,7 @@ ServerSetting.WriteTimeout = ServerSetting.ReadTimeout * time.Second
 
 在 pkg 目录下新建 file/file.go ，写入文件内容如下：
 
-```
+```go
 package file
 
 import (
@@ -355,7 +355,8 @@ func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 }
 ```
 
-在这里我们一共封装了 7个 方法
+在这里我们一共封装了 7 个 方法
+
 - GetSize：获取文件大小
 - GetExt：获取文件后缀
 - CheckExist：检查文件是否存在
@@ -374,7 +375,7 @@ multipart 又是什么，[rfc2388](https://tools.ietf.org/html/rfc2388) 的 mult
 
 1、打开 pkg/logging/file.go 文件，修改文件内容：
 
-```
+```go
 package logging
 
 import (
@@ -423,11 +424,12 @@ func openLogFile(fileName, filePath string) (*os.File, error) {
 	return f, nil
 }
 ```
+
 我们将引用都改为了 file/file.go 包里的方法
 
 2、打开 pkg/logging/log.go 文件，修改文件内容:
 
-```
+```go
 package logging
 
 ...
@@ -461,7 +463,7 @@ func Setup() {
 
 在 util 目录下新建 md5.go，写入文件内容：
 
-```
+```go
 package util
 
 import (
@@ -484,7 +486,7 @@ func EncodeMD5(value string) string {
 
 在 pkg 目录下新建 upload/image.go 文件，写入文件内容：
 
-```
+```go
 package upload
 
 import (
@@ -564,7 +566,8 @@ func CheckImage(src string) error {
 ```
 
 在这里我们实现了 7 个方法，如下：
-- GetImageFullUrl：获取图片完整访问URL
+
+- GetImageFullUrl：获取图片完整访问 URL
 - GetImageName：获取图片名称
 - GetImagePath：获取图片路径
 - GetImageFullPath：获取图片完整路径
@@ -578,7 +581,7 @@ func CheckImage(src string) error {
 
 这一步将编写上传图片的业务逻辑，在 routers/api 目录下 新建 upload.go 文件，写入文件内容:
 
-```
+```go
 package api
 
 import (
@@ -641,7 +644,7 @@ func UploadImage(c *gin.Context) {
 
 所涉及的错误码（需在 pkg/e/code.go、msg.go 添加）：
 
-```
+```go
 // 保存图片失败
 ERROR_UPLOAD_SAVE_IMAGE_FAIL = 30001
 // 检查图片失败
@@ -651,8 +654,9 @@ ERROR_UPLOAD_CHECK_IMAGE_FORMAT = 30003
 ```
 
 在这一大段的业务逻辑中，我们做了如下事情：
+
 - c.Request.FormFile：获取上传的图片（返回提供的表单键的第一个文件）
-- CheckImageExt、CheckImageSize检查图片大小，检查图片后缀
+- CheckImageExt、CheckImageSize 检查图片大小，检查图片后缀
 - CheckImage：检查上传图片所需（权限、文件夹）
 - SaveUploadedFile：保存图片
 
@@ -662,7 +666,7 @@ ERROR_UPLOAD_CHECK_IMAGE_FORMAT = 30003
 
 打开 routers/router.go 文件，增加路由 `r.POST("/upload", api.UploadImage)` ，如：
 
-```
+```go
 func InitRouter() *gin.Engine {
 	r := gin.New()
     ...
@@ -684,7 +688,7 @@ func InitRouter() *gin.Engine {
 
 最后我们请求一下上传图片的接口，测试所编写的功能
 
-![image](https://i.imgur.com/NjdkvxS.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xumb8.jpg)
 
 检查目录下是否含文件（注意权限问题）
 
@@ -703,7 +707,7 @@ $ ll
 
 在完成了上一小节后，我们还需要让前端能够访问到图片，一般是如下：
 
-- CDN 
+- CDN
 - http.FileSystem
 
 在公司的话，CDN 或自建分布式文件系统居多，也不需要过多关注。而在实践里的话肯定是本地搭建了，Go 本身对此就有很好的支持，而 Gin 更是再封装了一层，只需要在路由增加一行代码即可
@@ -712,7 +716,7 @@ $ ll
 
 打开 routers/router.go 文件，增加路由 `r.StaticFS("/upload/images", http.Dir(upload.GetImageFullPath()))`，如：
 
-```
+```go
 func InitRouter() *gin.Engine {
     ...
 	r.StaticFS("/upload/images", http.Dir(upload.GetImageFullPath()))
@@ -730,7 +734,7 @@ func InitRouter() *gin.Engine {
 
 而这行代码又做了什么事呢，我们来看看方法原型
 
-```
+```go
 // StaticFS works just like `Static()` but a custom `http.FileSystem` can be used instead.
 // Gin by default user: gin.Dir()
 func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
@@ -747,9 +751,9 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRou
 }
 ```
 
-首先在暴露的 URL 中禁止了 * 和 : 符号的使用，通过 `createStaticHandler` 创建了静态文件服务，实质最终调用的还是 `fileServer.ServeHTTP` 和一些处理逻辑了
+首先在暴露的 URL 中禁止了 \* 和 : 符号的使用，通过 `createStaticHandler` 创建了静态文件服务，实质最终调用的还是 `fileServer.ServeHTTP` 和一些处理逻辑了
 
-```
+```go
 func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
@@ -771,17 +775,17 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 
 通常 http.FileServer 要与 http.StripPrefix 相结合使用，否则当你运行：
 
-```
+```go
 http.Handle("/upload/images", http.FileServer(http.Dir("upload/images")))
 ```
 
 会无法正确的访问到文件目录，因为 `/upload/images` 也包含在了 URL 路径中，必须使用：
 
-```
+```go
 http.Handle("/upload/images", http.StripPrefix("upload/images", http.FileServer(http.Dir("upload/images"))))
 ```
 
-#### /*filepath
+#### /\*filepath
 
 到下面可以看到 `urlPattern := path.Join(relativePath, "/*filepath")`，`/*filepath` 你是谁，你在这里有什么用，你是 Gin 的产物吗?
 
@@ -801,7 +805,7 @@ Pattern: /src/*filepath
 
 重新执行 `go run main.go` ，去访问刚刚在 upload 接口得到的图片地址，检查 http.FileSystem 是否正常
 
-![image](https://i.imgur.com/zlNeiTt.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xu4Gd.jpg)
 
 ## 修改文章接口
 
@@ -810,7 +814,7 @@ Pattern: /src/*filepath
 - 新增、更新文章接口：支持入参 cover_image_url
 - 新增、更新文章接口：增加对 cover_image_url 的非空、最长长度校验
 
-这块前面文章讲过，如果有问题可以参考项目的代码👌
+这块前面文章讲过，如果有问题可以参考项目的代码 👌
 
 ## 总结
 
@@ -819,20 +823,22 @@ Pattern: /src/*filepath
 完成了清单中的功能点和优化，在实际项目中也是常见的场景，希望你能够细细品尝并针对一些点进行深入学习
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月02日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 02 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

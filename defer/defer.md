@@ -8,7 +8,7 @@
 
 ### 一、延迟调用
 
-```
+```go
 func main() {
 	defer log.Println("EDDYCJY.")
 
@@ -19,14 +19,14 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go            
+$ go run main.go
 2019/05/19 21:15:02 end.
 2019/05/19 21:15:02 EDDYCJY.
 ```
 
 ### 二、后进先出
 
-```
+```go
 func main() {
 	for i := 0; i < 6; i++ {
 		defer log.Println("EDDYCJY" + strconv.Itoa(i) + ".")
@@ -52,7 +52,7 @@ $ go run main.go
 
 ### 三、运行时间点
 
-```
+```go
 func main() {
 	func() {
 		 defer log.Println("defer.EDDYCJY.")
@@ -65,14 +65,14 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go 
+$ go run main.go
 2019/05/22 23:30:27 defer.EDDYCJY.
 2019/05/22 23:30:27 main.EDDYCJY.
 ```
 
 ### 四、异常处理
 
-```
+```go
 func main() {
 	defer func() {
 		if e := recover(); e != nil {
@@ -87,14 +87,14 @@ func main() {
 输出结果：
 
 ```
-$ go run main.go 
+$ go run main.go
 2019/05/20 22:22:57 EDDYCJY.
 ```
 
 ## 源码剖析
 
 ```
-$ go tool compile -S main.go 
+$ go tool compile -S main.go
 "".main STEXT size=163 args=0x0 locals=0x40
 	...
 	0x0059 00089 (main.go:6)	MOVQ	AX, 16(SP)
@@ -127,7 +127,7 @@ $ go tool compile -S main.go
 
 在开始前我们需要先介绍一下 `defer` 的基础单元 `_defer` 结构体，如下：
 
-```
+```go
 type _defer struct {
 	siz     int32
 	started bool
@@ -148,16 +148,16 @@ type funcval struct {
 - siz：所有传入参数的总大小
 - started：该 `defer` 是否已经执行过
 - sp：函数栈指针寄存器，一般指向当前函数栈的栈顶
-- pc：程序计数器，有时称为指令指针(IP)，线程利用它来跟踪下一个要执行的指令。在大多数处理器中，PC指向的是下一条指令，而不是当前指令
+- pc：程序计数器，有时称为指令指针(IP)，线程利用它来跟踪下一个要执行的指令。在大多数处理器中，PC 指向的是下一条指令，而不是当前指令
 - fn：指向传入的函数地址和参数
-- _panic：指向 `_panic` 链表
+- \_panic：指向 `_panic` 链表
 - link：指向 `_defer` 链表
 
-![image](https://i.imgur.com/f2KghN9.png)
+![image](https://s2.ax1x.com/2020/02/27/3dLNjJ.png)
 
 ### deferproc
 
-```
+```go
 func deferproc(siz int32, fn *funcval) {
     ...
 	sp := getcallersp()
@@ -182,7 +182,7 @@ func deferproc(siz int32, fn *funcval) {
 }
 ```
 
-- 获取调用 `defer` 函数的函数栈指针、传入函数的参数具体地址以及PC （程序计数器），也就是下一个要执行的指令。这些相当于是预备参数，便于后续的流转控制
+- 获取调用 `defer` 函数的函数栈指针、传入函数的参数具体地址以及 PC （程序计数器），也就是下一个要执行的指令。这些相当于是预备参数，便于后续的流转控制
 - 创建一个新的 `defer` 最小单元 `_defer`，填入先前准备的参数
 - 调用 `memmove` 将传入的参数存储到新 `_defer` （当前使用）中去，便于后续的使用
 - 最后调用 `return0` 进行返回，这个函数非常重要。能够避免在 `deferproc` 中又因为返回 `return`，而诱发 `deferreturn` 方法的调用。其根本原因是一个停止 `panic` 的延迟方法会使 `deferproc` 返回 1，但在机制中如果 `deferproc` 返回不等于 0，将会总是检查返回值并跳转到函数的末尾。而 `return0` 返回的就是 0，因此可以防止重复调用
@@ -193,7 +193,7 @@ func deferproc(siz int32, fn *funcval) {
 
 ### newdefer
 
-```
+```go
 func newdefer(siz int32) *_defer {
 	var d *_defer
 	sc := deferclass(uintptr(siz))
@@ -229,7 +229,7 @@ func newdefer(siz int32) *_defer {
 通过这个方法我们可以注意到两点，如下：
 
 - `defer` 与 `Goroutine(g)` 有直接关系，所以讨论 `defer` 时基本离不开 `g` 的关联
--  新的 `defer` 总是会在现有的链表中的最前面，也就是 `defer` 的特性后进先出
+- 新的 `defer` 总是会在现有的链表中的最前面，也就是 `defer` 的特性后进先出
 
 #### 小结
 
@@ -237,7 +237,7 @@ func newdefer(siz int32) *_defer {
 
 ### deferreturn
 
-```
+```go
 func deferreturn(arg0 uintptr) {
 	gp := getg()
 	d := gp._defer
@@ -287,8 +287,8 @@ TEXT runtime·jmpdefer(SB), NOSPLIT, $0-16
 
 通过源码的分析，我们发现它做了两个很 “奇怪” 又很重要的事，如下：
 
-- MOVQ	-8(SP), BP：`-8(BX)` 这个位置保存的是 `deferreturn` 执行完毕后的地址
-- SUBQ	$5, (SP)：`SP` 的地址减 5 ，其减掉的长度就恰好是 `runtime.deferreturn` 的长度
+- MOVQ -8(SP), BP：`-8(BX)` 这个位置保存的是 `deferreturn` 执行完毕后的地址
+- SUBQ \$5, (SP)：`SP` 的地址减 5 ，其减掉的长度就恰好是 `runtime.deferreturn` 的长度
 
 你可能会问，为什么是 5？好吧。翻了半天最后看了一下汇编代码...嗯，相减的确是 5 没毛病，如下：
 
@@ -299,7 +299,7 @@ TEXT runtime·jmpdefer(SB), NOSPLIT, $0-16
 
 我们整理一下思绪，照上述逻辑的话，那 `deferreturn` 就是一个 “递归” 了哦。每次都会重新回到 `deferreturn` 函数，那它在什么时候才会结束呢，如下：
 
-```
+```go
 func deferreturn(arg0 uintptr) {
 	gp := getg()
 	d := gp._defer
@@ -329,7 +329,7 @@ func deferreturn(arg0 uintptr) {
 
 的确如上述流程所分析一致，验证完毕
 
-#### 小结 
+#### 小结
 
 这个函数主要承担了清空已使用的 `defer` 和跳转到调用 `defer` 关键字的函数处，非常重要
 

@@ -2,7 +2,7 @@
 
 如果你以前有涉猎过 gRPC+gRPC Gateway 这两个组件，你肯定会遇到这个问题，就是 **“为什么非得开 TLS，才能够实现同端口双流量，能不能不开？”** 又或是 **“我不想用证书就实现这些功能，行不行？”**。我被无数的人问过无数次这些问题，也说服过很多人，但说服归说服，不代表放弃。前年不行，不代表今年不行，在今天我希望分享来龙去脉和具体的实现方式给你。
 
-![image](https://i.imgur.com/cjLNsWj.png)
+![image](https://s2.ax1x.com/2020/02/27/3dLBAx.png)
 
 ## 过去
 
@@ -38,9 +38,9 @@
 
 经过社区的不断讨论，最后在 2018 年 6 月，代表 "h2c" 标志的 `golang.org/x/net/http2/h2c` 标准库正式合并进来，自此我们就可以使用官方标准库（h2c），这个标准库实现了 HTTP/2 的未加密模式，因此我们就可以利用该标准库在同个端口上既提供 HTTP/1.1 又提供 HTTP/2 的功能了。
 
-### 使用标准库 h2c 
+### 使用标准库 h2c
 
-```
+```go
 import (
 	...
 
@@ -94,7 +94,7 @@ $ curl -X GET 'http://127.0.0.1:9005/search?request=EDDYCJY'
 
 #### HTTP/2(gRPC)
 
-```
+```go
 ...
 func main() {
 	conn, err := grpc.Dial(":"+PORT, grpc.WithInsecure())
@@ -105,6 +105,7 @@ func main() {
 	})
 }
 ```
+
 输出结果：
 
 ```

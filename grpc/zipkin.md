@@ -8,7 +8,7 @@
 
 ### 是什么
 
-OpenTracing 通过提供平台无关、厂商无关的API，使得开发人员能够方便的添加（或更换）追踪系统的实现
+OpenTracing 通过提供平台无关、厂商无关的 API，使得开发人员能够方便的添加（或更换）追踪系统的实现
 
 不过 OpenTracing 并不是标准。因为 CNCF 不是官方标准机构，但是它的目标是致力为分布式追踪创建更标准的 API 和工具
 
@@ -56,7 +56,7 @@ Baggage Items 可以理解为 trace 全局运行中额外传输的数据集合
 - 服务间的层次关系
 - 服务间串行或并行调用链
 
-结合以上信息，在实际场景中我们可以通过整个系统的调用链的上下文、性能等指标信息，一下子就能够发现系统的痛点在哪儿 
+结合以上信息，在实际场景中我们可以通过整个系统的调用链的上下文、性能等指标信息，一下子就能够发现系统的痛点在哪儿
 
 ## Zipkin
 
@@ -122,7 +122,7 @@ $ go get -u github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc
 
 #### Server
 
-```
+```go
 package main
 
 import (
@@ -188,17 +188,17 @@ func main() {
 }
 ```
 
-- zipkin.NewHTTPCollector：创建一个 Zipkin HTTP 后端收集器  
+- zipkin.NewHTTPCollector：创建一个 Zipkin HTTP 后端收集器
 - zipkin.NewRecorder：创建一个基于 Zipkin 收集器的记录器
 - zipkin.NewTracer：创建一个 OpenTracing 跟踪器（兼容 Zipkin Tracer）
-- otgrpc.OpenTracingClientInterceptor：返回 grpc.UnaryServerInterceptor，不同点在于该拦截器会在 gRPC Metadata 中查找 OpenTracing SpanContext。如果找到则为该服务的 Span Context 的子节点 
+- otgrpc.OpenTracingClientInterceptor：返回 grpc.UnaryServerInterceptor，不同点在于该拦截器会在 gRPC Metadata 中查找 OpenTracing SpanContext。如果找到则为该服务的 Span Context 的子节点
 - otgrpc.LogPayloads：设置并返回 Option。作用是让 OpenTracing 在双向方向上记录应用程序的有效载荷（payload）
 
 总的来讲，就是初始化 Zipkin，其又包含收集器、记录器、跟踪器。再利用拦截器在 Server 端实现 SpanContext、Payload 的双向读取和管理
 
 #### Client
 
-```
+```go
 func main() {
 	// the same as zipkin server
 	// ...
@@ -212,7 +212,7 @@ func main() {
 
 - otgrpc.OpenTracingClientInterceptor：返回 grpc.UnaryClientInterceptor。该拦截器的核心功能在于：
 
-（1）OpenTracing SpanContext 注入 gRPC Metadata 
+（1）OpenTracing SpanContext 注入 gRPC Metadata
 
 （2）查看 context.Context 中的上下文关系，若存在父级 Span 则创建一个 ChildOf 引用，得到一个子 Span
 
@@ -241,10 +241,12 @@ func main() {
 希望你通过本章节的介绍和学习，能够了解其概念和搭建且应用一个追踪系统。
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-grpc-example](https://github.com/EDDYCJY/go-grpc-example)
 
 ### 资料
+
 - [opentracing](https://opentracing.io/)
 - [zipkin](https://zipkin.io)
-

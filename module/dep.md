@@ -1,28 +1,36 @@
-# 2.1 Go依赖管理工具dep
->Go dependency management tool 
+# 2.1 Go 依赖管理工具 dep
+
+> Go dependency management tool
+
 ## 环境要求
+
 - Golang >= 1.9
 - Dep
 
 ## 目前版本：
+
 ```
 dep:
  version     : devel
- build date  : 
- git hash    : 
+ build date  :
+ git hash    :
  go version  : go1.10
  go compiler : gc
  platform    : linux/amd64
 ```
+
 `Latest release`为`v0.4.1`
 
 ## 安装
+
 ```
 go get -u github.com/golang/dep/cmd/dep
 ```
+
 若`$GOPATH/bin`不在`PATH`下，则需要将生成的`dep`文件从`$GOPATH/bin`移动至`$GOBIAN`下
 
 ## 验证
+
 ```
 $ dep
 Dep is a tool for managing dependencies for Go projects
@@ -48,6 +56,7 @@ Use "dep help [command]" for more information about a command.
 ```
 
 ## 初始化
+
 在项目根目录执行初始化命令，`dep`在初始化时会分析应用程序所需要的所有依赖包，得出依赖包清单
 
 并生成`vendor`目录，`Gopkg.toml`、`Gopkg.lock`文件
@@ -55,15 +64,19 @@ Use "dep help [command]" for more information about a command.
 ![image](https://golang.github.io/dep/docs/assets/func-toggles.png)
 
 ### 默认初始化
+
 ```
 $ dep init -v
 ```
+
 直接从对应网络资源处下载
 
-### 优先从$GOPATH初始化
+### 优先从\$GOPATH 初始化
+
 ```
 $ dep init -gopath -v
 ```
+
 该命令会先从`$GOPATH`查找既有的依赖包，若不存在则从对应网络资源处下载
 
 ### Gopkg.toml
@@ -128,6 +141,7 @@ system2-data = "value that is used by another system"
 ## 常用命令
 
 ### dep ensure
+
 从项目中的`Gopkg.toml`和`Gopkg.lock`中分析关系图，并获取所需的依赖包
 
 用于确保本地的关系图、锁、依赖包清单完全一致
@@ -143,6 +157,7 @@ dep ensure -add github.com/pkg/foo@^1.0.1
 ```
 
 ### dep ensure -update
+
 将`Gopkg.lock`中的约定依赖项更新为`Gopkg.toml`允许的最新版本
 
 ## 最后

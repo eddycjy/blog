@@ -29,9 +29,9 @@ $ go get -u github.com/boombuler/barcode
 
 ### 工具包
 
-考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建  pkg/qrcode/qrcode.go 文件，写入内容：
+考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建 pkg/qrcode/qrcode.go 文件，写入内容：
 
-```
+```go
 package qrcode
 
 import (
@@ -138,7 +138,7 @@ func (q *QrCode) Encode(path string) (string, string, error) {
 
 另外在 `jpeg.Encode(f, code, nil)` 中，第三个参数可设置其图像质量，默认值为 75
 
-```
+```go
 // DefaultQuality is the default quality encoding parameter.
 const DefaultQuality = 75
 
@@ -163,7 +163,7 @@ type Options struct {
 
 修改 GenerateArticlePoster 方法，编写对应的生成逻辑，如下：
 
-```
+```go
 const (
 	QRCODE_URL = "https://github.com/EDDYCJY/blog#gin%E7%B3%BB%E5%88%97%E7%9B%AE%E5%BD%95"
 )
@@ -184,9 +184,9 @@ func GenerateArticlePoster(c *gin.Context) {
 
 ### 验证
 
-通过 POST 方法访问  `http://127.0.0.1:8000/api/v1/articles/poster/generate?token=$token`（注意 $token）
+通过 POST 方法访问 `http://127.0.0.1:8000/api/v1/articles/poster/generate?token=$token`（注意 \$token）
 
-![image](https://i.imgur.com/a6Ju16L.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xQmb6.jpg)
 
 通过检查两个点确定功能是否正常，如下：
 
@@ -194,8 +194,7 @@ func GenerateArticlePoster(c *gin.Context) {
 
 2、本地目录是否成功生成二维码图片
 
-![image](https://i.imgur.com/FdVf4z4.jpg)
-
+![image](https://s2.ax1x.com/2020/02/15/1xQCUU.jpg)
 
 ## 合并海报
 
@@ -203,7 +202,7 @@ func GenerateArticlePoster(c *gin.Context) {
 
 ### 背景图
 
-![image](https://i.imgur.com/Zm13Wgv.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xMXgs.jpg)
 
 将背景图另存为 runtime/qrcode/bg.jpg（实际应用，可存在 OSS 或其他地方）
 
@@ -211,7 +210,7 @@ func GenerateArticlePoster(c *gin.Context) {
 
 打开 service/article_service 目录，新建 article_poster.go 文件，写入内容：
 
-```
+```go
 package article_service
 
 import (
@@ -357,7 +356,7 @@ func (a *ArticlePosterBg) Generate() (string, string, error) {
 
 打开 routers/api/v1/article.go 文件，修改 GenerateArticlePoster 方法，编写最终的业务逻辑（含生成二维码及合并海报），如下：
 
-```
+```go
 const (
 	QRCODE_URL = "https://github.com/EDDYCJY/blog#gin%E7%B3%BB%E5%88%97%E7%9B%AE%E5%BD%95"
 )
@@ -413,39 +412,41 @@ func GenerateArticlePoster(c *gin.Context) {
 
 在 routers/router.go 文件，增加如下代码:
 
-```
+```go
 r.StaticFS("/qrcode", http.Dir(qrcode.GetQrCodeFullPath()))
 ```
 
 ### 验证
 
-![image](https://i.imgur.com/kR1sqR6.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xMLCQ.jpg)
 
 访问完整的 URL 路径，返回合成后的海报并扫除二维码成功则正确 🤓
 
-![image](https://i.imgur.com/0Mhmr44.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xMhjI.jpg)
 
 ## 总结
 
 在本章节实现了两个很常见的业务功能，分别是生成二维码和合并海报。希望你能够仔细阅读我给出的链接，这块的知识量不少，想要用好图像处理的功能，必须理解对应的思路，举一反三
 
-最后希望对你有所帮助  👌
+最后希望对你有所帮助 👌
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月02日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 02 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

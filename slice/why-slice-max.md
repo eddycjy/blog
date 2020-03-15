@@ -1,6 +1,6 @@
 # 7.2 Go Slice 最大容量大小是怎么来的
 
-![image](https://i.imgur.com/bQQRTTY.png)
+![image](https://s2.ax1x.com/2020/02/27/3wnHRU.png)
 
 ## 前言
 
@@ -8,7 +8,7 @@
 
 Go Slice 对应代码如下：
 
-```
+```go
 func makeslice(et *_type, len, cap int) slice {
 	maxElements := maxSliceCap(et.size)
 	if len < 0 || uintptr(len) > maxElements {
@@ -28,7 +28,7 @@ func makeslice(et *_type, len, cap int) slice {
 
 ## maxSliceCap
 
-```
+```go
 func maxSliceCap(elemsize uintptr) uintptr {
 	if elemsize < uintptr(len(maxElems)) {
 		return maxElems[elemsize]
@@ -39,7 +39,7 @@ func maxSliceCap(elemsize uintptr) uintptr {
 
 ## maxElems
 
-```
+```go
 var maxElems = [...]uintptr{
 	^uintptr(0),
 	maxAlloc / 1, maxAlloc / 2, maxAlloc / 3, maxAlloc / 4,
@@ -61,7 +61,7 @@ var maxElems = [...]uintptr{
 
 ### ^uintptr(0)
 
-```
+```go
 func main() {
 	log.Printf("uintptr: %v\n", uintptr(0))
 	log.Printf("^uintptr: %v\n", ^uintptr(0))
@@ -81,7 +81,7 @@ func main() {
 
 在分析之前，我们要知道 uintptr 的本质（真面目），也就是它的类型是什么，如下：
 
-```
+```go
 type uintptr uintptr
 ```
 
@@ -96,6 +96,7 @@ typedef	uint32		uintptr;
 ```
 
 通过对以上代码的分析，可得出以下结论：
+
 - 在 32 位系统下，uintptr 为 uint32 类型，占用大小为 4 个字节
 - 在 64 位系统下，uintptr 为 uint64 类型，占用大小为 8 个字节
 
@@ -103,7 +104,7 @@ typedef	uint32		uintptr;
 
 ^ 位运算符的作用是**按位异或**，如下：
 
-```
+```go
 func main() {
 	log.Println(^1)
 	log.Println(^uint64(0))
@@ -127,7 +128,6 @@ func main() {
 
 该数为有符号整数，最高位为符号位。低三位为表示数值。按位取反后为 1110，根据先前的说明，最高位为 1，因此表示为 -。取反后 110 对应十进制 -2
 
-
 #### ^uint64(0)
 
 二进制：0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
@@ -143,7 +143,7 @@ func main() {
 
 ### maxAlloc
 
-```
+```go
 const GoarchMips = 0
 const GoarchMipsle = 0
 const GoarchWasm = 0
@@ -167,7 +167,7 @@ maxAlloc = (1 << heapAddrBits) - (1-_64bit)*1
 
 我们再次回顾 `maxSliceCap` 的逻辑代码，这次重点放在控制逻辑，如下：
 
-```
+```go
 // func makeslice
 maxElements := maxSliceCap(et.size)
 
@@ -194,4 +194,4 @@ return maxAlloc / elemsize
 
 短短的一句话其实蕴含着不少知识点，希望这篇文章恰恰好可以帮你解惑
 
-注：本文 Go 代码基于版本 11.4 
+注：本文 Go 代码基于版本 11.4

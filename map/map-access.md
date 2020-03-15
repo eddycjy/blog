@@ -16,20 +16,20 @@
 
 首先我们一起看看 Go map 的基础数据结构，先有一个大致的印象
 
-![image](https://i.imgur.com/EAJgaWk.png)
+![image](https://s2.ax1x.com/2020/02/27/3dLgjH.png)
 
 ### hmap
 
-```
+```go
 type hmap struct {
-	count     int 
+	count     int
 	flags     uint8
 	B         uint8
 	noverflow uint16
 	hash0     uint32
 	buckets    unsafe.Pointer
 	oldbuckets unsafe.Pointer
-	nevacuate  uintptr 
+	nevacuate  uintptr
 	extra *mapextra
 }
 
@@ -42,16 +42,16 @@ type mapextra struct {
 
 - count：map 的大小，也就是 len() 的值。代指 map 中的键值对个数
 - flags：状态标识，主要是 goroutine 写入和扩容机制的相关状态控制。并发读写的判断条件之一就是该值
-- B：桶，最大可容纳的元素数量，值为 **负载因子（默认 6.5） * 2 ^ B**，是 2 的指数
+- B：桶，最大可容纳的元素数量，值为 **负载因子（默认 6.5） \* 2 ^ B**，是 2 的指数
 - noverflow：溢出桶的数量
 - hash0：哈希因子
 - buckets：保存当前桶数据的指针地址（指向一段连续的内存地址，主要存储键值对数据）
 - oldbuckets，保存旧桶的指针地址
 - nevacuate：迁移进度
 - extra：原有 buckets 满载后，会发生扩容动作，在 Go 的机制中使用了增量扩容，如下为细项：
-   - `overflow` 为 `hmap.buckets` （当前）溢出桶的指针地址
-   - `oldoverflow` 为 `hmap.oldbuckets` （旧）溢出桶的指针地址
-   - `nextOverflow` 为空闲溢出桶的指针地址
+  - `overflow` 为 `hmap.buckets` （当前）溢出桶的指针地址
+  - `oldoverflow` 为 `hmap.oldbuckets` （旧）溢出桶的指针地址
+  - `nextOverflow` 为空闲溢出桶的指针地址
 
 在这里我们要注意几点，如下：
 
@@ -61,9 +61,9 @@ type mapextra struct {
 
 ### bmap
 
-![image](https://i.imgur.com/zHG1CId.png)
+![image](https://s2.ax1x.com/2020/02/27/3dLz5V.png)
 
-```
+```go
 bucketCntBits = 3
 bucketCnt     = 1 << bucketCntBits
 ...
@@ -71,6 +71,7 @@ type bmap struct {
 	tophash [bucketCnt]uint8
 }
 ```
+
 - tophash：key 的 hash 值高 8 位
 - keys：8 个 key
 - values：8 个 value
@@ -88,19 +89,19 @@ tophash 是个长度为 8 的数组，代指桶最大可容纳的键值对为 8�
 
 在这里我们留意到，存储 k 和 v 的载体并不是用 `k/v/k/v/k/v/k/v` 的模式，而是 `k/k/k/k/v/v/v/v` 的形式去存储。这是为什么呢？
 
-```
+```go
 map[int64]int8
 ```
 
 在这个例子中，如果按照 `k/v/k/v/k/v/k/v` 的形式存放的话，虽然每个键值对的值都只占用 1 个字节。但是却需要 7 个填充字节来补齐内存空间。最终就会造成大量的内存 “浪费”
 
-![image](https://i.imgur.com/yNWBDqD.png)
+![image](https://s2.ax1x.com/2020/02/27/3dOK2D.png)
 
 但是如果以 `k/k/k/k/v/v/v/v` 的形式存放的话，就能够解决因对齐所 "浪费" 的内存空间
 
 因此这部分的拆分主要是考虑到内存对齐的问题，虽然相对会复杂一点，但依然值得如此设计
 
-![image](https://i.imgur.com/DssSFRr.png)
+![image](https://s2.ax1x.com/2020/02/27/3dODqs.png)
 
 #### overflow
 
@@ -108,13 +109,13 @@ map[int64]int8
 
 而在 Go map 中当 `hmap.buckets` 满了后，就会使用溢出桶接着存储。我们结合分析可确定 Go 采用的是数组 + 链地址法解决哈希冲突
 
-![image](https://i.imgur.com/uHeHP8k.png)
+![image](https://s2.ax1x.com/2020/02/27/3dO7Ix.png)
 
 ## 初始化
 
 ### 用法
 
-```
+```go
 m := make(map[int32]int32)
 ```
 
@@ -122,7 +123,7 @@ m := make(map[int32]int32)
 
 通过阅读源码可得知，初始化方法有好几种。函数原型如下：
 
-```
+```go
 func makemap_small() *hmap
 func makemap64(t *maptype, hint int64, h *hmap) *hmap
 func makemap(t *maptype, hint int, h *hmap) *hmap
@@ -134,7 +135,7 @@ func makemap(t *maptype, hint int, h *hmap) *hmap
 
 ### 源码
 
-```
+```go
 func makemap(t *maptype, hint int, h *hmap) *hmap {
 	if hint < 0 || hint > int(maxSliceCap(t.bucket.size)) {
 		hint = 0
@@ -177,7 +178,7 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 
 而当 `hint` 小于 8 时，这种问题**相对**就不会凸显的太明显，如下：
 
-```
+```go
 func makemap_small() *hmap {
 	h := new(hmap)
 	h.hash0 = fastrand()
@@ -187,7 +188,7 @@ func makemap_small() *hmap {
 
 ### 图示
 
-![image](https://i.imgur.com/Hoi01Qt.png)
+![image](https://s2.ax1x.com/2020/02/27/3dOLRO.png)
 
 ## 访问
 
@@ -202,7 +203,7 @@ v, ok := m[i]
 
 在实现 map 元素访问上有好几种方法，主要是包含针对 32/64 位、string 类型的特殊处理，总的函数原型如下：
 
-```
+```go
 mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer
 mapaccess2(t *maptype, h *hmap, key unsafe.Pointer) (unsafe.Pointer, bool)
 
@@ -228,7 +229,7 @@ mapaccess1_faststr(t *maptype, h *hmap, ky string) unsafe.Pointer
 
 ### 源码
 
-```
+```go
 func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	...
 	if h == nil || h.count == 0 {
@@ -290,7 +291,7 @@ func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 
 ### 图示
 
-![image](https://i.imgur.com/Y4rmolX.png)
+![image](https://s2.ax1x.com/2020/02/27/3dOOzD.png)
 
 ## 总结
 

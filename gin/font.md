@@ -25,7 +25,7 @@ $ go get -u github.com/golang/freetype
 
 打开 service/article_service/article_poster.go 文件，增加绘制文字的业务逻辑，如下：
 
-```
+```go
 type DrawText struct {
 	JPG    draw.Image
 	Merged *os.File
@@ -86,7 +86,7 @@ func (a *ArticlePosterBg) DrawPoster(d *DrawText, fontName string) error {
 
 1、freetype.NewContext：创建一个新的 Context，会对其设置一些默认值
 
-```
+```go
 func NewContext() *Context {
 	return &Context{
 		r:        raster.NewRasterizer(0, 0),
@@ -109,7 +109,7 @@ func NewContext() *Context {
 
 7、fc.SetSrc：设置绘制操作的源图像，通常为 [image.Uniform](https://golang.org/pkg/image/#Uniform)
 
-```
+```go
 var (
         // Black is an opaque black uniform image.
         Black = NewUniform(color.Black)
@@ -128,7 +128,7 @@ var (
 
 打开 service/article_service/article_poster.go 方法，在 Generate 方法增加绘制文字的代码逻辑，如下：
 
-```
+```go
 func (a *ArticlePosterBg) Generate() (string, string, error) {
 	fullPath := qrcode.GetQrCodeFullPath()
 	fileName, path, err := a.Qr.Encode(fullPath)
@@ -170,27 +170,29 @@ func (a *ArticlePosterBg) Generate() (string, string, error) {
 
 访问生成文章海报的接口 `$HOST/api/v1/articles/poster/generate?token=$token`，检查其生成结果，如下图
 
-![image](https://i.imgur.com/qaaG0LE.jpg)
+![image](https://s2.ax1x.com/2020/02/15/1xKBTS.jpg)
 
 ## 总结
 
 在本章节在 [连载十五](https://github.com/EDDYCJY/blog/blob/master/golang/gin/2018-07-04-Gin%E5%AE%9E%E8%B7%B5-%E8%BF%9E%E8%BD%BD%E5%8D%81%E4%BA%94-%E7%94%9F%E6%88%90%E4%BA%8C%E7%BB%B4%E7%A0%81-%E5%90%88%E5%B9%B6%E6%B5%B7%E6%8A%A5.md) 的基础上增加了绘制文字，在实现上并不困难，而这两块需求一般会同时出现，大家可以多加练习，了解里面的逻辑和其他 API 😁
 
 ## 参考
+
 ### 本系列示例代码
+
 - [go-gin-example](https://github.com/EDDYCJY/go-gin-example)
 
 ## 关于
 
 ### 修改记录
 
-- 第一版：2018年02月16日发布文章
-- 第二版：2019年10月02日修改文章
+- 第一版：2018 年 02 月 16 日发布文章
+- 第二版：2019 年 10 月 02 日修改文章
 
 ## ？
 
 如果有任何疑问或错误，欢迎在 [issues](https://github.com/EDDYCJY/blog) 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。
 
-### 我的公众号 
+### 我的公众号
 
 ![image](https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg)

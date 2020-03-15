@@ -1,6 +1,6 @@
 # 7.1 深入理解 Go Slice
 
-![image](https://i.imgur.com/lIoSqWC.png)
+![image](https://s2.ax1x.com/2020/02/27/3dXSeA.png)
 
 ## 是什么
 
@@ -10,7 +10,7 @@
 
 ### Array
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -25,7 +25,7 @@ func main() {
 
 我们可得知在 Go 中，数组类型需要指定长度和元素类型。在上述代码中，可得知 `[3]int{}` 表示 3 个整数的数组，并进行了初始化。底层数据存储为一段连续的内存空间，通过固定的索引值（下标）进行检索
 
-![image](https://i.imgur.com/uyO3sS6.png)
+![image](https://s2.ax1x.com/2020/02/27/3dXASS.png)
 
 数组在声明后，其元素的初始值（也就是零值）为 0。并且该变量可以直接使用，不需要特殊操作
 
@@ -34,13 +34,13 @@ func main() {
 #### 输出结果
 
 ```
-nums: [1 0 0] 
-n: 2 
+nums: [1 0 0]
+n: 2
 ```
 
 ### Slice
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -55,9 +55,9 @@ Slice 是对 Array 的抽象，类型为 `[]T`。在上述代码中，`dnums` �
 
 ## 数据结构
 
-![image](https://i.imgur.com/hRRFLOl.png)
+![image](https://s2.ax1x.com/2020/02/27/3wmr3F.png)
 
-```
+```go
 type slice struct {
 	array unsafe.Pointer
 	len   int
@@ -77,7 +77,7 @@ Slice 的底层数据结构共分为三部分，如下：
 
 为了更好的理解，我们回顾上小节的代码便于演示，如下：
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -88,13 +88,13 @@ func main() {
 }
 ```
 
-![image](https://i.imgur.com/fL1l0Zu.png)
+![image](https://s2.ax1x.com/2020/02/27/3wmoge.png)
 
 在代码中，可观察到 `dnums := nums[:]`，这段代码确定了 Slice 的 Pointer 指向数组，且 len 和 cap 都为数组的基础属性。与图示表达一致
 
 ### len、cap 不同
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -105,7 +105,7 @@ func main() {
 }
 ```
 
-![image](https://i.imgur.com/Xkf5tvZ.png)
+![image](https://s2.ax1x.com/2020/02/27/3wmxC8.png)
 
 #### 输出结果
 
@@ -126,7 +126,7 @@ Slice 的创建有两种方式，如下：
 
 它会在调用 make 的时候，分配一个数组并返回引用该数组的 Slice
 
-```
+```go
 func makeslice(et *_type, len, cap int) slice {
 	maxElements := maxSliceCap(et.size)
 	if len < 0 || uintptr(len) > maxElements {
@@ -156,14 +156,14 @@ func makeslice(et *_type, len, cap int) slice {
 
 ### zerobase
 
-```
+```go
 func growslice(et *_type, old slice, cap int) slice {
 	...
 	if et.size == 0 {
 		if cap < old.cap {
 			panic(errorString("growslice: cap out of range"))
 		}
-		
+
 		return slice{unsafe.Pointer(&zerobase), old.len, cap}
 	}
     ...
@@ -174,7 +174,7 @@ func growslice(et *_type, old slice, cap int) slice {
 
 ### 扩容 - 计算策略
 
-```
+```go
 func growslice(et *_type, old slice, cap int) slice {
     ...
     newcap := old.cap
@@ -203,7 +203,7 @@ func growslice(et *_type, old slice, cap int) slice {
 
 ### 扩容 - 内存策略
 
-```
+```go
 func growslice(et *_type, old slice, cap int) slice {
     ...
     var overflow bool
@@ -272,7 +272,7 @@ func growslice(et *_type, old slice, cap int) slice {
 
 #### 一、同根
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -297,13 +297,13 @@ dnums: [5 0], len: 2, cap: 3
 
 在**未扩容前**，Slice array 指向所引用的 Array。因此在 Slice 上的变更。会直接修改到原始 Array 上（两者所引用的是同一个）
 
-![image](https://i.imgur.com/wCny9zI.png)
+![image](https://s2.ax1x.com/2020/02/27/3wnibn.png)
 
 #### 二、时过境迁
 
 随着 Slice 不断 append，内在的元素越来越多，终于触发了扩容。如下代码：
 
-```
+```go
 func main() {
 	nums := [3]int{}
 	nums[0] = 1
@@ -331,13 +331,13 @@ dnums: [1 1 2 3], len: 4, cap: 6
 
 这时候内部就会重新申请一块内存空间，将原本的元素**拷贝**一份到新的内存空间上。此时其与原本的数组就没有任何关联关系了，**再进行修改值也不会变动到原始数组**。这是需要注意的
 
-![image](https://i.imgur.com/A3kR8nX.png)
+![image](https://s2.ax1x.com/2020/02/27/3wnAU0.png)
 
 ## 复制
 
 ### 原型
 
-```
+```go
 func copy（dst，src [] T）int
 ```
 
@@ -345,7 +345,7 @@ copy 函数将数据从**源 Slice**复制到**目标 Slice**。它返回复制�
 
 ### 示例
 
-```
+```go
 func main() {
 	dst := []int{1, 2, 3}
 	src := []int{4, 5, 6, 7, 8}
@@ -359,7 +359,7 @@ copy 函数支持在不同长度的 Slice 之间进行复制，若出现长度�
 
 那么在源码中是如何完成复制这一个行为的呢？我们来一起看看源码的实现，如下：
 
-```
+```go
 func slicecopy(to, fm slice, width uintptr) int {
 	if fm.len == 0 || to.len == 0 {
 		return 0
@@ -397,11 +397,11 @@ func slicecopy(to, fm slice, width uintptr) int {
 
 ### Empty
 
-```
+```go
 func main() {
 	nums := []int{}
 	renums := make([]int, 0)
-	
+
 	fmt.Printf("nums: %v, len: %d, cap: %d\n", nums, len(nums), cap(nums))
 	fmt.Printf("renums: %v, len: %d, cap: %d\n", renums, len(renums), cap(renums))
 }
@@ -416,7 +416,7 @@ renums: [], len: 0, cap: 0
 
 ### Nil
 
-```
+```go
 func main() {
     var nums []int
 }
@@ -432,7 +432,7 @@ nums: [], len: 0, cap: 0
 
 乍一看，Empty Slice 和 Nil Slice 好像一模一样？不管是 len，还是 cap 都为 0。好像没区别？我们再看看如下代码：
 
-```
+```go
 func main() {
 	var nums []int
 	renums := make([]int, 0)
@@ -455,12 +455,11 @@ nums is nil.
 
 ##### Empty
 
-![image](https://i.imgur.com/2DFo7H0.png)
+![image](https://s2.ax1x.com/2020/02/27/3wncRS.png)
 
 ##### Nil
 
-![image](https://i.imgur.com/WClJnJZ.png)
-
+![image](https://s2.ax1x.com/2020/02/27/3wn5aq.png)
 
 从图示中可以看出来，两者有本质上的区别。其底层数组的指向指针是不一样的，Nil Slice 指向的是 nil，Empty Slice 指向的是实际存在的空数组地址
 
