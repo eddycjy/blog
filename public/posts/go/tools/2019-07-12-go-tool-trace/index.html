@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="Go 大杀器之跟踪剖析 trace">
+<meta itemprop="description" content="在 Go 中有许许多多的分析工具，在之前我有写过一篇 《Golang 大杀器之性能剖析 PProf》 来介绍 PProf，如果有小伙伴感兴趣可以去我博客看看。
+但单单使用 PProf 有时候不一定足够完整，因为在真实的程序中还包含许多的隐藏动作，例如 Goroutine 在执行时会做哪些操作？执行/阻塞了多长时间？在什么时候阻止？在哪里被阻止的？谁又锁/解锁了它们？GC 是怎么影响到 Goroutine 的执行的？这些东西用 PProf 是很难分析出来的，但如果你又想知道上述的答案的话，你可以用本文的主角 go tool trace 来打开新世界的大门。目录如下：
+初步了解 import ( &#34;os&#34; &#34;runtime/trace&#34; ) func main() { trace.Start(os.Stderr) defer trace.Stop() ch := make(chan string) go func() { ch &lt;- &#34;EDDYCJY&#34; }() &lt;-ch } 生成跟踪文件：
+$ go run main.go 2&gt; trace.out 启动可视化界面：
+$ go tool trace trace.out 2019/06/22 16:14:52 Parsing trace... 2019/06/22 16:14:52 Splitting trace... 2019/06/22 16:14:52 Opening browser.">
+<meta itemprop="datePublished" content="2019-07-12T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-07-12T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="342">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="Go 大杀器之跟踪剖析 trace" />
+<meta property="og:description" content="在 Go 中有许许多多的分析工具，在之前我有写过一篇 《Golang 大杀器之性能剖析 PProf》 来介绍 PProf，如果有小伙伴感兴趣可以去我博客看看。
+但单单使用 PProf 有时候不一定足够完整，因为在真实的程序中还包含许多的隐藏动作，例如 Goroutine 在执行时会做哪些操作？执行/阻塞了多长时间？在什么时候阻止？在哪里被阻止的？谁又锁/解锁了它们？GC 是怎么影响到 Goroutine 的执行的？这些东西用 PProf 是很难分析出来的，但如果你又想知道上述的答案的话，你可以用本文的主角 go tool trace 来打开新世界的大门。目录如下：
+初步了解 import ( &#34;os&#34; &#34;runtime/trace&#34; ) func main() { trace.Start(os.Stderr) defer trace.Stop() ch := make(chan string) go func() { ch &lt;- &#34;EDDYCJY&#34; }() &lt;-ch } 生成跟踪文件：
+$ go run main.go 2&gt; trace.out 启动可视化界面：
+$ go tool trace trace.out 2019/06/22 16:14:52 Parsing trace... 2019/06/22 16:14:52 Splitting trace... 2019/06/22 16:14:52 Opening browser." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/tools/2019-07-12-go-tool-trace/" />
+<meta property="article:published_time" content="2019-07-12T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-07-12T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Go 大杀器之跟踪剖析 trace"/>
+<meta name="twitter:description" content="在 Go 中有许许多多的分析工具，在之前我有写过一篇 《Golang 大杀器之性能剖析 PProf》 来介绍 PProf，如果有小伙伴感兴趣可以去我博客看看。
+但单单使用 PProf 有时候不一定足够完整，因为在真实的程序中还包含许多的隐藏动作，例如 Goroutine 在执行时会做哪些操作？执行/阻塞了多长时间？在什么时候阻止？在哪里被阻止的？谁又锁/解锁了它们？GC 是怎么影响到 Goroutine 的执行的？这些东西用 PProf 是很难分析出来的，但如果你又想知道上述的答案的话，你可以用本文的主角 go tool trace 来打开新世界的大门。目录如下：
+初步了解 import ( &#34;os&#34; &#34;runtime/trace&#34; ) func main() { trace.Start(os.Stderr) defer trace.Stop() ch := make(chan string) go func() { ch &lt;- &#34;EDDYCJY&#34; }() &lt;-ch } 生成跟踪文件：
+$ go run main.go 2&gt; trace.out 启动可视化界面：
+$ go tool trace trace.out 2019/06/22 16:14:52 Parsing trace... 2019/06/22 16:14:52 Splitting trace... 2019/06/22 16:14:52 Opening browser."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>Go 大杀器之跟踪剖析 trace</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Jul 12, 2019</span></div>
+				<h1>Go 大杀器之跟踪剖析 trace</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/15/1x1phF.png" alt="image"></p>
+<p>在 Go 中有许许多多的分析工具，在之前我有写过一篇 《Golang 大杀器之性能剖析 PProf》 来介绍 PProf，如果有小伙伴感兴趣可以去我博客看看。</p>
+<p>但单单使用 PProf 有时候不一定足够完整，因为在真实的程序中还包含许多的隐藏动作，例如 Goroutine 在执行时会做哪些操作？执行/阻塞了多长时间？在什么时候阻止？在哪里被阻止的？谁又锁/解锁了它们？GC 是怎么影响到 Goroutine 的执行的？这些东西用 PProf 是很难分析出来的，但如果你又想知道上述的答案的话，你可以用本文的主角 <code>go tool trace</code> 来打开新世界的大门。目录如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1P1J.png" alt="image"></p>
+<h2 id="初步了解">初步了解<a href="#初步了解" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;os&#34;</span>
+	<span class="s">&#34;runtime/trace&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">trace</span><span class="p">.</span><span class="nf">Start</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stderr</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">trace</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
+
+	<span class="nx">ch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">string</span><span class="p">)</span>
+	<span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="s">&#34;EDDYCJY&#34;</span>
+	<span class="p">}()</span>
+
+	<span class="o">&lt;-</span><span class="nx">ch</span>
+<span class="p">}</span>
+</code></pre></div><p>生成跟踪文件：</p>
+<pre><code>$ go run main.go 2&gt; trace.out
+</code></pre><p>启动可视化界面：</p>
+<pre><code>$ go tool trace trace.out
+2019/06/22 16:14:52 Parsing trace...
+2019/06/22 16:14:52 Splitting trace...
+2019/06/22 16:14:52 Opening browser. Trace viewer is listening on http://127.0.0.1:57321
+</code></pre><p>查看可视化界面：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1FXR.png" alt="image"></p>
+<ul>
+<li>View trace：查看跟踪</li>
+<li>Goroutine analysis：Goroutine 分析</li>
+<li>Network blocking profile：网络阻塞概况</li>
+<li>Synchronization blocking profile：同步阻塞概况</li>
+<li>Syscall blocking profile：系统调用阻塞概况</li>
+<li>Scheduler latency profile：调度延迟概况</li>
+<li>User defined tasks：用户自定义任务</li>
+<li>User defined regions：用户自定义区域</li>
+<li>Minimum mutator utilization：最低 Mutator 利用率</li>
+</ul>
+<h3 id="scheduler-latency-profile">Scheduler latency profile<a href="#scheduler-latency-profile" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在刚开始查看问题时，除非是很明显的现象，否则不应该一开始就陷入细节，因此我们一般先查看 “Scheduler latency profile”，我们能通过 Graph 看到整体的调用开销情况，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1K9e.png" alt="image"></p>
+<p>演示程序比较简单，因此这里就两块，一个是 <code>trace</code> 本身，另外一个是 <code>channel</code> 的收发。</p>
+<h3 id="goroutine-analysis">Goroutine analysis<a href="#goroutine-analysis" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>第二步看 “Goroutine analysis”，我们能通过这个功能看到整个运行过程中，每个函数块有多少个有 Goroutine 在跑，并且观察每个的 Goroutine 的运行开销都花费在哪个阶段。如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1ljA.png" alt="image"></p>
+<p>通过上图我们可以看到共有 3 个 goroutine，分别是 <code>runtime.main</code>、<code>runtime/trace.Start.func1</code>、<code>main.main.func1</code>，那么它都做了些什么事呢，接下来我们可以通过点击具体细项去观察。如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x18Bt.jpg" alt="image"></p>
+<p>同时也可以看到当前 Goroutine 在整个调用耗时中的占比，以及 GC 清扫和 GC 暂停等待的一些开销。如果你觉得还不够，可以把图表下载下来分析，相当于把整个 Goroutine 运行时掰开来看了，这块能够很好的帮助我们<strong>对 Goroutine 运行阶段做一个的剖析，可以得知到底慢哪，然后再决定下一步的排查方向</strong>。如下：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>含义</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Execution Time</td>
+<td>执行时间</td>
+<td>3140ns</td>
+</tr>
+<tr>
+<td>Network Wait Time</td>
+<td>网络等待时间</td>
+<td>0ns</td>
+</tr>
+<tr>
+<td>Sync Block Time</td>
+<td>同步阻塞时间</td>
+<td>0ns</td>
+</tr>
+<tr>
+<td>Blocking Syscall Time</td>
+<td>调用阻塞时间</td>
+<td>0ns</td>
+</tr>
+<tr>
+<td>Scheduler Wait Time</td>
+<td>调度等待时间</td>
+<td>14ns</td>
+</tr>
+<tr>
+<td>GC Sweeping</td>
+<td>GC 清扫</td>
+<td>0ns</td>
+</tr>
+<tr>
+<td>GC Pause</td>
+<td>GC 暂停</td>
+<td>0ns</td>
+</tr>
+</tbody>
+</table>
+<h3 id="view-trace">View trace<a href="#view-trace" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在对当前程序的 Goroutine 运行分布有了初步了解后，我们再通过 “查看跟踪” 看看之间的关联性，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1GHP.png" alt="image"></p>
+<p>这个跟踪图粗略一看，相信有的小伙伴会比较懵逼，我们可以依据注解一块块查看，如下：</p>
+<ol>
+<li>时间线：显示执行的时间单元，根据时间维度的不同可以调整区间，具体可执行 <code>shift</code> + <code>?</code> 查看帮助手册。</li>
+<li>堆：显示执行期间的内存分配和释放情况。</li>
+<li>协程：显示在执行期间的每个 Goroutine 运行阶段有多少个协程在运行，其包含 GC 等待（GCWaiting）、可运行（Runnable）、运行中（Running）这三种状态。</li>
+<li>OS 线程：显示在执行期间有多少个线程在运行，其包含正在调用 Syscall（InSyscall）、运行中（Running）这两种状态。</li>
+<li>虚拟处理器：每个虚拟处理器显示一行，虚拟处理器的数量一般默认为系统内核数。</li>
+<li>协程和事件：显示在每个虚拟处理器上有什么 Goroutine 正在运行，而连线行为代表事件关联。</li>
+</ol>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1YAf.jpg" alt="image"></p>
+<p>点击具体的 Goroutine 行为后可以看到其相关联的详细信息，这块很简单，大家实际操作一下就懂了。文字解释如下：</p>
+<ul>
+<li>Start：开始时间</li>
+<li>Wall Duration：持续时间</li>
+<li>Self Time：执行时间</li>
+<li>Start Stack Trace：开始时的堆栈信息</li>
+<li>End Stack Trace：结束时的堆栈信息</li>
+<li>Incoming flow：输入流</li>
+<li>Outgoing flow：输出流</li>
+<li>Preceding events：之前的事件</li>
+<li>Following events：之后的事件</li>
+<li>All connected：所有连接的事件</li>
+</ul>
+<h3 id="view-events">View Events<a href="#view-events" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>我们可以通过点击 View Options-Flow events、Following events 等方式，查看我们应用运行中的事件流情况。如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1d3Q.png" alt="image"></p>
+<p>通过分析图上的事件流，我们可得知这程序从 <code>G1 runtime.main</code> 开始运行，在运行时创建了 2 个 Goroutine，先是创建 <code>G18 runtime/trace.Start.func1</code>，然后再是 <code>G19 main.main.func1</code> 。而同时我们可以通过其 Goroutine Name 去了解它的调用类型，如：<code>runtime/trace.Start.func1</code> 就是程序中在 <code>main.main</code> 调用了 <code>runtime/trace.Start</code> 方法，然后该方法又利用协程创建了一个闭包 <code>func1</code> 去进行调用。</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1Dun.png" alt="image"></p>
+<p>在这里我们结合开头的代码去看的话，很明显就是 <code>ch</code> 的输入输出的过程了。</p>
+<h2 id="结合实战">结合实战<a href="#结合实战" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>今天生产环境突然出现了问题，机智的你早已埋好 <code>_ &quot;net/http/pprof&quot;</code> 这个神奇的工具，你麻利的执行了如下命令：</p>
+<ul>
+<li>curl http://127.0.0.1:6060/debug/pprof/trace?seconds=20 &gt; trace.out</li>
+<li>go tool trace trace.out</li>
+</ul>
+<h3 id="view-trace-1">View trace<a href="#view-trace-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>你很快的看到了熟悉的 List 界面，然后不信邪点开了 View trace 界面，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1cNT.jpg" alt="image"></p>
+<p>完全看懵的你，稳住，对着合适的区域执行快捷键 <code>W</code> 不断地放大时间线，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1x1ID1.jpg" alt="image"></p>
+<p>经过初步排查，你发现上述绝大部分的 G 竟然都和 <code>google.golang.org/grpc.(*Server).Serve.func</code> 有关，关联的一大串也是 <code>Serve</code> 所触发的相关动作。</p>
+<p><img src="https://s2.ax1x.com/2020/02/16/3pNw9I.jpg" alt="image"></p>
+<p>这时候有经验的你心里已经有了初步结论，你可以继续追踪 View trace 深入进去，不过我建议先鸟瞰全貌，因此我们再往下看 “Network blocking profile” 和 “Syscall blocking profile” 所提供的信息，如下：</p>
+<h3 id="network-blocking-profile">Network blocking profile<a href="#network-blocking-profile" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/16/3pNfCn.jpg" alt="image"></p>
+<h3 id="syscall-blocking-profile">Syscall blocking profile<a href="#syscall-blocking-profile" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/16/3pN7bF.jpg" alt="image"></p>
+<p>通过对以上三项的跟踪分析，加上这个泄露，这个阻塞的耗时，这个涉及的内部方法名，很明显就是哪位又忘记关闭客户端连接了，赶紧改改改。</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>通过本文我们习得了 <code>go tool trace</code> 的武林秘籍，它能够跟踪捕获各种执行中的事件，例如 Goroutine 的创建/阻塞/解除阻塞，Syscall 的进入/退出/阻止，GC 事件，Heap 的大小改变，Processor 启动/停止等等。</p>
+<p>希望你能够用好 Go 的两大杀器 pprof + trace 组合，此乃排查好搭档，谁用谁清楚，即使他并不万能。</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="https://about.sourcegraph.com/go/an-introduction-to-go-tool-trace-rhys-hiltner">https://about.sourcegraph.com/go/an-introduction-to-go-tool-trace-rhys-hiltner</a></li>
+<li><a href="https://www.itcodemonkey.com/article/5419.html">https://www.itcodemonkey.com/article/5419.html</a></li>
+<li><a href="https://making.pusher.com/go-tool-trace/">https://making.pusher.com/go-tool-trace/</a></li>
+<li><a href="https://golang.org/cmd/trace/">https://golang.org/cmd/trace/</a></li>
+<li><a href="https://docs.google.com/document/d/1FP5apqzBgr7ahCCgFO-yoVhk4YZrNIDNf9RybngBc14/pub">https://docs.google.com/document/d/1FP5apqzBgr7ahCCgFO-yoVhk4YZrNIDNf9RybngBc14/pub</a></li>
+<li><a href="https://godoc.org/runtime/trace">https://godoc.org/runtime/trace</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>342 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-07-12 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#初步了解">初步了解</a>
+      <ul>
+        <li><a href="#scheduler-latency-profile">Scheduler latency profile</a></li>
+        <li><a href="#goroutine-analysis">Goroutine analysis</a></li>
+        <li><a href="#view-trace">View trace</a></li>
+        <li><a href="#view-events">View Events</a></li>
+      </ul>
+    </li>
+    <li><a href="#结合实战">结合实战</a>
+      <ul>
+        <li><a href="#view-trace-1">View trace</a></li>
+        <li><a href="#network-blocking-profile">Network blocking profile</a></li>
+        <li><a href="#syscall-blocking-profile">Syscall blocking profile</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/tools/2019-08-19-godebug-sched/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>用 GODEBUG 看调度跟踪</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/talk/2019-06-29-talking-grpc/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>从实践到原理，带你参透 gRPC</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

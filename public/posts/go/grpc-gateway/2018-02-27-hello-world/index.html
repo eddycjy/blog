@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载二」Hello World">
+<meta itemprop="description" content="这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念
+需求 由于本实践偏向Grpc&#43;Grpc Gateway的方面，我们的需求是同一个服务端支持Rpc和Restful Api，那么就意味着http2、TLS等等的应用，功能方面就是一个服务端能够接受来自grpc和Restful Api的请求并响应
+一、初始化目录 我们先在$GOPATH中新建grpc-hello-world文件夹，我们项目的初始目录目录如下：
+grpc-hello-world/ ├── certs ├── client ├── cmd ├── pkg ├── proto │ ├── google │ │ └── api └── server  certs：证书凭证 client：客户端 cmd：命令行 pkg：第三方公共模块 proto：protobuf的一些相关文件（含.proto、pb.go、.pb.gw.go)，google/api中用于存放annotations.proto、http.proto server：服务端  二、制作证书 在服务端支持Rpc和Restful Api，需要用到TLS，因此我们要先制作证书
+进入certs目录，生成TLS所需的公钥密钥文件
+私钥 openssl genrsa -out server.key 2048 openssl ecparam -genkey -name secp384r1 -out server.key  openssl genrsa：生成RSA私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认512 openssl ecparam：生成ECC私钥，命令为椭圆曲线密钥参数生成及操作，本文中ECC曲线选择的是secp384r1  自签名公钥 openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650  openssl req：生成自签名证书，-new指生成证书请求、-sha256指使用sha256加密、-key指定私钥文件、-x509指输出证书、-days 3650为有效期，此后则输入证书拥有者信息  填写信息 Country Name (2 letter code) [XX]: State or Province Name (full name) []: Locality Name (eg, city) [Default City]: Organization Name (eg, company) [Default Company Ltd]: Organizational Unit Name (eg, section) []: Common Name (eg, your name or your server&#39;s hostname) []:grpc server name Email Address []: 三、proto 编写 1、 google.">
+<meta itemprop="datePublished" content="2018-02-27T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-02-27T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1928">
+
+
+
+<meta itemprop="keywords" content="go,grpc-gateway," /><meta property="og:title" content="「连载二」Hello World" />
+<meta property="og:description" content="这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念
+需求 由于本实践偏向Grpc&#43;Grpc Gateway的方面，我们的需求是同一个服务端支持Rpc和Restful Api，那么就意味着http2、TLS等等的应用，功能方面就是一个服务端能够接受来自grpc和Restful Api的请求并响应
+一、初始化目录 我们先在$GOPATH中新建grpc-hello-world文件夹，我们项目的初始目录目录如下：
+grpc-hello-world/ ├── certs ├── client ├── cmd ├── pkg ├── proto │ ├── google │ │ └── api └── server  certs：证书凭证 client：客户端 cmd：命令行 pkg：第三方公共模块 proto：protobuf的一些相关文件（含.proto、pb.go、.pb.gw.go)，google/api中用于存放annotations.proto、http.proto server：服务端  二、制作证书 在服务端支持Rpc和Restful Api，需要用到TLS，因此我们要先制作证书
+进入certs目录，生成TLS所需的公钥密钥文件
+私钥 openssl genrsa -out server.key 2048 openssl ecparam -genkey -name secp384r1 -out server.key  openssl genrsa：生成RSA私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认512 openssl ecparam：生成ECC私钥，命令为椭圆曲线密钥参数生成及操作，本文中ECC曲线选择的是secp384r1  自签名公钥 openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650  openssl req：生成自签名证书，-new指生成证书请求、-sha256指使用sha256加密、-key指定私钥文件、-x509指输出证书、-days 3650为有效期，此后则输入证书拥有者信息  填写信息 Country Name (2 letter code) [XX]: State or Province Name (full name) []: Locality Name (eg, city) [Default City]: Organization Name (eg, company) [Default Company Ltd]: Organizational Unit Name (eg, section) []: Common Name (eg, your name or your server&#39;s hostname) []:grpc server name Email Address []: 三、proto 编写 1、 google." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/grpc-gateway/2018-02-27-hello-world/" />
+<meta property="article:published_time" content="2018-02-27T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-02-27T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载二」Hello World"/>
+<meta name="twitter:description" content="这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念
+需求 由于本实践偏向Grpc&#43;Grpc Gateway的方面，我们的需求是同一个服务端支持Rpc和Restful Api，那么就意味着http2、TLS等等的应用，功能方面就是一个服务端能够接受来自grpc和Restful Api的请求并响应
+一、初始化目录 我们先在$GOPATH中新建grpc-hello-world文件夹，我们项目的初始目录目录如下：
+grpc-hello-world/ ├── certs ├── client ├── cmd ├── pkg ├── proto │ ├── google │ │ └── api └── server  certs：证书凭证 client：客户端 cmd：命令行 pkg：第三方公共模块 proto：protobuf的一些相关文件（含.proto、pb.go、.pb.gw.go)，google/api中用于存放annotations.proto、http.proto server：服务端  二、制作证书 在服务端支持Rpc和Restful Api，需要用到TLS，因此我们要先制作证书
+进入certs目录，生成TLS所需的公钥密钥文件
+私钥 openssl genrsa -out server.key 2048 openssl ecparam -genkey -name secp384r1 -out server.key  openssl genrsa：生成RSA私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认512 openssl ecparam：生成ECC私钥，命令为椭圆曲线密钥参数生成及操作，本文中ECC曲线选择的是secp384r1  自签名公钥 openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650  openssl req：生成自签名证书，-new指生成证书请求、-sha256指使用sha256加密、-key指定私钥文件、-x509指输出证书、-days 3650为有效期，此后则输入证书拥有者信息  填写信息 Country Name (2 letter code) [XX]: State or Province Name (full name) []: Locality Name (eg, city) [Default City]: Organization Name (eg, company) [Default Company Ltd]: Organizational Unit Name (eg, section) []: Common Name (eg, your name or your server&#39;s hostname) []:grpc server name Email Address []: 三、proto 编写 1、 google."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载二」Hello World</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Feb 27, 2018</span></div>
+				<h1>「连载二」Hello World</h1>
+			</header>
+			<div class="content">
+				<p>这节将开始编写一个复杂的Hello World，涉及到许多的知识，建议大家认真思考其中的概念</p>
+<h2 id="需求">需求<a href="#需求" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>由于本实践偏向<code>Grpc</code>+<code>Grpc Gateway</code>的方面，我们的需求是<strong>同一个服务端支持<code>Rpc</code>和<code>Restful Api</code></strong>，那么就意味着<code>http2</code>、<code>TLS</code>等等的应用，功能方面就是一个服务端能够接受来自<code>grpc</code>和<code>Restful Api</code>的请求并响应</p>
+<h2 id="一初始化目录">一、初始化目录<a href="#一初始化目录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>我们先在$GOPATH中新建<code>grpc-hello-world</code>文件夹，我们项目的初始目录目录如下：</p>
+<pre><code>grpc-hello-world/
+├── certs
+├── client
+├── cmd
+├── pkg
+├── proto
+│   ├── google
+│   │   └── api
+└── server
+</code></pre><ul>
+<li><code>certs</code>：证书凭证</li>
+<li><code>client</code>：客户端</li>
+<li><code>cmd</code>：命令行</li>
+<li><code>pkg</code>：第三方公共模块</li>
+<li><code>proto</code>：<code>protobuf</code>的一些相关文件（含<code>.proto</code>、<code>pb.go</code>、<code>.pb.gw.go</code>)，<code>google/api</code>中用于存放<code>annotations.proto</code>、<code>http.proto</code></li>
+<li><code>server</code>：服务端</li>
+</ul>
+<h2 id="二制作证书">二、制作证书<a href="#二制作证书" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在服务端支持<code>Rpc</code>和<code>Restful Api</code>，需要用到<code>TLS</code>，因此我们要先制作证书</p>
+<p>进入<code>certs</code>目录，生成<code>TLS</code>所需的公钥密钥文件</p>
+<h3 id="私钥">私钥<a href="#私钥" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>openssl genrsa -out server.key 2048
+
+openssl ecparam -genkey -name secp384r1 -out server.key
+</code></pre><ul>
+<li><code>openssl genrsa</code>：生成<code>RSA</code>私钥，命令的最后一个参数，将指定生成密钥的位数，如果没有指定，默认512</li>
+<li><code>openssl ecparam</code>：生成<code>ECC</code>私钥，命令为椭圆曲线密钥参数生成及操作，本文中<code>ECC</code>曲线选择的是<code>secp384r1</code></li>
+</ul>
+<h3 id="自签名公钥">自签名公钥<a href="#自签名公钥" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
+</code></pre><ul>
+<li><code>openssl req</code>：生成自签名证书，<code>-new</code>指生成证书请求、<code>-sha256</code>指使用<code>sha256</code>加密、<code>-key</code>指定私钥文件、<code>-x509</code>指输出证书、<code>-days 3650</code>为有效期，此后则输入证书拥有者信息</li>
+</ul>
+<h3 id="填写信息">填写信息<a href="#填写信息" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>Country Name (2 letter code) [XX]:
+State or Province Name (full name) []:
+Locality Name (eg, city) [Default City]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:grpc server name
+Email Address []:
+</code></pre><h2 id="三proto">三、<code>proto</code><a href="#三proto" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="编写">编写<a href="#编写" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、 <code>google.api</code></p>
+<p>我们看到<code>proto</code>目录中有<code>google/api</code>目录，它用到了<code>google</code>官方提供的两个<code>api</code>描述文件，主要是针对<code>grpc-gateway</code>的<code>http</code>转换提供支持，定义了<code>Protocol Buffer</code>所扩展的<code>HTTP Option</code></p>
+<p><code>annotations.proto</code>文件：</p>
+<pre><code>// Copyright (c) 2015, Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = &quot;proto3&quot;;
+
+package google.api;
+
+import &quot;google/api/http.proto&quot;;
+import &quot;google/protobuf/descriptor.proto&quot;;
+
+option java_multiple_files = true;
+option java_outer_classname = &quot;AnnotationsProto&quot;;
+option java_package = &quot;com.google.api&quot;;
+
+extend google.protobuf.MethodOptions {
+  // See `HttpRule`.
+  HttpRule http = 72295728;
+}
+
+</code></pre><p><code>http.proto</code>文件：</p>
+<pre><code>// Copyright 2016 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = &quot;proto3&quot;;
+
+package google.api;
+
+option cc_enable_arenas = true;
+option java_multiple_files = true;
+option java_outer_classname = &quot;HttpProto&quot;;
+option java_package = &quot;com.google.api&quot;;
+
+
+// Defines the HTTP configuration for a service. It contains a list of
+// [HttpRule][google.api.HttpRule], each specifying the mapping of an RPC method
+// to one or more HTTP REST API methods.
+message Http {
+  // A list of HTTP rules for configuring the HTTP REST API methods.
+  repeated HttpRule rules = 1;
+}
+
+// Use CustomHttpPattern to specify any HTTP method that is not included in the
+// `pattern` field, such as HEAD, or &quot;*&quot; to leave the HTTP method unspecified for
+// a given URL path rule. The wild-card rule is useful for services that provide
+// content to Web (HTML) clients.
+message HttpRule {
+  // Selects methods to which this rule applies.
+  //
+  // Refer to [selector][google.api.DocumentationRule.selector] for syntax details.
+  string selector = 1;
+
+  // Determines the URL pattern is matched by this rules. This pattern can be
+  // used with any of the {get|put|post|delete|patch} methods. A custom method
+  // can be defined using the 'custom' field.
+  oneof pattern {
+    // Used for listing and getting information about resources.
+    string get = 2;
+
+    // Used for updating a resource.
+    string put = 3;
+
+    // Used for creating a resource.
+    string post = 4;
+
+    // Used for deleting a resource.
+    string delete = 5;
+
+    // Used for updating a resource.
+    string patch = 6;
+
+    // Custom pattern is used for defining custom verbs.
+    CustomHttpPattern custom = 8;
+  }
+
+  // The name of the request field whose value is mapped to the HTTP body, or
+  // `*` for mapping all fields not captured by the path pattern to the HTTP
+  // body. NOTE: the referred field must not be a repeated field.
+  string body = 7;
+
+  // Additional HTTP bindings for the selector. Nested bindings must
+  // not contain an `additional_bindings` field themselves (that is,
+  // the nesting may only be one level deep).
+  repeated HttpRule additional_bindings = 11;
+}
+
+// A custom pattern is used for defining custom HTTP verb.
+message CustomHttpPattern {
+  // The name of this custom HTTP verb.
+  string kind = 1;
+
+  // The path matched by this custom verb.
+  string path = 2;
+}
+
+</code></pre><ol start="2">
+<li><code>hello.proto</code></li>
+</ol>
+<p>这一小节将编写<code>Demo</code>的<code>.proto</code>文件，我们在<code>proto</code>目录下新建<code>hello.proto</code>文件，写入文件内容：</p>
+<pre><code>syntax = &quot;proto3&quot;;
+
+package proto;
+
+import &quot;google/api/annotations.proto&quot;;
+
+service HelloWorld {
+    rpc SayHelloWorld(HelloWorldRequest) returns (HelloWorldResponse) {
+        option (google.api.http) = {
+            post: &quot;/hello_world&quot;
+            body: &quot;*&quot;
+        };
+    }
+}
+
+message HelloWorldRequest {
+    string referer = 1;
+}
+
+message HelloWorldResponse {
+    string message = 1;
+}
+</code></pre><p>在<code>hello.proto</code>文件中，引用了<code>google/api/annotations.proto</code>，达到支持<code>HTTP Option</code>的效果</p>
+<ul>
+<li>定义了一个<code>service</code>RPC服务<code>HelloWorld</code>，在其内部定义了一个<code>HTTP Option</code>的<code>POST</code>方法，<code>HTTP</code>响应路径为<code>/hello_world</code></li>
+<li>定义<code>message</code>类型<code>HelloWorldRequest</code>、<code>HelloWorldResponse</code>，用于响应请求和返回结果</li>
+</ul>
+<h3 id="编译">编译<a href="#编译" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在编写完<code>.proto</code>文件后，我们需要对其进行编译，就能够在<code>server</code>中使用</p>
+<p>进入<code>proto</code>目录，执行以下命令</p>
+<pre><code># 编译google.api
+protoc -I . --go_out=plugins=grpc,Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor:. google/api/*.proto
+
+#编译hello_http.proto为hello_http.pb.proto
+protoc -I . --go_out=plugins=grpc,Mgoogle/api/annotations.proto=grpc-hello-world/proto/google/api:. ./hello.proto
+
+#编译hello_http.proto为hello_http.pb.gw.proto
+protoc --grpc-gateway_out=logtostderr=true:. ./hello.proto
+</code></pre><p>执行完毕后将生成<code>hello.pb.go</code>和<code>hello.gw.pb.go</code>，分别针对<code>grpc</code>和<code>grpc-gateway</code>的功能支持</p>
+<h2 id="四命令行模块-cmd">四、命令行模块 <code>cmd</code><a href="#四命令行模块-cmd" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="介绍">介绍<a href="#介绍" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>这一小节我们编写命令行模块，为什么要独立出来呢，是为了将<code>cmd</code>和<code>server</code>两者解耦，避免混淆在一起。</p>
+<p>我们采用 <a href="https://github.com/spf13/cobra">Cobra</a> 来完成这项功能，<code>Cobra</code>既是创建强大的现代CLI应用程序的库，也是生成应用程序和命令文件的程序。提供了以下功能：</p>
+<ul>
+<li>简易的子命令行模式</li>
+<li>完全兼容posix的命令行模式(包括短和长版本)</li>
+<li>嵌套的子命令</li>
+<li>全局、本地和级联<code>flags</code></li>
+<li>使用<code>Cobra</code>很容易的生成应用程序和命令，使用<code>cobra create appname</code>和<code>cobra add cmdname</code></li>
+<li>智能提示</li>
+<li>自动生成commands和flags的帮助信息</li>
+<li>自动生成详细的help信息<code>-h</code>，<code>--help</code>等等</li>
+<li>自动生成的bash自动完成功能</li>
+<li>为应用程序自动生成手册</li>
+<li>命令别名</li>
+<li>定义您自己的帮助、用法等的灵活性。</li>
+<li>可选与<a href="https://github.com/spf13/viper">viper</a>紧密集成的apps</li>
+</ul>
+<h3 id="编写server">编写<code>server</code><a href="#编写server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在编写<code>cmd</code>时需要先用<code>server</code>进行测试关联，因此这一步我们先写<code>server.go</code>用于测试</p>
+<p>在<code>server</code>模块下 新建<code>server.go</code>文件，写入测试内容：</p>
+<pre><code>package server
+
+import (
+    &quot;log&quot;
+)
+
+var (
+    ServerPort string
+    CertName string
+    CertPemPath string
+    CertKeyPath string
+)
+
+func Serve() (err error){
+    log.Println(ServerPort)
+    
+    log.Println(CertName)
+    
+    log.Println(CertPemPath)
+    
+    log.Println(CertKeyPath)
+    
+    return nil
+}
+
+</code></pre><h3 id="编写cmd">编写<code>cmd</code><a href="#编写cmd" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在<code>cmd</code>模块下 新建<code>root.go</code>文件，写入内容：</p>
+<pre><code>package cmd
+
+import (
+    &quot;fmt&quot;
+    &quot;os&quot;
+
+    &quot;github.com/spf13/cobra&quot;
+)
+
+var rootCmd = &amp;cobra.Command{
+    Use:   &quot;grpc&quot;,
+    Short: &quot;Run the gRPC hello-world server&quot;,
+}
+
+func Execute() {
+    if err := rootCmd.Execute(); err != nil {
+        fmt.Println(err)
+        os.Exit(-1)
+    }
+}
+</code></pre><p>新建<code>server.go</code>文件，写入内容：</p>
+<pre><code>package cmd
+
+import (
+	&quot;log&quot;
+
+	&quot;github.com/spf13/cobra&quot;
+	
+	&quot;grpc-hello-world/server&quot;
+)
+
+var serverCmd = &amp;cobra.Command{
+	Use:   &quot;server&quot;,
+	Short: &quot;Run the gRPC hello-world server&quot;,
+	Run: func(cmd *cobra.Command, args []string) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Println(&quot;Recover error : %v&quot;, err)
+			}
+		}()
+		
+		server.Serve()
+	},
+}
+
+func init() {
+	serverCmd.Flags().StringVarP(&amp;server.ServerPort, &quot;port&quot;, &quot;p&quot;, &quot;50052&quot;, &quot;server port&quot;)
+	serverCmd.Flags().StringVarP(&amp;server.CertPemPath, &quot;cert-pem&quot;, &quot;&quot;, &quot;./certs/server.pem&quot;, &quot;cert pem path&quot;)
+	serverCmd.Flags().StringVarP(&amp;server.CertKeyPath, &quot;cert-key&quot;, &quot;&quot;, &quot;./certs/server.key&quot;, &quot;cert key path&quot;)
+	serverCmd.Flags().StringVarP(&amp;server.CertName, &quot;cert-name&quot;, &quot;&quot;, &quot;grpc server name&quot;, &quot;server's hostname&quot;)
+	rootCmd.AddCommand(serverCmd)
+}
+</code></pre><p>我们在<code>grpc-hello-world/</code>目录下，新建文件<code>main.go</code>，写入内容：</p>
+<pre><code>package main
+
+import (
+	&quot;grpc-hello-world/cmd&quot;
+)
+
+func main() {
+	cmd.Execute()
+}
+</code></pre><h3 id="讲解">讲解<a href="#讲解" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>要使用<code>Cobra</code>，按照<code>Cobra</code>标准要创建<code>main.go</code>和一个<code>rootCmd</code>文件，另外我们有子命令<code>server</code></p>
+<p>1、<code>rootCmd</code>：
+<code>rootCmd</code>表示在没有任何子命令的情况下的基本命令</p>
+<p>2、<code>&amp;cobra.Command</code>：</p>
+<ul>
+<li><code>Use</code>：<code>Command</code>的用法，<code>Use</code>是一个行用法消息</li>
+<li><code>Short</code>：<code>Short</code>是<code>help</code>命令输出中显示的简短描述</li>
+<li><code>Run</code>：运行:典型的实际工作功能。大多数命令只会实现这一点；另外还有<code>PreRun</code>、<code>PreRunE</code>、<code>PostRun</code>、<code>PostRunE</code>等等不同时期的运行命令，但比较少用，具体使用时再查看亦可</li>
+</ul>
+<p>3、<code>rootCmd.AddCommand</code>：<code>AddCommand</code>向这父命令（<code>rootCmd</code>）添加一个或多个命令</p>
+<p>4、<code>serverCmd.Flags().StringVarP()</code>：</p>
+<p>一般来说，我们需要在<code>init()</code>函数中定义<code>flags</code>和处理配置，以<code>serverCmd.Flags().StringVarP(&amp;server.ServerPort, &quot;port&quot;, &quot;p&quot;, &quot;50052&quot;, &quot;server port&quot;)</code>为例，我们定义了一个<code>flag</code>，值存储在<code>&amp;server.ServerPort</code>中，长命令为<code>--port</code>，短命令为<code>-p</code>，，默认值为<code>50052</code>，命令的描述为<code>server port</code>。这一种调用方式成为<code>Local Flags</code></p>
+<p>我们延伸一下，如果觉得每一个子命令都要设一遍觉得很麻烦，我们可以采用<code>Persistent Flags</code>：</p>
+<p><code>rootCmd.PersistentFlags().BoolVarP(&amp;Verbose, &quot;verbose&quot;, &quot;v&quot;, false, &quot;verbose output&quot;)</code></p>
+<p>作用：</p>
+<p><code>flag</code>是可以持久的，这意味着该<code>flag</code>将被分配给它所分配的命令以及该命令下的每个命令。对于全局标记，将标记作为根上的持久标志。</p>
+<p>另外还有<code>Local Flag on Parent Commands</code>、<code>Bind Flags with Config</code>、<code>Required flags</code>等等，使用到再 <a href="https://github.com/spf13/cobra#local-flag-on-parent-commands">传送</a> 了解即可</p>
+<h3 id="测试">测试<a href="#测试" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>回到<code>grpc-hello-world/</code>目录下执行<code>go run main.go server</code>，查看输出是否为（此时应为默认值）：</p>
+<pre><code>2018/02/25 23:23:21 50052
+2018/02/25 23:23:21 dev
+2018/02/25 23:23:21 ./certs/server.pem
+2018/02/25 23:23:21 ./certs/server.key
+</code></pre><p>执行<code>go run main.go server --port=8000 --cert-pem=test-pem --cert-key=test-key --cert-name=test-name</code>，检验命令行参数是否正确：</p>
+<pre><code>2018/02/25 23:24:56 8000
+2018/02/25 23:24:56 test-name
+2018/02/25 23:24:56 test-pem
+2018/02/25 23:24:56 test-key
+</code></pre><p>若都无误，那么恭喜你<code>cmd</code>模块的编写正确了，下一部分开始我们的重点章节！</p>
+<h2 id="五服务端模块-server">五、服务端模块 <code>server</code><a href="#五服务端模块-server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="编写hellogo">编写<code>hello.go</code><a href="#编写hellogo" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在<code>server</code>目录下新建文件<code>hello.go</code>，写入文件内容：</p>
+<pre><code>package server
+
+import (
+	&quot;golang.org/x/net/context&quot;
+
+	pb &quot;grpc-hello-world/proto&quot;
+)
+
+type helloService struct{}
+
+func NewHelloService() *helloService {
+	return &amp;helloService{}
+}
+
+func (h helloService) SayHelloWorld(ctx context.Context, r *pb.HelloWorldRequest) (*pb.HelloWorldResponse, error) {
+	return &amp;pb.HelloWorldResponse{
+		Message : &quot;test&quot;,
+	}, nil
+}
+</code></pre><p>我们创建了<code>helloService</code>及其方法<code>SayHelloWorld</code>，对应<code>.proto</code>的<code>rpc SayHelloWorld</code>，这个方法需要有2个参数：<code>ctx context.Context</code>用于接受上下文参数、<code>r *pb.HelloWorldRequest</code>用于接受<code>protobuf</code>的<code>Request</code>参数（对应<code>.proto</code>的<code>message HelloWorldRequest</code>）</p>
+<h3 id="编写servergo">*编写<code>server.go</code><a href="#编写servergo" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>这一小章节，我们编写最为重要的服务端程序部分，涉及到大量的<code>grpc</code>、<code>grpc-gateway</code>及一些网络知识的应用</p>
+<p>1、在<code>pkg</code>下新建<code>util</code>目录，新建<code>grpc.go</code>文件，写入内容：</p>
+<pre><code>package util
+
+import (
+	&quot;net/http&quot;
+	&quot;strings&quot;
+
+	&quot;google.golang.org/grpc&quot;
+)
+
+func GrpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
+    if otherHandler == nil {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            grpcServer.ServeHTTP(w, r)
+        })
+    }
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.ProtoMajor == 2 &amp;&amp; strings.Contains(r.Header.Get(&quot;Content-Type&quot;), &quot;application/grpc&quot;) {
+            grpcServer.ServeHTTP(w, r)
+        } else {
+            otherHandler.ServeHTTP(w, r)
+        }
+    })
+}
+</code></pre><p><code>GrpcHandlerFunc</code>函数是用于判断请求是来源于<code>Rpc</code>客户端还是<code>Restful Api</code>的请求，根据不同的请求注册不同的<code>ServeHTTP</code>服务；<code>r.ProtoMajor == 2</code>也代表着请求必须基于<code>HTTP/2</code></p>
+<p>2、在<code>pkg</code>下的<code>util</code>目录下，新建<code>tls.go</code>文件，写入内容：</p>
+<pre><code>package util
+
+import (
+	&quot;crypto/tls&quot;
+    &quot;io/ioutil&quot;
+    &quot;log&quot;
+
+    &quot;golang.org/x/net/http2&quot;
+)
+
+func GetTLSConfig(certPemPath, certKeyPath string) *tls.Config {
+    var certKeyPair *tls.Certificate
+    cert, _ := ioutil.ReadFile(certPemPath)
+    key, _ := ioutil.ReadFile(certKeyPath)
+    
+    pair, err := tls.X509KeyPair(cert, key)
+    if err != nil {
+        log.Println(&quot;TLS KeyPair err: %v\n&quot;, err)
+    }
+    
+    certKeyPair = &amp;pair
+
+    return &amp;tls.Config{
+        Certificates: []tls.Certificate{*certKeyPair},
+        NextProtos:   []string{http2.NextProtoTLS},
+    }
+}
+</code></pre><p><code>GetTLSConfig</code>函数是用于获取<code>TLS</code>配置，在内部，我们读取了<code>server.key</code>和<code>server.pem</code>这类证书凭证文件</p>
+<ul>
+<li><code>tls.X509KeyPair</code>：从一对<code>PEM</code>编码的数据中解析公钥/私钥对。成功则返回公钥/私钥对</li>
+<li><code>http2.NextProtoTLS</code>：<code>NextProtoTLS</code>是谈判期间的<code>NPN/ALPN</code>协议，用于<strong>HTTP/2的TLS设置</strong></li>
+<li><code>tls.Certificate</code>：返回一个或多个证书，实质我们解析<code>PEM</code>调用的<code>X509KeyPair</code>的函数声明就是<code>func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (Certificate, error)</code>，返回值就是<code>Certificate</code></li>
+</ul>
+<p>总的来说该函数是用于处理从证书凭证文件（PEM），最终获取<code>tls.Config</code>作为<code>HTTP2</code>的使用参数</p>
+<p>3、修改<code>server</code>目录下的<code>server.go</code>文件，该文件是我们服务里的核心文件，写入内容：</p>
+<pre><code>package server
+
+import (
+    &quot;crypto/tls&quot;
+    &quot;net&quot;
+    &quot;net/http&quot;
+    &quot;log&quot;
+
+    &quot;golang.org/x/net/context&quot;
+    &quot;google.golang.org/grpc&quot;
+    &quot;google.golang.org/grpc/credentials&quot;
+    &quot;github.com/grpc-ecosystem/grpc-gateway/runtime&quot;
+    
+    pb &quot;grpc-hello-world/proto&quot;
+    &quot;grpc-hello-world/pkg/util&quot;
+)
+
+var (
+    ServerPort string
+    CertName string
+    CertPemPath string
+    CertKeyPath string
+    EndPoint string
+)
+
+func Serve() (err error){
+    EndPoint = &quot;:&quot; + ServerPort
+    conn, err := net.Listen(&quot;tcp&quot;, EndPoint)
+    if err != nil {
+        log.Printf(&quot;TCP Listen err:%v\n&quot;, err)
+    }
+
+    tlsConfig := util.GetTLSConfig(CertPemPath, CertKeyPath)
+    srv := createInternalServer(conn, tlsConfig)
+
+    log.Printf(&quot;gRPC and https listen on: %s\n&quot;, ServerPort)
+
+    if err = srv.Serve(tls.NewListener(conn, tlsConfig)); err != nil {
+        log.Printf(&quot;ListenAndServe: %v\n&quot;, err)
+    }
+
+    return err
+}
+
+func createInternalServer(conn net.Listener, tlsConfig *tls.Config) (*http.Server) {
+    var opts []grpc.ServerOption
+
+    // grpc server
+    creds, err := credentials.NewServerTLSFromFile(CertPemPath, CertKeyPath)
+    if err != nil {
+        log.Printf(&quot;Failed to create server TLS credentials %v&quot;, err)
+    }
+
+    opts = append(opts, grpc.Creds(creds))
+    grpcServer := grpc.NewServer(opts...)
+
+    // register grpc pb
+    pb.RegisterHelloWorldServer(grpcServer, NewHelloService())
+
+    // gw server
+    ctx := context.Background()
+    dcreds, err := credentials.NewClientTLSFromFile(CertPemPath, CertName)
+    if err != nil {
+        log.Printf(&quot;Failed to create client TLS credentials %v&quot;, err)
+    }
+    dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
+    gwmux := runtime.NewServeMux()
+
+    // register grpc-gateway pb
+    if err := pb.RegisterHelloWorldHandlerFromEndpoint(ctx, gwmux, EndPoint, dopts); err != nil {
+        log.Printf(&quot;Failed to register gw server: %v\n&quot;, err)
+    }
+
+    // http服务
+    mux := http.NewServeMux()
+    mux.Handle(&quot;/&quot;, gwmux)
+
+    return &amp;http.Server{
+        Addr:      EndPoint,
+        Handler:   util.GrpcHandlerFunc(grpcServer, mux),
+        TLSConfig: tlsConfig,
+    }
+}
+</code></pre><h4 id="server流程剖析"><code>server</code>流程剖析<a href="#server流程剖析" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>我们将这一大块代码，分成以下几个部分来理解</p>
+<h5 id="一启动监听">一、启动监听<a href="#一启动监听" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><code>net.Listen(&quot;tcp&quot;, EndPoint)</code>用于监听本地的网络地址通知，它的函数原型<code>func Listen(network, address string) (Listener, error)</code></p>
+<p>参数：<code>network</code>必须传入<code>tcp</code>、<code>tcp4</code>、<code>tcp6</code>、<code>unix</code>、<code>unixpacket</code>，若<code>address</code>为空或为0则会自动选择一个端口号
+返回值：通过查看源码我们可以得知其返回值为<code>Listener</code>，结构体原型：</p>
+<pre><code>type Listener interface {
+    Accept() (Conn, error)
+    Close() error
+    Addr() Addr
+}
+</code></pre><p>通过分析得知，<strong>最后<code>net.Listen</code>会返回一个监听器的结构体，返回给接下来的动作，让其执行下一步的操作</strong>，它可以执行三类操作</p>
+<ul>
+<li><code>Accept</code>：接受等待并将下一个连接返回给<code>Listener</code></li>
+<li><code>Close</code>：关闭<code>Listener</code></li>
+<li><code>Addr</code>：返回<code>Listener</code>的网络地址</li>
+</ul>
+<h5 id="二获取tls">二、获取<code>TLS</code><a href="#二获取tls" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>通过<code>util.GetTLSConfig</code>解析得到<code>tls.Config</code>，传达给<code>http.Server</code>服务的<code>TLSConfig</code>配置项使用</p>
+<h5 id="三创建内部服务">三、创建内部服务<a href="#三创建内部服务" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><code>createInternalServer</code>函数，是整个服务端的核心流转部分</p>
+<p>程序采用的是<code>HTT2</code>、<code>HTTPS</code>也就是需要支持<code>TLS</code>，因此在启动<code>grpc.NewServer</code>前，我们要将认证的中间件注册进去</p>
+<p>而前面所获取的<code>tlsConfig</code>仅能给<code>HTTP</code>使用，因此<strong>第一步</strong>我们要创建<code>grpc</code>的<code>TLS</code>认证凭证</p>
+<p><strong>1、创建<code>grpc</code>的<code>TLS</code>认证凭证</strong></p>
+<p>新增引用<code>google.golang.org/grpc/credentials</code>的第三方包，它实现了<code>grpc</code>库支持的各种凭证，该凭证封装了客户机需要的所有状态，以便与服务器进行身份验证并进行各种断言，例如关于客户机的身份，角色或是否授权进行特定的呼叫</p>
+<p>我们调用<code>NewServerTLSFromFile</code>来达到我们的目的，它能够从输入证书文件和服务器的密钥文件<strong>构造TLS证书凭证</strong></p>
+<pre><code>func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error) {
+    //LoadX509KeyPair读取并解析来自一对文件的公钥/私钥对
+    cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+    if err != nil {
+        return nil, err
+    }
+    //NewTLS使用tls.Config来构建基于TLS的TransportCredentials
+    return NewTLS(&amp;tls.Config{Certificates: []tls.Certificate{cert}}), nil
+}
+</code></pre><p><strong>2、设置<code>grpc ServerOption</code></strong></p>
+<p>以<code>grpc.Creds(creds)</code>为例，其原型为<code>func Creds(c credentials.TransportCredentials) ServerOption</code>，该函数返回<code>ServerOption</code>，它为服务器连接设置凭据</p>
+<p><strong>3、创建<code>grpc</code>服务端</strong></p>
+<p>函数原型：</p>
+<pre><code>func NewServer(opt ...ServerOption) *Server
+</code></pre><p>我们在此处创建了一个没有注册服务的<code>grpc</code>服务端，还没有开始接受请求</p>
+<pre><code>grpcServer := grpc.NewServer(opts...)
+</code></pre><p><strong>4、注册<code>grpc</code>服务</strong></p>
+<pre><code>pb.RegisterHelloWorldServer(grpcServer, NewHelloService())
+</code></pre><p><strong>5、创建<code>grpc-gateway</code>关联组件</strong></p>
+<pre><code>ctx := context.Background()
+dcreds, err := credentials.NewClientTLSFromFile(CertPemPath, CertName)
+if err != nil {
+    log.Println(&quot;Failed to create client TLS credentials %v&quot;, err)
+}
+dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
+</code></pre><ul>
+<li><code>context.Background</code>：返回一个非空的空上下文。它没有被注销，没有值，没有过期时间。它通常由主函数、初始化和测试使用，并作为传入请求的<strong>顶级上下文</strong></li>
+<li><code>credentials.NewClientTLSFromFile</code>：从客户机的输入证书文件构造TLS凭证</li>
+<li><code>grpc.WithTransportCredentials</code>：配置一个连接级别的安全凭据(例：<code>TLS</code>、<code>SSL</code>)，返回值为<code>type DialOption</code></li>
+<li><code>grpc.DialOption</code>：<code>DialOption</code>选项配置我们如何设置连接（其内部具体由多个的<code>DialOption</code>组成，决定其设置连接的内容）</li>
+</ul>
+<p><strong>6、创建<code>HTTP NewServeMux</code>及注册<code>grpc-gateway</code>逻辑</strong></p>
+<pre><code>gwmux := runtime.NewServeMux()
+
+// register grpc-gateway pb
+if err := pb.RegisterHelloWorldHandlerFromEndpoint(ctx, gwmux, EndPoint, dopts); err != nil {
+    log.Println(&quot;Failed to register gw server: %v\n&quot;, err)
+}
+
+// http服务
+mux := http.NewServeMux()
+mux.Handle(&quot;/&quot;, gwmux)
+</code></pre><ul>
+<li><code>runtime.NewServeMux</code>：返回一个新的<code>ServeMux</code>，它的内部映射是空的；<code>ServeMux</code>是<code>grpc-gateway</code>的一个请求多路复用器。它将<code>http</code>请求与模式匹配，并调用相应的处理程序</li>
+<li><code>RegisterHelloWorldHandlerFromEndpoint</code>：如函数名，注册<code>HelloWorld</code>服务的<code>HTTP Handle</code>到<code>grpc</code>端点</li>
+<li><code>http.NewServeMux</code>：<code>分配并返回一个新的ServeMux</code></li>
+<li><code>mux.Handle</code>：为给定模式注册处理程序</li>
+</ul>
+<p>（带着疑问去看程序）为什么<code>gwmux</code>可以放入<code>mux.Handle</code>中？</p>
+<p>首先我们看看它们的原型是怎么样的</p>
+<p>（1）<code>http.NewServeMux()</code></p>
+<pre><code>func NewServeMux() *ServeMux {
+        return new(ServeMux) 
+}
+</code></pre><pre><code>type Handler interface {
+    ServeHTTP(ResponseWriter, *Request)
+}
+</code></pre><p>（2）<code>runtime.NewServeMux</code>？</p>
+<pre><code>func NewServeMux(opts ...ServeMuxOption) *ServeMux {
+    serveMux := &amp;ServeMux{
+        handlers:               make(map[string][]handler),
+        forwardResponseOptions: make([]func(context.Context, http.ResponseWriter, proto.Message) error, 0),
+        marshalers:             makeMarshalerMIMERegistry(),
+    }
+    ...
+    return serveMux
+}
+</code></pre><p>（3）<code>http.NewServeMux()</code>的<code>Handle</code>方法</p>
+<pre><code>func (mux *ServeMux) Handle(pattern string, handler Handler)
+</code></pre><p>通过分析可得知，两者<code>NewServeMux</code>都是最终返回<code>serveMux</code>，<code>Handler</code>中导出的方法仅有<code>ServeHTTP</code>，功能是用于响应HTTP请求</p>
+<p>我们回到<code>Handle interface</code>中，可以得出结论就是任何结构体，只要实现了<code>ServeHTTP</code>方法，这个结构就可以称为<code>Handle</code>，<code>ServeMux</code>会使用该<code>Handler</code>调用<code>ServeHTTP</code>方法处理请求，这也就是<strong>自定义<code>Handler</code></strong></p>
+<p>而我们这里正是将<code>grpc-gateway</code>中注册好的<code>HTTP Handler</code>无缝的植入到<code>net/http</code>的<code>Handle</code>方法中</p>
+<p><strong>补充：在<code>go</code>中任何结构体只要实现了与接口相同的方法，就等同于实现了接口</strong></p>
+<p><strong>7、注册具体服务</strong></p>
+<pre><code>if err := pb.RegisterHelloWorldHandlerFromEndpoint(ctx, gwmux, EndPoint, dopts); err != nil {
+    log.Println(&quot;Failed to register gw server: %v\n&quot;, err)
+}
+</code></pre><p>在这段代码中，我们利用了前几小节的</p>
+<ul>
+<li>上下文</li>
+<li><code>gateway-grpc</code>的请求多路复用器</li>
+<li>服务网络地址</li>
+<li>配置好的安全凭据</li>
+</ul>
+<p>注册了<code>HelloWorld</code>这一个服务</p>
+<h5 id="四创建tlsnewlistener">四、创建<code>tls.NewListener</code><a href="#四创建tlsnewlistener" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>func NewListener(inner net.Listener, config *Config) net.Listener {
+    l := new(listener)
+    l.Listener = inner
+    l.config = config
+    return l
+}
+</code></pre><p><code>NewListener</code>将会创建一个<code>Listener</code>，它接受两个参数，第一个是来自内部<code>Listener</code>的监听器，第二个参数是<code>tls.Config</code>（必须包含至少一个证书）</p>
+<h5 id="五服务开始接受请求">五、服务开始接受请求<a href="#五服务开始接受请求" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>在最后我们调用<code>srv.Serve(tls.NewListener(conn, tlsConfig))</code>，可以得知它是<code>http.Server</code>的方法，并且需要一个<code>Listener</code>作为参数，那么<code>Serve</code>内部做了些什么事呢？</p>
+<pre><code>func (srv *Server) Serve(l net.Listener) error {
+    defer l.Close()
+    ...
+
+    baseCtx := context.Background() // base is always background, per Issue 16220
+    ctx := context.WithValue(baseCtx, ServerContextKey, srv)
+    for {
+        rw, e := l.Accept()
+        ...
+        c := srv.newConn(rw)
+        c.setState(c.rwc, StateNew) // before Serve can return
+        go c.serve(ctx)
+    }
+}
+</code></pre><p>粗略的看，它创建了一个<code>context.Background()</code>上下文对象，并调用<code>Listener</code>的<code>Accept</code>方法开始接受外部请求，在获取到连接数据后使用<code>newConn</code>创建连接对象，在最后使用<code>goroutine</code>的方式处理连接请求，达到其目的</p>
+<p><strong>补充：对于<code>HTTP/2</code>支持，在调用<code>Serve</code>之前，应将<code>srv.TLSConfig</code>初始化为提供的<code>Listener</code>的TLS配置。如果<code>srv.TLSConfig</code>非零，并且在<code>Config.NextProtos</code>中不包含字符串<code>h2</code>，则不启用<code>HTTP/2</code>支持</strong></p>
+<h2 id="六验证功能">六、验证功能<a href="#六验证功能" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="编写测试客户端">编写测试客户端<a href="#编写测试客户端" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在<code>grpc-hello-world/</code>下新建目录<code>client</code>，新建<code>client.go</code>文件，新增内容：</p>
+<pre><code>package main
+
+import (
+	&quot;log&quot;
+
+	&quot;golang.org/x/net/context&quot;
+	&quot;google.golang.org/grpc&quot;
+	&quot;google.golang.org/grpc/credentials&quot;
+
+	pb &quot;grpc-hello-world/proto&quot;
+)
+
+func main() {
+	creds, err := credentials.NewClientTLSFromFile(&quot;../certs/server.pem&quot;, &quot;dev&quot;)
+	if err != nil {
+		log.Println(&quot;Failed to create TLS credentials %v&quot;, err)
+	}
+	conn, err := grpc.Dial(&quot;:50052&quot;, grpc.WithTransportCredentials(creds))
+	defer conn.Close()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	c := pb.NewHelloWorldClient(conn)
+	context := context.Background()
+	body := &amp;pb.HelloWorldRequest{
+		Referer : &quot;Grpc&quot;,
+	}
+
+	r, err := c.SayHelloWorld(context, body)
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println(r.Message)
+}
+</code></pre><p>由于客户端只是展示测试用，就简单的来了，原本它理应归类到<code>cobra</code>的管控下，配置管理等等都应可控化</p>
+<p>在看这篇文章的你，可以试试将测试客户端归类好</p>
+<h3 id="启动服务端">启动服务端<a href="#启动服务端" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>回到<code>grpc-hello-world/</code>目录下，启动服务端<code>go run main.go server</code>，成功则仅返回</p>
+<pre><code>2018/02/26 17:19:36 gRPC and https listen on: 50052
+</code></pre><h3 id="执行测试客户端">执行测试客户端<a href="#执行测试客户端" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>回到<code>client</code>目录下，启动客户端<code>go run client.go</code>，成功则返回</p>
+<pre><code>2018/02/26 17:22:57 Grpc
+</code></pre><h3 id="执行测试restful-api">执行测试Restful Api<a href="#执行测试restful-api" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>curl -X POST -k https://localhost:50052/hello_world -d '{&quot;referer&quot;: &quot;restful_api&quot;}'
+</code></pre><p>成功则返回<code>{&quot;message&quot;:&quot;restful_api&quot;}</code></p>
+<hr>
+<h2 id="最终目录结构">最终目录结构<a href="#最终目录结构" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>grpc-hello-world
+├── certs
+│   ├── server.key
+│   └── server.pem
+├── client
+│   └── client.go
+├── cmd
+│   ├── root.go
+│   └── server.go
+├── main.go
+├── pkg
+│   └── util
+│       ├── grpc.go
+│       └── tls.go
+├── proto
+│   ├── google
+│   │   └── api
+│   │       ├── annotations.pb.go
+│   │       ├── annotations.proto
+│   │       ├── http.pb.go
+│   │       └── http.proto
+│   ├── hello.pb.go
+│   ├── hello.pb.gw.go
+│   └── hello.proto
+└── server
+    ├── hello.go
+    └── server.go
+</code></pre><p>至此本节就结束了，推荐一下<code>jergoo</code>的文章，大家有时间可以看看</p>
+<p>另外本节涉及了许多组件间的知识，值得大家细细的回味，非常有意义！</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="示例代码">示例代码<a href="#示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/grpc-hello-world">grpc-hello-world</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/grpc-gateway">grpc-gateway</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>1928 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-02-27 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#需求">需求</a></li>
+    <li><a href="#一初始化目录">一、初始化目录</a></li>
+    <li><a href="#二制作证书">二、制作证书</a>
+      <ul>
+        <li><a href="#私钥">私钥</a></li>
+        <li><a href="#自签名公钥">自签名公钥</a></li>
+        <li><a href="#填写信息">填写信息</a></li>
+      </ul>
+    </li>
+    <li><a href="#三proto">三、<code>proto</code></a>
+      <ul>
+        <li><a href="#编写">编写</a></li>
+        <li><a href="#编译">编译</a></li>
+      </ul>
+    </li>
+    <li><a href="#四命令行模块-cmd">四、命令行模块 <code>cmd</code></a>
+      <ul>
+        <li><a href="#介绍">介绍</a></li>
+        <li><a href="#编写server">编写<code>server</code></a></li>
+        <li><a href="#编写cmd">编写<code>cmd</code></a></li>
+        <li><a href="#讲解">讲解</a></li>
+        <li><a href="#测试">测试</a></li>
+      </ul>
+    </li>
+    <li><a href="#五服务端模块-server">五、服务端模块 <code>server</code></a>
+      <ul>
+        <li><a href="#编写hellogo">编写<code>hello.go</code></a></li>
+        <li><a href="#编写servergo">*编写<code>server.go</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#六验证功能">六、验证功能</a>
+      <ul>
+        <li><a href="#编写测试客户端">编写测试客户端</a></li>
+        <li><a href="#启动服务端">启动服务端</a></li>
+        <li><a href="#执行测试客户端">执行测试客户端</a></li>
+        <li><a href="#执行测试restful-api">执行测试Restful Api</a></li>
+      </ul>
+    </li>
+    <li><a href="#最终目录结构">最终目录结构</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#示例代码">示例代码</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/grpc-gateway/2018-03-04-swagger/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载三」Swagger了解一下</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/grpc-gateway/2018-02-23-install/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载一」gRPC介绍与环境安装</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

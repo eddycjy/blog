@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="我要在栈上。不，你应该在堆上">
+<meta itemprop="description" content="我们在写代码的时候，有时候会想这个变量到底分配到哪里了？这时候可能会有人说，在栈上，在堆上。信我准没错&hellip;
+但从结果上来讲你还是一知半解，这可不行，万一被人懵了呢。今天我们一起来深挖下 Go 在这块的奥妙，自己动手丰衣足食
+问题 type User struct { ID int64 Name string Avatar string } func GetUserInfo() *User { return &amp;User{ID: 13746731, Name: &#34;EDDYCJY&#34;, Avatar: &#34;https://avatars0.githubusercontent.com/u/13746731&#34;} } func main() { _ = GetUserInfo() } 开局就是一把问号，带着问题进行学习。请问 main 调用 GetUserInfo 后返回的 &amp;User{...}。这个变量是分配到栈上了呢，还是分配到堆上了？
+什么是堆/栈 在这里并不打算详细介绍堆栈，仅简单介绍本文所需的基础知识。如下：
+ 堆（Heap）：一般来讲是人为手动进行管理，手动申请、分配、释放。一般所涉及的内存大小并不定，一般会存放较大的对象。另外其分配相对慢，涉及到的指令动作也相对多 栈（Stack）：由编译器进行管理，自动申请、分配、释放。一般不会太大，我们常见的函数参数（不同平台允许存放的数量不同），局部变量等等都会存放在栈上  今天我们介绍的 Go 语言，它的堆栈分配是通过 Compiler 进行分析，GC 去管理的，而对其的分析选择动作就是今天探讨的重点
+什么是逃逸分析 在编译程序优化理论中，逃逸分析是一种确定指针动态范围的方法，简单来说就是分析在程序的哪些地方可以访问到该指针
+通俗地讲，逃逸分析就是确定一个变量要放堆上还是栈上，规则如下：
+ 是否有在其他地方（非局部）被引用。只要有可能被引用了，那么它一定分配到堆上。否则分配到栈上 即使没有被外部引用，但对象过大，无法存放在栈区上。依然有可能分配到堆上  对此你可以理解为，逃逸分析是编译器用于决定变量分配到堆上还是栈上的一种行为
+在什么阶段确立逃逸 在编译阶段确立逃逸，注意并不是在运行时
+为什么需要逃逸 这个问题我们可以反过来想，如果变量都分配到堆上了会出现什么事情？例如：
+ 垃圾回收（GC）的压力不断增大 申请、分配、回收内存的系统开销增大（相对于栈） 动态分配产生一定量的内存碎片  其实总的来说，就是频繁申请、分配堆内存是有一定 “代价” 的。会影响应用程序运行的效率，间接影响到整体系统。因此 “按需分配” 最大限度的灵活利用资源，才是正确的治理之道。这就是为什么需要逃逸分析的原因，你觉得呢？">
+<meta itemprop="datePublished" content="2019-05-20T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-05-20T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="489">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="我要在栈上。不，你应该在堆上" />
+<meta property="og:description" content="我们在写代码的时候，有时候会想这个变量到底分配到哪里了？这时候可能会有人说，在栈上，在堆上。信我准没错&hellip;
+但从结果上来讲你还是一知半解，这可不行，万一被人懵了呢。今天我们一起来深挖下 Go 在这块的奥妙，自己动手丰衣足食
+问题 type User struct { ID int64 Name string Avatar string } func GetUserInfo() *User { return &amp;User{ID: 13746731, Name: &#34;EDDYCJY&#34;, Avatar: &#34;https://avatars0.githubusercontent.com/u/13746731&#34;} } func main() { _ = GetUserInfo() } 开局就是一把问号，带着问题进行学习。请问 main 调用 GetUserInfo 后返回的 &amp;User{...}。这个变量是分配到栈上了呢，还是分配到堆上了？
+什么是堆/栈 在这里并不打算详细介绍堆栈，仅简单介绍本文所需的基础知识。如下：
+ 堆（Heap）：一般来讲是人为手动进行管理，手动申请、分配、释放。一般所涉及的内存大小并不定，一般会存放较大的对象。另外其分配相对慢，涉及到的指令动作也相对多 栈（Stack）：由编译器进行管理，自动申请、分配、释放。一般不会太大，我们常见的函数参数（不同平台允许存放的数量不同），局部变量等等都会存放在栈上  今天我们介绍的 Go 语言，它的堆栈分配是通过 Compiler 进行分析，GC 去管理的，而对其的分析选择动作就是今天探讨的重点
+什么是逃逸分析 在编译程序优化理论中，逃逸分析是一种确定指针动态范围的方法，简单来说就是分析在程序的哪些地方可以访问到该指针
+通俗地讲，逃逸分析就是确定一个变量要放堆上还是栈上，规则如下：
+ 是否有在其他地方（非局部）被引用。只要有可能被引用了，那么它一定分配到堆上。否则分配到栈上 即使没有被外部引用，但对象过大，无法存放在栈区上。依然有可能分配到堆上  对此你可以理解为，逃逸分析是编译器用于决定变量分配到堆上还是栈上的一种行为
+在什么阶段确立逃逸 在编译阶段确立逃逸，注意并不是在运行时
+为什么需要逃逸 这个问题我们可以反过来想，如果变量都分配到堆上了会出现什么事情？例如：
+ 垃圾回收（GC）的压力不断增大 申请、分配、回收内存的系统开销增大（相对于栈） 动态分配产生一定量的内存碎片  其实总的来说，就是频繁申请、分配堆内存是有一定 “代价” 的。会影响应用程序运行的效率，间接影响到整体系统。因此 “按需分配” 最大限度的灵活利用资源，才是正确的治理之道。这就是为什么需要逃逸分析的原因，你觉得呢？" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2019-05-20-stack-heap/" />
+<meta property="article:published_time" content="2019-05-20T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-05-20T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="我要在栈上。不，你应该在堆上"/>
+<meta name="twitter:description" content="我们在写代码的时候，有时候会想这个变量到底分配到哪里了？这时候可能会有人说，在栈上，在堆上。信我准没错&hellip;
+但从结果上来讲你还是一知半解，这可不行，万一被人懵了呢。今天我们一起来深挖下 Go 在这块的奥妙，自己动手丰衣足食
+问题 type User struct { ID int64 Name string Avatar string } func GetUserInfo() *User { return &amp;User{ID: 13746731, Name: &#34;EDDYCJY&#34;, Avatar: &#34;https://avatars0.githubusercontent.com/u/13746731&#34;} } func main() { _ = GetUserInfo() } 开局就是一把问号，带着问题进行学习。请问 main 调用 GetUserInfo 后返回的 &amp;User{...}。这个变量是分配到栈上了呢，还是分配到堆上了？
+什么是堆/栈 在这里并不打算详细介绍堆栈，仅简单介绍本文所需的基础知识。如下：
+ 堆（Heap）：一般来讲是人为手动进行管理，手动申请、分配、释放。一般所涉及的内存大小并不定，一般会存放较大的对象。另外其分配相对慢，涉及到的指令动作也相对多 栈（Stack）：由编译器进行管理，自动申请、分配、释放。一般不会太大，我们常见的函数参数（不同平台允许存放的数量不同），局部变量等等都会存放在栈上  今天我们介绍的 Go 语言，它的堆栈分配是通过 Compiler 进行分析，GC 去管理的，而对其的分析选择动作就是今天探讨的重点
+什么是逃逸分析 在编译程序优化理论中，逃逸分析是一种确定指针动态范围的方法，简单来说就是分析在程序的哪些地方可以访问到该指针
+通俗地讲，逃逸分析就是确定一个变量要放堆上还是栈上，规则如下：
+ 是否有在其他地方（非局部）被引用。只要有可能被引用了，那么它一定分配到堆上。否则分配到栈上 即使没有被外部引用，但对象过大，无法存放在栈区上。依然有可能分配到堆上  对此你可以理解为，逃逸分析是编译器用于决定变量分配到堆上还是栈上的一种行为
+在什么阶段确立逃逸 在编译阶段确立逃逸，注意并不是在运行时
+为什么需要逃逸 这个问题我们可以反过来想，如果变量都分配到堆上了会出现什么事情？例如：
+ 垃圾回收（GC）的压力不断增大 申请、分配、回收内存的系统开销增大（相对于栈） 动态分配产生一定量的内存碎片  其实总的来说，就是频繁申请、分配堆内存是有一定 “代价” 的。会影响应用程序运行的效率，间接影响到整体系统。因此 “按需分配” 最大限度的灵活利用资源，才是正确的治理之道。这就是为什么需要逃逸分析的原因，你觉得呢？"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>我要在栈上。不，你应该在堆上</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>May 20, 2019</span></div>
+				<h1>我要在栈上。不，你应该在堆上</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/27/3wK39K.jpg" alt="image"></p>
+<p>我们在写代码的时候，有时候会想这个变量到底分配到哪里了？这时候可能会有人说，在栈上，在堆上。信我准没错&hellip;</p>
+<p>但从结果上来讲你还是一知半解，这可不行，万一被人懵了呢。今天我们一起来深挖下 Go 在这块的奥妙，自己动手丰衣足食</p>
+<h2 id="问题">问题<a href="#问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">ID</span>     <span class="kt">int64</span>
+	<span class="nx">Name</span>   <span class="kt">string</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetUserInfo</span><span class="p">()</span> <span class="o">*</span><span class="nx">User</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">User</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="mi">13746731</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;EDDYCJY&#34;</span><span class="p">,</span> <span class="nx">Avatar</span><span class="p">:</span> <span class="s">&#34;https://avatars0.githubusercontent.com/u/13746731&#34;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">_</span> <span class="p">=</span> <span class="nf">GetUserInfo</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div><p>开局就是一把问号，带着问题进行学习。请问 main 调用 <code>GetUserInfo</code> 后返回的 <code>&amp;User{...}</code>。这个变量是分配到栈上了呢，还是分配到堆上了？</p>
+<h2 id="什么是堆栈">什么是堆/栈<a href="#什么是堆栈" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在这里并不打算详细介绍堆栈，仅简单介绍本文所需的基础知识。如下：</p>
+<ul>
+<li>堆（Heap）：一般来讲是人为手动进行管理，手动申请、分配、释放。一般所涉及的内存大小并不定，一般会存放较大的对象。另外其分配相对慢，涉及到的指令动作也相对多</li>
+<li>栈（Stack）：由编译器进行管理，自动申请、分配、释放。一般不会太大，我们常见的函数参数（不同平台允许存放的数量不同），局部变量等等都会存放在栈上</li>
+</ul>
+<p>今天我们介绍的 Go 语言，它的堆栈分配是通过 Compiler 进行分析，GC 去管理的，而对其的分析选择动作就是今天探讨的重点</p>
+<h2 id="什么是逃逸分析">什么是逃逸分析<a href="#什么是逃逸分析" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在编译程序优化理论中，逃逸分析是一种确定指针动态范围的方法，简单来说就是分析在程序的哪些地方可以访问到该指针</p>
+<p>通俗地讲，逃逸分析就是确定一个变量要放堆上还是栈上，规则如下：</p>
+<ol>
+<li>是否有在其他地方（非局部）被引用。只要<strong>有可能</strong>被引用了，那么它<strong>一定</strong>分配到堆上。否则分配到栈上</li>
+<li>即使没有被外部引用，但对象过大，无法存放在栈区上。依然有可能分配到堆上</li>
+</ol>
+<p>对此你可以理解为，逃逸分析是编译器用于决定变量分配到堆上还是栈上的一种行为</p>
+<h2 id="在什么阶段确立逃逸">在什么阶段确立逃逸<a href="#在什么阶段确立逃逸" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在编译阶段确立逃逸，注意并不是在运行时</p>
+<h2 id="为什么需要逃逸">为什么需要逃逸<a href="#为什么需要逃逸" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>这个问题我们可以反过来想，如果变量都分配到堆上了会出现什么事情？例如：</p>
+<ul>
+<li>垃圾回收（GC）的压力不断增大</li>
+<li>申请、分配、回收内存的系统开销增大（相对于栈）</li>
+<li>动态分配产生一定量的内存碎片</li>
+</ul>
+<p>其实总的来说，就是频繁申请、分配堆内存是有一定 “代价” 的。会影响应用程序运行的效率，间接影响到整体系统。因此 “按需分配” 最大限度的灵活利用资源，才是正确的治理之道。这就是为什么需要逃逸分析的原因，你觉得呢？</p>
+<h2 id="怎么确定是否逃逸">怎么确定是否逃逸<a href="#怎么确定是否逃逸" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>第一，通过编译器命令，就可以看到详细的逃逸分析过程。而指令集 <code>-gcflags</code> 用于将标识参数传递给 Go 编译器，涉及如下：</p>
+<ul>
+<li>
+<p><code>-m</code> 会打印出逃逸分析的优化策略，实际上最多总共可以用 4 个 <code>-m</code>，但是信息量较大，一般用 1 个就可以了</p>
+</li>
+<li>
+<p><code>-l</code> 会禁用函数内联，在这里禁用掉 inline 能更好的观察逃逸情况，减少干扰</p>
+</li>
+</ul>
+<pre><code>$ go build -gcflags '-m -l' main.go
+</code></pre><p>第二，通过反编译命令查看</p>
+<pre><code>$ go tool compile -S main.go
+</code></pre><p>注：可以通过 <code>go tool compile -help</code> 查看所有允许传递给编译器的标识参数</p>
+<h2 id="逃逸案例">逃逸案例<a href="#逃逸案例" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="案例一指针">案例一：指针<a href="#案例一指针" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>第一个案例是一开始抛出的问题，现在你再看看，想想，如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">ID</span>     <span class="kt">int64</span>
+	<span class="nx">Name</span>   <span class="kt">string</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetUserInfo</span><span class="p">()</span> <span class="o">*</span><span class="nx">User</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">User</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="mi">13746731</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;EDDYCJY&#34;</span><span class="p">,</span> <span class="nx">Avatar</span><span class="p">:</span> <span class="s">&#34;https://avatars0.githubusercontent.com/u/13746731&#34;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">_</span> <span class="p">=</span> <span class="nf">GetUserInfo</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div><p>执行命令观察一下，如下：</p>
+<pre><code>$ go build -gcflags '-m -l' main.go
+# command-line-arguments
+./main.go:10:54: &amp;User literal escapes to heap
+</code></pre><p>通过查看分析结果，可得知 <code>&amp;User</code> 逃到了堆里，也就是分配到堆上了。这是不是有问题啊&hellip;再看看汇编代码确定一下，如下：</p>
+<pre><code>$ go tool compile -S main.go
+&quot;&quot;.GetUserInfo STEXT size=190 args=0x8 locals=0x18
+	0x0000 00000 (main.go:9)	TEXT	&quot;&quot;.GetUserInfo(SB), $24-8
+	...
+	0x0028 00040 (main.go:10)	MOVQ	AX, (SP)
+	0x002c 00044 (main.go:10)	CALL	runtime.newobject(SB)
+	0x0031 00049 (main.go:10)	PCDATA	$2, $1
+	0x0031 00049 (main.go:10)	MOVQ	8(SP), AX
+	0x0036 00054 (main.go:10)	MOVQ	$13746731, (AX)
+	0x003d 00061 (main.go:10)	MOVQ	$7, 16(AX)
+	0x0045 00069 (main.go:10)	PCDATA	$2, $-2
+	0x0045 00069 (main.go:10)	PCDATA	$0, $-2
+	0x0045 00069 (main.go:10)	CMPL	runtime.writeBarrier(SB), $0
+	0x004c 00076 (main.go:10)	JNE	156
+	0x004e 00078 (main.go:10)	LEAQ	go.string.&quot;EDDYCJY&quot;(SB), CX
+    ...
+</code></pre><p>我们将目光集中到 CALL 指令，发现其执行了 <code>runtime.newobject</code> 方法，也就是确实是分配到了堆上。这是为什么呢？</p>
+<h4 id="分析结果">分析结果<a href="#分析结果" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>这是因为 <code>GetUserInfo()</code> 返回的是指针对象，引用被返回到了方法之外了。因此编译器会把该对象分配到堆上，而不是栈上。否则方法结束之后，局部变量就被回收了，岂不是翻车。所以最终分配到堆上是理所当然的</p>
+<h4 id="再想想">再想想<a href="#再想想" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>那你可能会想，那就是所有指针对象，都应该在堆上？并不。如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">str</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="kt">string</span><span class="p">)</span>
+	<span class="o">*</span><span class="nx">str</span> <span class="p">=</span> <span class="s">&#34;EDDYCJY&#34;</span>
+<span class="p">}</span>
+</code></pre></div><p>你想想这个对象会分配到哪里？如下：</p>
+<pre><code>$ go build -gcflags '-m -l' main.go
+# command-line-arguments
+./main.go:4:12: main new(string) does not escape
+</code></pre><p>显然，该对象分配到栈上了。很核心的一点就是它有没有被作用域之外所引用，而这里作用域仍然保留在 <code>main</code> 中，因此它没有发生逃逸</p>
+<h3 id="案例二未确定类型">案例二：未确定类型<a href="#案例二未确定类型" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">str</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="kt">string</span><span class="p">)</span>
+	<span class="o">*</span><span class="nx">str</span> <span class="p">=</span> <span class="s">&#34;EDDYCJY&#34;</span>
+
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>执行命令观察一下，如下：</p>
+<pre><code>$ go build -gcflags '-m -l' main.go
+# command-line-arguments
+./main.go:9:13: str escapes to heap
+./main.go:6:12: new(string) escapes to heap
+./main.go:9:13: main ... argument does not escape
+</code></pre><p>通过查看分析结果，可得知 <code>str</code> 变量逃到了堆上，也就是该对象在堆上分配。但上个案例时它还在栈上，我们也就 <code>fmt</code> 输出了它而已。这&hellip;到底发生了什么事？</p>
+<h4 id="分析结果-1">分析结果<a href="#分析结果-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>相对案例一，案例二只加了一行代码 <code>fmt.Println(str)</code>，问题肯定出在它身上。其原型：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">Println</span><span class="p">(</span><span class="nx">a</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</code></pre></div><p>通过对其分析，可得知当形参为 <code>interface</code> 类型时，在编译阶段编译器无法确定其具体的类型。因此会产生逃逸，最终分配到堆上</p>
+<p>如果你有兴趣追源码的话，可以看下内部的 <code>reflect.TypeOf(arg).Kind()</code> 语句，其会造成堆逃逸，而表象就是 <code>interface</code> 类型会导致该对象分配到堆上</p>
+<h3 id="案例三泄露参数">案例三、泄露参数<a href="#案例三泄露参数" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">ID</span>     <span class="kt">int64</span>
+	<span class="nx">Name</span>   <span class="kt">string</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetUserInfo</span><span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">User</span><span class="p">)</span> <span class="o">*</span><span class="nx">User</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">u</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">_</span> <span class="p">=</span> <span class="nf">GetUserInfo</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">User</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="mi">13746731</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;EDDYCJY&#34;</span><span class="p">,</span> <span class="nx">Avatar</span><span class="p">:</span> <span class="s">&#34;https://avatars0.githubusercontent.com/u/13746731&#34;</span><span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div><p>执行命令观察一下，如下：</p>
+<pre><code>$ go build -gcflags '-m -l' main.go
+# command-line-arguments
+./main.go:9:18: leaking param: u to result ~r1 level=0
+./main.go:14:63: main &amp;User literal does not escape
+</code></pre><p>我们注意到 <code>leaking param</code> 的表述，它说明了变量 <code>u</code> 是一个泄露参数。结合代码可得知其传给 <code>GetUserInfo</code> 方法后，没有做任何引用之类的涉及变量的动作，直接就把这个变量返回出去了。因此这个变量实际上并没有逃逸，它的作用域还在 <code>main()</code> 之中，所以分配在栈上</p>
+<h4 id="再想想-1">再想想<a href="#再想想-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>那你再想想怎么样才能让它分配到堆上？结合案例一，举一反三。修改如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">ID</span>     <span class="kt">int64</span>
+	<span class="nx">Name</span>   <span class="kt">string</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetUserInfo</span><span class="p">(</span><span class="nx">u</span> <span class="nx">User</span><span class="p">)</span> <span class="o">*</span><span class="nx">User</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">u</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">_</span> <span class="p">=</span> <span class="nf">GetUserInfo</span><span class="p">(</span><span class="nx">User</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="mi">13746731</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;EDDYCJY&#34;</span><span class="p">,</span> <span class="nx">Avatar</span><span class="p">:</span> <span class="s">&#34;https://avatars0.githubusercontent.com/u/13746731&#34;</span><span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div><p>执行命令观察一下，如下：</p>
+<pre><code>$ go build -gcflags '-m -l' main.go
+# command-line-arguments
+./main.go:10:9: &amp;u escapes to heap
+./main.go:9:18: moved to heap: u
+</code></pre><p>只要一小改，它就考虑会被外部所引用，因此妥妥的分配到堆上了</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本文我给你介绍了逃逸分析的概念和规则，并列举了一些例子加深理解。但实际肯定远远不止这些案例，你需要做到的是掌握方法，遇到再看就好了。除此之外你还需要注意：</p>
+<ul>
+<li>静态分配到栈上，性能一定比动态分配到堆上好</li>
+<li>底层分配到堆，还是栈。实际上对你来说是透明的，不需要过度关心</li>
+<li>每个 Go 版本的逃逸分析都会有所不同（会改变，会优化）</li>
+<li>直接通过 <code>go build -gcflags '-m -l'</code> 就可以看到逃逸分析的过程和结果</li>
+<li>到处都用指针传递并不一定是最好的，要用对</li>
+</ul>
+<p>之前就有想过要不要写 “逃逸分析” 相关的文章，直到最近看到在夜读里有人问，还是有写的必要。对于这块的知识点。我的建议是适当了解，但没必要硬记。靠基础知识点加命令调试观察就好了。像是曹大之前讲的 “你琢磨半天逃逸分析，一压测，瓶颈在锁上”，完全没必要过度在意&hellip;</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="http://www.agardner.me/golang/garbage/collection/gc/escape/analysis/2015/10/18/go-escape-analysis.html">Golang escape analysis</a></li>
+<li><a href="https://golang.org/doc/faq#stack_or_heap">FAQ</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90">逃逸分析</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>489 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-05-20 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#问题">问题</a></li>
+    <li><a href="#什么是堆栈">什么是堆/栈</a></li>
+    <li><a href="#什么是逃逸分析">什么是逃逸分析</a></li>
+    <li><a href="#在什么阶段确立逃逸">在什么阶段确立逃逸</a></li>
+    <li><a href="#为什么需要逃逸">为什么需要逃逸</a></li>
+    <li><a href="#怎么确定是否逃逸">怎么确定是否逃逸</a></li>
+    <li><a href="#逃逸案例">逃逸案例</a>
+      <ul>
+        <li><a href="#案例一指针">案例一：指针</a></li>
+        <li><a href="#案例二未确定类型">案例二：未确定类型</a></li>
+        <li><a href="#案例三泄露参数">案例三、泄露参数</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/panic/2019-05-21-panic-and-recover/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>深入理解 Go panic and recover</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/map/2019-04-07-why-map-no-order/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>为什么遍历 Go map 是无序的</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

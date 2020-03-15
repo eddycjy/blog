@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载六」Unary and Stream interceptor">
+<meta itemprop="description" content="前言 我想在每个 RPC 方法的前或后做某些事情，怎么做？
+本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能。
+有几种方法 在 gRPC 中，大类可分为两种 RPC 方法，与拦截器的对应关系是：
+ 普通方法：一元拦截器（grpc.UnaryInterceptor） 流方法：流拦截器（grpc.StreamInterceptor）  看一看 grpc.UnaryInterceptor func UnaryInterceptor(i UnaryServerInterceptor) ServerOption { return func(o *options) { if o.unaryInt != nil { panic(&quot;The unary server interceptor was already set and may not be reset.&quot;) } o.unaryInt = i } } 函数原型：
+type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error) 通过查看源码可得知，要完成一个拦截器需要实现 UnaryServerInterceptor 方法。形参如下：
+ ctx context.Context：请求上下文 req interface{}：RPC 方法的请求参数 info *UnaryServerInfo：RPC 方法的所有信息 handler UnaryHandler：RPC 方法本身  grpc.">
+<meta itemprop="datePublished" content="2018-10-10T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-10-10T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="350">
+
+
+
+<meta itemprop="keywords" content="go,grpc," /><meta property="og:title" content="「连载六」Unary and Stream interceptor" />
+<meta property="og:description" content="前言 我想在每个 RPC 方法的前或后做某些事情，怎么做？
+本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能。
+有几种方法 在 gRPC 中，大类可分为两种 RPC 方法，与拦截器的对应关系是：
+ 普通方法：一元拦截器（grpc.UnaryInterceptor） 流方法：流拦截器（grpc.StreamInterceptor）  看一看 grpc.UnaryInterceptor func UnaryInterceptor(i UnaryServerInterceptor) ServerOption { return func(o *options) { if o.unaryInt != nil { panic(&quot;The unary server interceptor was already set and may not be reset.&quot;) } o.unaryInt = i } } 函数原型：
+type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error) 通过查看源码可得知，要完成一个拦截器需要实现 UnaryServerInterceptor 方法。形参如下：
+ ctx context.Context：请求上下文 req interface{}：RPC 方法的请求参数 info *UnaryServerInfo：RPC 方法的所有信息 handler UnaryHandler：RPC 方法本身  grpc." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/grpc/2018-10-10-interceptor/" />
+<meta property="article:published_time" content="2018-10-10T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-10-10T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载六」Unary and Stream interceptor"/>
+<meta name="twitter:description" content="前言 我想在每个 RPC 方法的前或后做某些事情，怎么做？
+本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能。
+有几种方法 在 gRPC 中，大类可分为两种 RPC 方法，与拦截器的对应关系是：
+ 普通方法：一元拦截器（grpc.UnaryInterceptor） 流方法：流拦截器（grpc.StreamInterceptor）  看一看 grpc.UnaryInterceptor func UnaryInterceptor(i UnaryServerInterceptor) ServerOption { return func(o *options) { if o.unaryInt != nil { panic(&quot;The unary server interceptor was already set and may not be reset.&quot;) } o.unaryInt = i } } 函数原型：
+type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error) 通过查看源码可得知，要完成一个拦截器需要实现 UnaryServerInterceptor 方法。形参如下：
+ ctx context.Context：请求上下文 req interface{}：RPC 方法的请求参数 info *UnaryServerInfo：RPC 方法的所有信息 handler UnaryHandler：RPC 方法本身  grpc."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载六」Unary and Stream interceptor</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Oct 10, 2018</span></div>
+				<h1>「连载六」Unary and Stream interceptor</h1>
+			</header>
+			<div class="content">
+				<h2 id="前言">前言<a href="#前言" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>我想在每个 RPC 方法的前或后做某些事情，怎么做？</p>
+<p>本章节将要介绍的拦截器（interceptor），就能帮你在合适的地方实现这些功能。</p>
+<h2 id="有几种方法">有几种方法<a href="#有几种方法" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在 gRPC 中，大类可分为两种 RPC 方法，与拦截器的对应关系是：</p>
+<ul>
+<li>普通方法：一元拦截器（grpc.UnaryInterceptor）</li>
+<li>流方法：流拦截器（grpc.StreamInterceptor）</li>
+</ul>
+<h2 id="看一看">看一看<a href="#看一看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="grpcunaryinterceptor">grpc.UnaryInterceptor<a href="#grpcunaryinterceptor" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>func UnaryInterceptor(i UnaryServerInterceptor) ServerOption {
+	return func(o *options) {
+		if o.unaryInt != nil {
+			panic(&quot;The unary server interceptor was already set and may not be reset.&quot;)
+		}
+		o.unaryInt = i
+	}
+}
+</code></pre><p>函数原型：</p>
+<pre><code>type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error)
+</code></pre><p>通过查看源码可得知，要完成一个拦截器需要实现 <code>UnaryServerInterceptor</code> 方法。形参如下：</p>
+<ul>
+<li>ctx context.Context：请求上下文</li>
+<li>req interface{}：RPC 方法的请求参数</li>
+<li>info *UnaryServerInfo：RPC 方法的所有信息</li>
+<li>handler UnaryHandler：RPC 方法本身</li>
+</ul>
+<h3 id="grpcstreaminterceptor">grpc.StreamInterceptor<a href="#grpcstreaminterceptor" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>func StreamInterceptor(i StreamServerInterceptor) ServerOption
+</code></pre><p>函数原型：</p>
+<pre><code>type StreamServerInterceptor func(srv interface{}, ss ServerStream, info *StreamServerInfo, handler StreamHandler) error
+</code></pre><p>StreamServerInterceptor 与 UnaryServerInterceptor 形参的意义是一样，不再赘述</p>
+<h3 id="如何实现多个拦截器">如何实现多个拦截器<a href="#如何实现多个拦截器" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>另外，可以发现 gRPC 本身居然只能设置一个拦截器，难道所有的逻辑都只能写在一起？</p>
+<p>关于这一点，你可以放心。采用开源项目 <a href="https://github.com/grpc-ecosystem/go-grpc-middleware">go-grpc-middleware</a> 就可以解决这个问题，本章也会使用它。</p>
+<pre><code>import &quot;github.com/grpc-ecosystem/go-grpc-middleware&quot;
+
+myServer := grpc.NewServer(
+    grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+        ...
+    )),
+    grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+       ...
+    )),
+)
+</code></pre><h2 id="grpc">gRPC<a href="#grpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>从本节开始编写 gRPC interceptor 的代码，我们会将实现以下拦截器：</p>
+<ul>
+<li>logging：RPC 方法的入参出参的日志输出</li>
+<li>recover：RPC 方法的异常保护和日志输出</li>
+</ul>
+<h3 id="实现-interceptor">实现 interceptor<a href="#实现-interceptor" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="logging">logging<a href="#logging" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>func LoggingInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	log.Printf(&quot;gRPC method: %s, %v&quot;, info.FullMethod, req)
+	resp, err := handler(ctx, req)
+	log.Printf(&quot;gRPC method: %s, %v&quot;, info.FullMethod, resp)
+	return resp, err
+}
+</code></pre><h4 id="recover">recover<a href="#recover" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>func RecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			debug.PrintStack()
+			err = status.Errorf(codes.Internal, &quot;Panic err: %v&quot;, e)
+		}
+	}()
+
+	return handler(ctx, req)
+}
+</code></pre><h3 id="server">Server<a href="#server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>import (
+	&quot;context&quot;
+	&quot;crypto/tls&quot;
+	&quot;crypto/x509&quot;
+	&quot;errors&quot;
+	&quot;io/ioutil&quot;
+	&quot;log&quot;
+	&quot;net&quot;
+	&quot;runtime/debug&quot;
+
+	&quot;google.golang.org/grpc&quot;
+	&quot;google.golang.org/grpc/credentials&quot;
+	&quot;google.golang.org/grpc/status&quot;
+	&quot;google.golang.org/grpc/codes&quot;
+	&quot;github.com/grpc-ecosystem/go-grpc-middleware&quot;
+
+	pb &quot;github.com/EDDYCJY/go-grpc-example/proto&quot;
+)
+
+...
+
+func main() {
+	c, err := GetTLSCredentialsByCA()
+	if err != nil {
+		log.Fatalf(&quot;GetTLSCredentialsByCA err: %v&quot;, err)
+	}
+
+	opts := []grpc.ServerOption{
+		grpc.Creds(c),
+		grpc_middleware.WithUnaryServerChain(
+			RecoveryInterceptor,
+			LoggingInterceptor,
+		),
+	}
+
+	server := grpc.NewServer(opts...)
+	pb.RegisterSearchServiceServer(server, &amp;SearchService{})
+
+	lis, err := net.Listen(&quot;tcp&quot;, &quot;:&quot;+PORT)
+	if err != nil {
+		log.Fatalf(&quot;net.Listen err: %v&quot;, err)
+	}
+
+	server.Serve(lis)
+}
+</code></pre><h2 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="logging-1">logging<a href="#logging-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>启动 simple_server/server.go，执行 simple_client/client.go 发起请求，得到结果：</p>
+<pre><code>$ go run server.go
+2018/10/02 13:46:35 gRPC method: /proto.SearchService/Search, request:&quot;gRPC&quot; 
+2018/10/02 13:46:35 gRPC method: /proto.SearchService/Search, response:&quot;gRPC Server&quot;
+</code></pre><h3 id="recover-1">recover<a href="#recover-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在 RPC 方法中人为地制造运行时错误，再重复启动 server/client.go，得到结果：</p>
+<h4 id="client">client<a href="#client" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>$ go run client.go
+2018/10/02 13:19:03 client.Search err: rpc error: code = Internal desc = Panic err: assignment to entry in nil map
+exit status 1
+</code></pre><h4 id="server-1">server<a href="#server-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>$ go run server.go
+goroutine 23 [running]:
+runtime/debug.Stack(0xc420223588, 0x1033da9, 0xc420001980)
+	/usr/local/Cellar/go/1.10.1/libexec/src/runtime/debug/stack.go:24 +0xa7
+runtime/debug.PrintStack()
+	/usr/local/Cellar/go/1.10.1/libexec/src/runtime/debug/stack.go:16 +0x22
+main.RecoveryInterceptor.func1(0xc420223a10)
+...
+</code></pre><p>检查服务是否仍然运行，即可知道 Recovery 是否成功生效</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>通过本章节，你可以学会最常见的拦截器使用方法。接下来其它“新”需求只要举一反三即可。</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-grpc-example">go-grpc-example</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/grpc">grpc</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>350 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-10-10 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#有几种方法">有几种方法</a></li>
+    <li><a href="#看一看">看一看</a>
+      <ul>
+        <li><a href="#grpcunaryinterceptor">grpc.UnaryInterceptor</a></li>
+        <li><a href="#grpcstreaminterceptor">grpc.StreamInterceptor</a></li>
+        <li><a href="#如何实现多个拦截器">如何实现多个拦截器</a></li>
+      </ul>
+    </li>
+    <li><a href="#grpc">gRPC</a>
+      <ul>
+        <li><a href="#实现-interceptor">实现 interceptor</a></li>
+        <li><a href="#server">Server</a></li>
+      </ul>
+    </li>
+    <li><a href="#验证">验证</a>
+      <ul>
+        <li><a href="#logging-1">logging</a></li>
+        <li><a href="#recover-1">recover</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/grpc/2018-10-12-grpc-http/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载七」让你的服务同时提供 HTTP 接口</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/grpc/2018-10-08-ca-tls/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载五」基于 CA 的 TLS 证书认证</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

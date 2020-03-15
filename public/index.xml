@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>煎鱼</title>
+    <link>https://eddycjy.com/</link>
+    <description>Recent content on 煎鱼</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-hans</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright>
+    <lastBuildDate>Sun, 15 Mar 2020 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://eddycjy.com/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>https://eddycjy.com/about/</link>
+      <pubDate>Sun, 15 Mar 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/about/</guid>
+      <description>你好，我是煎鱼，有任何建议或问题欢迎随时找我交流。
+联系方式：
+ Github：https://github.com/eddycjy/blog 公众号：我要煎鱼说 邮箱：eddycjy@gmail.com  </description>
+    </item>
+    
+    <item>
+      <title>Go Modules 终极入门</title>
+      <link>https://eddycjy.com/posts/go/go-moduels/2020-02-28-go-modules/</link>
+      <pubDate>Fri, 28 Feb 2020 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/go-moduels/2020-02-28-go-modules/</guid>
+      <description>Go modules 是 Go 语言中正式官宣的项目依赖解决方案，Go modules（前身为vgo）于 Go1.11 正式发布，在 Go1.14 已经准备好，并且可以用在生产上（ready for production）了，Go官方也鼓励所有用户从其他依赖项管理工具迁移到 Go modules。
+而 Go1.14，在近期也终于正式发布，Go 官方亲自 “喊” 你来用：
+因此在今天这篇文章中，我将给大家带来 Go modules 的 “终极入门”，欢迎大家一起共同探讨。
+Go modules 是 Go 语言中正式官宣的项目依赖管理工具，Go modules（前身为vgo）于 Go1.11 正式发布，在 Go1.14 已经准备好，并且可以用在生产上（ready for production）了，鼓励所有用户从其他依赖项管理工具迁移到 Go modules。
+什么是Go Modules Go modules 是 Go 语言的依赖解决方案，发布于 Go1.11，成长于 Go1.12，丰富于 Go1.13，正式于 Go1.14 推荐在生产上使用。
+Go moudles 目前集成在 Go 的工具链中，只要安装了 Go，自然而然也就可以使用 Go moudles 了，而 Go modules 的出现也解决了在 Go1.11 前的几个常见争议问题：
+ Go 语言长久以来的依赖管理问题。 “淘汰”现有的 GOPATH 的使用模式。 统一社区中的其它的依赖管理工具（提供迁移功能）。  GOPATH的那些点点滴滴 我们有提到 Go modules 的解决的问题之一就是“淘汰”掉 GOPATH，但是 GOPATH 又是什么呢，为什么在 Go1.</description>
+    </item>
+    
+    <item>
+      <title>干货满满的 Go Modules 和 goproxy.cn</title>
+      <link>https://eddycjy.com/posts/go/go-moduels/2019-09-29-goproxy-cn/</link>
+      <pubDate>Sun, 29 Sep 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/go-moduels/2019-09-29-goproxy-cn/</guid>
+      <description>大家好，我是一只普通的煎鱼，周四晚上很有幸邀请到 goproxy.cn 的作者 @盛傲飞（@aofei） 到 Go 夜读给我们进行第 61 期 《Go Modules、Go Module Proxy 和 goproxy.cn》的技术分享。
+本次 @盛傲飞 的夜读分享，是对 Go Modules 的一次很好的解读，比较贴近工程实践，我必然希望把这块的知识更多的分享给大家，因此有了今天本篇文章，同时大家也可以多关注 Go 夜读，每周会通过 zoom 在线直播的方式分享 Go 相关的技术话题，希望对大家有所帮助。
+前言 Go 1.11 推出的模块（Modules）为 Go 语言开发者打开了一扇新的大门，理想化的依赖管理解决方案使得 Go 语言朝着计算机编程史上的第一个依赖乌托邦（Deptopia）迈进。随着模块一起推出的还有模块代理协议（Module proxy protocol），通过这个协议我们可以实现 Go 模块代理（Go module proxy），也就是依赖镜像。
+Go 1.13 的发布为模块带来了大量的改进，所以模块的扶正就是这次 Go 1.13 发布中开发者能直接感觉到的最大变化。而问题在于，Go 1.13 中的 GOPROXY 环境变量拥有了一个在中国大陆无法访问到的默认值 proxy.golang.org，经过大家在 golang/go#31755 中激烈的讨论（有些人甚至将话提上升到了“自由世界”的层次），最终 Go 核心团队仍然无法为中国开发者提供一个可在中国大陆访问的官方模块代理。
+为了今后中国的 Go 语言开发者能更好地进行开发，七牛云推出了非营利性项目 goproxy.cn，其目标是为中国和世界上其他地方的 Gopher 们提供一个免费的、可靠的、持续在线的且经过 CDN 加速的模块代理。可以预见未来是属于模块化的，所以 Go 语言开发者能越早切入模块就能越早进入未来。
+如果说 Go 1.11 和 Go 1.</description>
+    </item>
+    
+    <item>
+      <title>Go 应用内存占用太多，让排查？（VSZ篇）</title>
+      <link>https://eddycjy.com/posts/go/talk/2019-09-24-why-vsz-large/</link>
+      <pubDate>Tue, 24 Sep 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/talk/2019-09-24-why-vsz-large/</guid>
+      <description>前段时间，某同学说某服务的容器因为超出内存限制，不断地重启，问我们是不是有内存泄露，赶紧排查，然后解决掉，省的出问题。我们大为震惊，赶紧查看监控+报警系统和性能分析，发现应用指标压根就不高，不像有泄露的样子。
+那么问题是出在哪里了呢，我们进入某个容器里查看了 top 的系统指标，结果如下：
+PID VSZ RSS ... COMMAND 67459 2007m 136m ... ./eddycjy-server 从结果上来看，也没什么大开销的东西，主要就一个 Go 进程，一看，某同学就说 VSZ 那么高，而某云上的容器内存指标居然恰好和 VSZ 的值相接近，因此某同学就怀疑是不是 VSZ 所导致的，觉得存在一定的关联关系。
+而从最终的结论上来讲，上述的表述是不全对的，那么在今天，本篇文章将主要围绕 Go 进程的 VSZ 来进行剖析，看看到底它为什么那么 &amp;ldquo;高&amp;rdquo;，而在正式开始分析前，第一节为前置的补充知识，大家可按顺序阅读。
+基础知识 什么是 VSZ VSZ 是该进程所能使用的虚拟内存总大小，它包括进程可以访问的所有内存，其中包括了被换出的内存（Swap）、已分配但未使用的内存以及来自共享库的内存。
+为什么要虚拟内存 在前面我们有了解到 VSZ 其实就是该进程的虚拟内存总大小，那如果我们想了解 VSZ 的话，那我们得先了解 “为什么要虚拟内存？”。
+本质上来讲，在一个系统中的进程是与其他进程共享 CPU 和主存资源的，而在现代的操作系统中，多进程的使用非常的常见，那么如果太多的进程需要太多的内存，那么在没有虚拟内存的情况下，物理内存很可能会不够用，就会导致其中有些任务无法运行，更甚至会出现一些很奇怪的现象，例如 “某一个进程不小心写了另一个进程使用的内存”，就会造成内存破坏，因此虚拟内存是非常重要的一个媒介。
+虚拟内存包含了什么 而虚拟内存，又分为内核虚拟内存和进程虚拟内存，每一个进程的虚拟内存都是独立的， 呈现如上图所示。
+这里也补充说明一下，在内核虚拟内存中，是包含了内核中的代码和数据结构，而内核虚拟内存中的某些区域会被映射到所有进程共享的物理页面中去，因此你会看到 ”内核虚拟内存“ 中实际上是包含了 ”物理内存“ 的，它们两者存在映射关系。而在应用场景上来讲，每个进程也会去共享内核的代码和全局数据结构，因此就会被映射到所有进程的物理页面中去。
+虚拟内存的重要能力 为了更有效地管理内存并且减少出错，现代系统提供了一种对主存的抽象概念，也就是今天的主角，叫做虚拟内存（VM），虚拟内存是硬件异常、硬件地址翻译、主存、磁盘文件和内核软件交互的地方，它为每个进程提供了一个大的、一致的和私有的地址空间，虚拟内存提供了三个重要的能力：
+ 它将主存看成是一个存储在磁盘上的地址空间的高速缓存，在主存中只保存活动区域，并根据需要在磁盘和主存之间来回传送数据，通过这种方式，它高效地使用了主存。 它为每个进程提供了一致的地址空间，从而简化了内存管理。 它保护了每个进程的地址空间不被其他进程破坏。  小结 上面发散的可能比较多，简单来讲，对于本文我们重点关注这些知识点，如下：
+ 虚拟内存它是有各式各样内存交互的地方，它包含的不仅仅是 &amp;ldquo;自己&amp;rdquo;，而在本文中，我们只需要关注 VSZ，也就是进程虚拟内存，它包含了你的代码、数据、堆、栈段和共享库。 虚拟内存作为内存保护的工具，能够保证进程之间的内存空间独立，不受其他进程的影响，因此每一个进程的 VSZ 大小都不一样，互不影响。 虚拟内存的存在，系统给各进程分配的内存之和是可以大于实际可用的物理内存的，因此你也会发现你进程的物理内存总是比虚拟内存低的多的多。  排查问题 在了解了基础知识后，我们正式开始排查问题，第一步我们先编写一个测试程序，看看没有什么业务逻辑的 Go 程序，它初始的 VSZ 是怎么样的。</description>
+    </item>
+    
+    <item>
+      <title>Go1.13 defer 的性能是如何提高的</title>
+      <link>https://eddycjy.com/posts/go/talk/2019-09-07-go1.13-defer/</link>
+      <pubDate>Sat, 07 Sep 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/talk/2019-09-07-go1.13-defer/</guid>
+      <description>最近 Go1.13 终于发布了，其中一个值得关注的特性就是 defer 在大部分的场景下性能提升了30%，但是官方并没有具体写是怎么提升的，这让大家非常的疑惑。而我因为之前写过《深入理解 Go defer》 和 《Go defer 会有性能损耗，尽量不要用？》 这类文章，因此我挺感兴趣它是做了什么改变才能得到这样子的结果，所以今天和大家一起探索其中奥妙。
+一、测试 Go1.12 $ go test -bench=. -benchmem -run=none goos: darwin goarch: amd64 pkg: github.com/EDDYCJY/awesomeDefer BenchmarkDoDefer-4 20000000	91.4 ns/op	48 B/op	1 allocs/op BenchmarkDoNotDefer-4 30000000	41.6 ns/op	48 B/op	1 allocs/op PASS ok github.com/EDDYCJY/awesomeDefer	3.234s Go1.13 $ go test -bench=. -benchmem -run=none goos: darwin goarch: amd64 pkg: github.com/EDDYCJY/awesomeDefer BenchmarkDoDefer-4 15986062	74.7 ns/op	48 B/op	1 allocs/op BenchmarkDoNotDefer-4 29231842	40.3 ns/op	48 B/op	1 allocs/op PASS ok github.</description>
+    </item>
+    
+    <item>
+      <title>用 GODEBUG 看 GC</title>
+      <link>https://eddycjy.com/posts/go/tools/2019-09-02-godebug-gc/</link>
+      <pubDate>Mon, 02 Sep 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/tools/2019-09-02-godebug-gc/</guid>
+      <description>什么是 GC 在计算机科学中，垃圾回收（GC）是一种自动管理内存的机制，垃圾回收器会去尝试回收程序不再使用的对象及其占用的内存。而最早 John McCarthy 在 1959 年左右发明了垃圾回收，以简化 Lisp 中的手动内存管理的机制（来自 wikipedia）。
+为什么要 GC 手动管理内存挺麻烦，管错或者管漏内存也很糟糕，将会直接导致程序不稳定（持续泄露）甚至直接崩溃。
+GC 带来的问题 硬要说会带来什么问题的话，也就数大家最关注的 Stop The World（STW），STW 代指在执行某个垃圾回收算法的某个阶段时，需要将整个应用程序暂停去处理 GC 相关的工作事项。例如：
+   行为 会不会 STW 为什么     标记开始 会 在开始标记时，准备根对象的扫描，会打开写屏障（Write Barrier） 和 辅助GC（mutator assist），而回收器和应用程序是并发运行的，因此会暂停当前正在运行的所有 Goroutine。   并发标记中 不会 标记阶段，主要目的是标记堆内存中仍在使用的值。   标记结束 会 在完成标记任务后，将重新扫描部分根对象，这时候会禁用写屏障（Write Barrier）和辅助GC（mutator assist），而标记阶段和应用程序是并发运行的，所以在标记阶段可能会有新的对象产生，因此在重新扫描时需要进行 STW。    如何调整 GC 频率 可以通过 GOGC 变量设置初始垃圾收集器的目标百分比值，对比的规则为当新分配的数值与上一次收集后剩余的实时数值的比例达到设置的目标百分比时，就会触发 GC，默认值为 GOGC=100。如果将其设置为 GOGC=off 可以完全禁用垃圾回收器，要不试试？
+简单来讲就是，GOGC 的值设置的越大，GC 的频率越低，但每次最终所触发到 GC 的堆内存也会更大。</description>
+    </item>
+    
+    <item>
+      <title>用 GODEBUG 看调度跟踪</title>
+      <link>https://eddycjy.com/posts/go/tools/2019-08-19-godebug-sched/</link>
+      <pubDate>Mon, 19 Aug 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/tools/2019-08-19-godebug-sched/</guid>
+      <description>让 Go 更强大的原因之一莫过于它的 GODEBUG 工具，GODEBUG 的设置可以让 Go 程序在运行时输出调试信息，可以根据你的要求很直观的看到你想要的调度器或垃圾回收等详细信息，并且还不需要加装其它的插件，非常方便，今天我们将先讲解 GODEBUG 的调度器相关内容，希望对你有所帮助。
+不过在开始前，没接触过的小伙伴得先补补如下前置知识，便于更好的了解调试器输出的信息内容。
+前置知识 Go scheduler 的主要功能是针对在处理器上运行的 OS 线程分发可运行的 Goroutine，而我们一提到调度器，就离不开三个经常被提到的缩写，分别是：
+ G：Goroutine，实际上我们每次调用 go func 就是生成了一个 G。 P：处理器，一般为处理器的核数，可以通过 GOMAXPROCS 进行修改。 M：OS 线程  这三者交互实际来源于 Go 的 M: N 调度模型，也就是 M 必须与 P 进行绑定，然后不断地在 M 上循环寻找可运行的 G 来执行相应的任务，如果想具体了解可以详细阅读 《Go Runtime Scheduler》，我们抽其中的工作流程图进行简单分析，如下:
+ 当我们执行 go func() 时，实际上就是创建一个全新的 Goroutine，我们称它为 G。 新创建的 G 会被放入 P 的本地队列（Local Queue）或全局队列（Global Queue）中，准备下一步的动作。 唤醒或创建 M 以便执行 G。 不断地进行事件循环 寻找在可用状态下的 G 进行执行任务 清除后，重新进入事件循环  而在描述中有提到全局和本地这两类队列，其实在功能上来讲都是用于存放正在等待运行的 G，但是不同点在于，本地队列有数量限制，不允许超过 256 个。并且在新建 G 时，会优先选择 P 的本地队列，如果本地队列满了，则将 P 的本地队列的一半的 G 移动到全局队列，这其实可以理解为调度资源的共享和再平衡。</description>
+    </item>
+    
+    <item>
+      <title>Go 大杀器之跟踪剖析 trace</title>
+      <link>https://eddycjy.com/posts/go/tools/2019-07-12-go-tool-trace/</link>
+      <pubDate>Fri, 12 Jul 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/tools/2019-07-12-go-tool-trace/</guid>
+      <description>在 Go 中有许许多多的分析工具，在之前我有写过一篇 《Golang 大杀器之性能剖析 PProf》 来介绍 PProf，如果有小伙伴感兴趣可以去我博客看看。
+但单单使用 PProf 有时候不一定足够完整，因为在真实的程序中还包含许多的隐藏动作，例如 Goroutine 在执行时会做哪些操作？执行/阻塞了多长时间？在什么时候阻止？在哪里被阻止的？谁又锁/解锁了它们？GC 是怎么影响到 Goroutine 的执行的？这些东西用 PProf 是很难分析出来的，但如果你又想知道上述的答案的话，你可以用本文的主角 go tool trace 来打开新世界的大门。目录如下：
+初步了解 import ( &amp;#34;os&amp;#34; &amp;#34;runtime/trace&amp;#34; ) func main() { trace.Start(os.Stderr) defer trace.Stop() ch := make(chan string) go func() { ch &amp;lt;- &amp;#34;EDDYCJY&amp;#34; }() &amp;lt;-ch } 生成跟踪文件：
+$ go run main.go 2&amp;gt; trace.out 启动可视化界面：
+$ go tool trace trace.out 2019/06/22 16:14:52 Parsing trace... 2019/06/22 16:14:52 Splitting trace... 2019/06/22 16:14:52 Opening browser.</description>
+    </item>
+    
+    <item>
+      <title>从实践到原理，带你参透 gRPC</title>
+      <link>https://eddycjy.com/posts/go/talk/2019-06-29-talking-grpc/</link>
+      <pubDate>Sat, 29 Jun 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/talk/2019-06-29-talking-grpc/</guid>
+      <description>gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
+简述 gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C++, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
+gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。
+调用模型 1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。
+2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）。
+3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回。
+4、对响应结果使用 Protobuf 进行对象序列化压缩（IDL）。
+5、客户端接受到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。
+调用方式 一、Unary RPC：一元 RPC Server type SearchService struct{} func (s *SearchService) Search(ctx context.Context, r *pb.</description>
+    </item>
+    
+    <item>
+      <title>「连载四」gRPC&#43;gRPC Gateway 能不能不用证书？</title>
+      <link>https://eddycjy.com/posts/go/grpc-gateway/2019-06-22-grpc-gateway-tls/</link>
+      <pubDate>Sat, 22 Jun 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/grpc-gateway/2019-06-22-grpc-gateway-tls/</guid>
+      <description>如果你以前有涉猎过 gRPC+gRPC Gateway 这两个组件，你肯定会遇到这个问题，就是 “为什么非得开 TLS，才能够实现同端口双流量，能不能不开？” 又或是 “我不想用证书就实现这些功能，行不行？”。我被无数的人问过无数次这些问题，也说服过很多人，但说服归说服，不代表放弃。前年不行，不代表今年不行，在今天我希望分享来龙去脉和具体的实现方式给你。
+过去 为什么 h2 不行 因为 net/http2 仅支持 &amp;ldquo;h2&amp;rdquo; 标识，而 &amp;ldquo;h2&amp;rdquo; 标识 HTTP/2 必须使用传输层安全性（TLS）的协议，此标识符用于 TLS 应用层协议协商字段以及识别 HTTP/2 over TLS。
+简单来讲，也就 net/http2 必须使用 TLS 来交互。通俗来讲就要用证书，那么理所当然，也就无法支持非 TLS 的情况了。
+寻找 h2c 那这条路不行，我们再想想别的路？那就是 HTTP/2 规范中的 &amp;ldquo;h2c&amp;rdquo; 标识了，&amp;ldquo;h2c&amp;rdquo; 标识允许通过明文 TCP 运行 HTTP/2 的协议，此标识符用于 HTTP/1.1 升级标头字段以及标识 HTTP/2 over TCP。
+但是这条路，早在 2015 年就已经有在 issue 中进行讨论，当时 @bradfitz 明确表示 “不打算支持 h2c，对仅支持 TLS 的情况非常满意，一年后再问我一次”，原文回复如下：
+ We do not plan to support h2c. I don&amp;rsquo;t want to receive bug reports from users who get bitten by transparent proxies messing with h2c.</description>
+    </item>
+    
+  </channel>
+</rss>

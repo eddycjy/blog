@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="用 GODEBUG 看 GC">
+<meta itemprop="description" content="什么是 GC 在计算机科学中，垃圾回收（GC）是一种自动管理内存的机制，垃圾回收器会去尝试回收程序不再使用的对象及其占用的内存。而最早 John McCarthy 在 1959 年左右发明了垃圾回收，以简化 Lisp 中的手动内存管理的机制（来自 wikipedia）。
+为什么要 GC 手动管理内存挺麻烦，管错或者管漏内存也很糟糕，将会直接导致程序不稳定（持续泄露）甚至直接崩溃。
+GC 带来的问题 硬要说会带来什么问题的话，也就数大家最关注的 Stop The World（STW），STW 代指在执行某个垃圾回收算法的某个阶段时，需要将整个应用程序暂停去处理 GC 相关的工作事项。例如：
+   行为 会不会 STW 为什么     标记开始 会 在开始标记时，准备根对象的扫描，会打开写屏障（Write Barrier） 和 辅助GC（mutator assist），而回收器和应用程序是并发运行的，因此会暂停当前正在运行的所有 Goroutine。   并发标记中 不会 标记阶段，主要目的是标记堆内存中仍在使用的值。   标记结束 会 在完成标记任务后，将重新扫描部分根对象，这时候会禁用写屏障（Write Barrier）和辅助GC（mutator assist），而标记阶段和应用程序是并发运行的，所以在标记阶段可能会有新的对象产生，因此在重新扫描时需要进行 STW。    如何调整 GC 频率 可以通过 GOGC 变量设置初始垃圾收集器的目标百分比值，对比的规则为当新分配的数值与上一次收集后剩余的实时数值的比例达到设置的目标百分比时，就会触发 GC，默认值为 GOGC=100。如果将其设置为 GOGC=off 可以完全禁用垃圾回收器，要不试试？
+简单来讲就是，GOGC 的值设置的越大，GC 的频率越低，但每次最终所触发到 GC 的堆内存也会更大。">
+<meta itemprop="datePublished" content="2019-09-02T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-09-02T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="530">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="用 GODEBUG 看 GC" />
+<meta property="og:description" content="什么是 GC 在计算机科学中，垃圾回收（GC）是一种自动管理内存的机制，垃圾回收器会去尝试回收程序不再使用的对象及其占用的内存。而最早 John McCarthy 在 1959 年左右发明了垃圾回收，以简化 Lisp 中的手动内存管理的机制（来自 wikipedia）。
+为什么要 GC 手动管理内存挺麻烦，管错或者管漏内存也很糟糕，将会直接导致程序不稳定（持续泄露）甚至直接崩溃。
+GC 带来的问题 硬要说会带来什么问题的话，也就数大家最关注的 Stop The World（STW），STW 代指在执行某个垃圾回收算法的某个阶段时，需要将整个应用程序暂停去处理 GC 相关的工作事项。例如：
+   行为 会不会 STW 为什么     标记开始 会 在开始标记时，准备根对象的扫描，会打开写屏障（Write Barrier） 和 辅助GC（mutator assist），而回收器和应用程序是并发运行的，因此会暂停当前正在运行的所有 Goroutine。   并发标记中 不会 标记阶段，主要目的是标记堆内存中仍在使用的值。   标记结束 会 在完成标记任务后，将重新扫描部分根对象，这时候会禁用写屏障（Write Barrier）和辅助GC（mutator assist），而标记阶段和应用程序是并发运行的，所以在标记阶段可能会有新的对象产生，因此在重新扫描时需要进行 STW。    如何调整 GC 频率 可以通过 GOGC 变量设置初始垃圾收集器的目标百分比值，对比的规则为当新分配的数值与上一次收集后剩余的实时数值的比例达到设置的目标百分比时，就会触发 GC，默认值为 GOGC=100。如果将其设置为 GOGC=off 可以完全禁用垃圾回收器，要不试试？
+简单来讲就是，GOGC 的值设置的越大，GC 的频率越低，但每次最终所触发到 GC 的堆内存也会更大。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/tools/2019-09-02-godebug-gc/" />
+<meta property="article:published_time" content="2019-09-02T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-09-02T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="用 GODEBUG 看 GC"/>
+<meta name="twitter:description" content="什么是 GC 在计算机科学中，垃圾回收（GC）是一种自动管理内存的机制，垃圾回收器会去尝试回收程序不再使用的对象及其占用的内存。而最早 John McCarthy 在 1959 年左右发明了垃圾回收，以简化 Lisp 中的手动内存管理的机制（来自 wikipedia）。
+为什么要 GC 手动管理内存挺麻烦，管错或者管漏内存也很糟糕，将会直接导致程序不稳定（持续泄露）甚至直接崩溃。
+GC 带来的问题 硬要说会带来什么问题的话，也就数大家最关注的 Stop The World（STW），STW 代指在执行某个垃圾回收算法的某个阶段时，需要将整个应用程序暂停去处理 GC 相关的工作事项。例如：
+   行为 会不会 STW 为什么     标记开始 会 在开始标记时，准备根对象的扫描，会打开写屏障（Write Barrier） 和 辅助GC（mutator assist），而回收器和应用程序是并发运行的，因此会暂停当前正在运行的所有 Goroutine。   并发标记中 不会 标记阶段，主要目的是标记堆内存中仍在使用的值。   标记结束 会 在完成标记任务后，将重新扫描部分根对象，这时候会禁用写屏障（Write Barrier）和辅助GC（mutator assist），而标记阶段和应用程序是并发运行的，所以在标记阶段可能会有新的对象产生，因此在重新扫描时需要进行 STW。    如何调整 GC 频率 可以通过 GOGC 变量设置初始垃圾收集器的目标百分比值，对比的规则为当新分配的数值与上一次收集后剩余的实时数值的比例达到设置的目标百分比时，就会触发 GC，默认值为 GOGC=100。如果将其设置为 GOGC=off 可以完全禁用垃圾回收器，要不试试？
+简单来讲就是，GOGC 的值设置的越大，GC 的频率越低，但每次最终所触发到 GC 的堆内存也会更大。"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>用 GODEBUG 看 GC</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Sep 2, 2019</span></div>
+				<h1>用 GODEBUG 看 GC</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://image.eddycjy.com/b07f55c7fd136392763729b9782f7776.png" alt="image"></p>
+<h2 id="什么是-gc">什么是 GC<a href="#什么是-gc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在计算机科学中，垃圾回收（GC）是一种自动管理内存的机制，垃圾回收器会去尝试回收程序不再使用的对象及其占用的内存。而最早 John McCarthy 在 1959 年左右发明了垃圾回收，以简化 Lisp 中的手动内存管理的机制（来自 wikipedia）。</p>
+<h2 id="为什么要-gc">为什么要 GC<a href="#为什么要-gc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>手动管理内存挺麻烦，管错或者管漏内存也很糟糕，将会直接导致程序不稳定（持续泄露）甚至直接崩溃。</p>
+<h2 id="gc-带来的问题">GC 带来的问题<a href="#gc-带来的问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>硬要说会带来什么问题的话，也就数大家最关注的 Stop The World（STW），STW 代指在执行某个垃圾回收算法的某个阶段时，需要将整个应用程序暂停去处理 GC 相关的工作事项。例如：</p>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>会不会 STW</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>标记开始</td>
+<td>会</td>
+<td>在开始标记时，准备根对象的扫描，会打开写屏障（Write Barrier） 和 辅助GC（mutator assist），而回收器和应用程序是并发运行的，因此会暂停当前正在运行的所有 Goroutine。</td>
+</tr>
+<tr>
+<td>并发标记中</td>
+<td>不会</td>
+<td>标记阶段，主要目的是标记堆内存中仍在使用的值。</td>
+</tr>
+<tr>
+<td>标记结束</td>
+<td>会</td>
+<td>在完成标记任务后，将重新扫描部分根对象，这时候会禁用写屏障（Write Barrier）和辅助GC（mutator assist），而标记阶段和应用程序是并发运行的，所以在标记阶段可能会有新的对象产生，因此在重新扫描时需要进行 STW。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="如何调整-gc-频率">如何调整 GC 频率<a href="#如何调整-gc-频率" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>可以通过 GOGC 变量设置初始垃圾收集器的目标百分比值，对比的规则为当新分配的数值与上一次收集后剩余的实时数值的比例达到设置的目标百分比时，就会触发 GC，默认值为 GOGC=100。如果将其设置为 GOGC=off 可以完全禁用垃圾回收器，要不试试？</p>
+<p>简单来讲就是，GOGC 的值设置的越大，GC 的频率越低，但每次最终所触发到 GC 的堆内存也会更大。</p>
+<h2 id="各版本-gc-情况">各版本 GC 情况<a href="#各版本-gc-情况" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>GC 算法</th>
+<th>STW 时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go 1.0</td>
+<td>STW（强依赖 tcmalloc）</td>
+<td>百ms到秒级别</td>
+</tr>
+<tr>
+<td>Go 1.3</td>
+<td>Mark STW, Sweep 并行</td>
+<td>百ms级别</td>
+</tr>
+<tr>
+<td>Go 1.5</td>
+<td>三色标记法, 并发标记清除。同时运行时从 C 和少量汇编，改为 Go 和少量汇编实现</td>
+<td>10-50ms级别</td>
+</tr>
+<tr>
+<td>Go 1.6</td>
+<td>1.5 中一些与并发 GC 不协调的地方更改，集中式的 GC 协调协程，改为状态机实现</td>
+<td>5ms级别</td>
+</tr>
+<tr>
+<td>Go 1.7</td>
+<td>GC 时由 mark 栈收缩改为并发，span 对象分配机制由 freelist 改为 bitmap 模式，SSA引入</td>
+<td>ms级别</td>
+</tr>
+<tr>
+<td>Go 1.8</td>
+<td>混合写屏障（hybrid write barrier）, 消除 re-scanning stack</td>
+<td>sub ms</td>
+</tr>
+<tr>
+<td>Go 1.12</td>
+<td>Mark Termination 流程优化</td>
+<td>sub ms, 但几乎减少一半</td>
+</tr>
+</tbody>
+</table>
+<p>注：资料来源于 @boya 在深圳 Gopher Meetup 的分享。</p>
+<h2 id="godebug">GODEBUG<a href="#godebug" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>GODEBUG 变量可以控制运行时内的调试变量，参数以逗号分隔，格式为：<code>name=val</code>。本文着重点在 GC 的观察上，主要涉及 gctrace 参数，我们通过设置 <code>gctrace=1</code> 后就可以使得垃圾收集器向标准错误流发出 GC 运行信息。</p>
+<h2 id="涉及术语">涉及术语<a href="#涉及术语" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>mark：标记阶段。</li>
+<li>markTermination：标记结束阶段。</li>
+<li>mutator assist：辅助 GC，是指在 GC 过程中 mutator 线程会并发运行，而 mutator assist 机制会协助 GC 做一部分的工作。</li>
+<li>heap_live：在 Go 的内存管理中，span 是内存页的基本单元，每页大小为 8kb，同时 Go 会根据对象的大小不同而分配不同页数的 span，而 heap_live 就代表着所有 span 的总大小。</li>
+<li>dedicated / fractional / idle：在标记阶段会分为三种不同的 mark worker 模式，分别是 dedicated、fractional 和 idle，它们代表着不同的专注程度，其中 dedicated 模式最专注，是完整的 GC 回收行为，fractional 只会干部分的 GC 行为，idle 最轻松。这里你只需要了解它是不同专注程度的 mark worker 就好了，详细介绍我们可以等后续的文章。</li>
+</ul>
+<h2 id="演示代码">演示代码<a href="#演示代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>func main() {
+    wg := sync.WaitGroup{}
+    wg.Add(10)
+    for i := 0; i &lt; 10; i++ {
+        go func(wg *sync.WaitGroup) {
+            var counter int
+            for i := 0; i &lt; 1e10; i++ {
+                counter++
+            }
+            wg.Done()
+        }(&amp;wg)
+    }
+
+    wg.Wait()
+}
+</code></pre><h2 id="gctrace">gctrace<a href="#gctrace" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>$ GODEBUG=gctrace=1 go run main.go    
+gc 1 @0.032s 0%: 0.019+0.45+0.003 ms clock, 0.076+0.22/0.40/0.80+0.012 ms cpu, 4-&gt;4-&gt;0 MB, 5 MB goal, 4 P
+gc 2 @0.046s 0%: 0.004+0.40+0.008 ms clock, 0.017+0.32/0.25/0.81+0.034 ms cpu, 4-&gt;4-&gt;0 MB, 5 MB goal, 4 P
+gc 3 @0.063s 0%: 0.004+0.40+0.008 ms clock, 0.018+0.056/0.32/0.64+0.033 ms cpu, 4-&gt;4-&gt;0 MB, 5 MB goal, 4 P
+gc 4 @0.080s 0%: 0.004+0.45+0.016 ms clock, 0.018+0.15/0.34/0.77+0.065 ms cpu, 4-&gt;4-&gt;1 MB, 5 MB goal, 4 P
+gc 5 @0.095s 0%: 0.015+0.87+0.005 ms clock, 0.061+0.27/0.74/1.8+0.023 ms cpu, 4-&gt;4-&gt;1 MB, 5 MB goal, 4 P
+gc 6 @0.113s 0%: 0.014+0.69+0.002 ms clock, 0.056+0.23/0.48/1.4+0.011 ms cpu, 4-&gt;4-&gt;1 MB, 5 MB goal, 4 P
+gc 7 @0.140s 1%: 0.031+2.0+0.042 ms clock, 0.12+0.43/1.8/0.049+0.17 ms cpu, 4-&gt;4-&gt;1 MB, 5 MB goal, 4 P
+...
+</code></pre><h3 id="格式">格式<a href="#格式" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>gc # @#s #%: #+#+# ms clock, #+#/#/#+# ms cpu, #-&gt;#-&gt;# MB, # MB goal, # P
+</code></pre><h3 id="含义">含义<a href="#含义" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><code>gc#</code>：GC 执行次数的编号，每次叠加。</li>
+<li><code>@#s</code>：自程序启动后到当前的具体秒数。</li>
+<li><code>#%</code>：自程序启动以来在GC中花费的时间百分比。</li>
+<li><code>#+...+#</code>：GC 的标记工作共使用的 CPU 时间占总 CPU 时间的百分比。</li>
+<li><code>#-&gt;#-&gt;# MB</code>：分别表示 GC 启动时, GC 结束时, GC 活动时的堆大小.</li>
+<li><code>#MB goal</code>：下一次触发 GC 的内存占用阈值。</li>
+<li><code>#P</code>：当前使用的处理器 P 的数量。</li>
+</ul>
+<h3 id="案例">案例<a href="#案例" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>gc 7 @0.140s 1%: 0.031+2.0+0.042 ms clock, 0.12+0.43/1.8/0.049+0.17 ms cpu, 4-&gt;4-&gt;1 MB, 5 MB goal, 4 P
+</code></pre><ul>
+<li>gc 7：第 7 次 GC。</li>
+<li>@0.140s：当前是程序启动后的 0.140s。</li>
+<li>1%：程序启动后到现在共花费 1% 的时间在 GC 上。</li>
+<li>0.031+2.0+0.042 ms clock：
+<ul>
+<li>0.031：表示单个 P 在 mark 阶段的 STW 时间。</li>
+<li>2.0：表示所有 P 的 mark concurrent（并发标记）所使用的时间。</li>
+<li>0.042：表示单个 P 的 markTermination 阶段的 STW 时间。</li>
+</ul>
+</li>
+<li>0.12+0.43/1.8/0.049+0.17 ms cpu：
+<ul>
+<li>0.12：表示整个进程在 mark 阶段 STW 停顿的时间。</li>
+<li>0.43/1.8/0.049：0.43 表示 mutator assist 占用的时间，1.8 表示 dedicated + fractional 占用的时间，0.049 表示 idle 占用的时间。</li>
+<li>0.17ms：0.17 表示整个进程在 markTermination 阶段 STW 时间。</li>
+</ul>
+</li>
+<li>4-&gt;4-&gt;1 MB：
+<ul>
+<li>4：表示开始 mark 阶段前的 heap_live 大小。</li>
+<li>4：表示开始 markTermination 阶段前的 heap_live 大小。</li>
+<li>1：表示被标记对象的大小。</li>
+</ul>
+</li>
+<li>5 MB goal：表示下一次触发 GC 回收的阈值是 5 MB。</li>
+<li>4 P：本次 GC 一共涉及多少个 P。</li>
+</ul>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>通过本章节我们掌握了使用 GODEBUG 查看应用程序 GC 运行情况的方法，只要用这种方法我们就可以观测不同情况下 GC 的情况了，甚至可以做出非常直观的对比图，大家不妨尝试一下。</p>
+<h2 id="关联文章">关联文章<a href="#关联文章" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/Brby6D7d1szUIBjcD_8kfg">用 GODEBUG 看调度跟踪</a></li>
+</ul>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="https://gocn.vip/question/310">Go GC打印出来的这些信息都是什么含义？</a></li>
+<li><a href="http://cbsheng.github.io/posts/godebug%E4%B9%8Bgctrace%E8%A7%A3%E6%9E%90/">GODEBUG之gctrace解析</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/77943973">关于Golang GC的一些误解&ndash;真的比Java GC更领先吗？</a></li>
+<li>@boya 深入浅出Golang Runtime PPT</li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>530 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-09-02 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是-gc">什么是 GC</a></li>
+    <li><a href="#为什么要-gc">为什么要 GC</a></li>
+    <li><a href="#gc-带来的问题">GC 带来的问题</a></li>
+    <li><a href="#如何调整-gc-频率">如何调整 GC 频率</a></li>
+    <li><a href="#各版本-gc-情况">各版本 GC 情况</a></li>
+    <li><a href="#godebug">GODEBUG</a></li>
+    <li><a href="#涉及术语">涉及术语</a></li>
+    <li><a href="#演示代码">演示代码</a></li>
+    <li><a href="#gctrace">gctrace</a>
+      <ul>
+        <li><a href="#格式">格式</a></li>
+        <li><a href="#含义">含义</a></li>
+        <li><a href="#案例">案例</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#关联文章">关联文章</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/talk/2019-09-07-go1.13-defer/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>Go1.13 defer 的性能是如何提高的</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/tools/2019-08-19-godebug-sched/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>用 GODEBUG 看调度跟踪</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

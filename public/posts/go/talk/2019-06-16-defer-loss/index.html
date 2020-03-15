@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="Go1.12 defer 会有性能损耗，尽量不要用？">
+<meta itemprop="description" content="上个月在 @polaris @轩脉刃 的全栈技术群里看到一个小伙伴问 “说 defer 在栈退出时执行，会有性能损耗，尽量不要用，这个怎么解？”。
+恰好前段时间写了一篇 《深入理解 Go defer》 去详细剖析 defer 关键字。那么这一次简单结合前文对这个问题进行探讨一波，希望对你有所帮助，但在此之前希望你花几分钟，自己思考一下答案，再继续往下看。
+测试 func DoDefer(key, value string) { defer func(key, value string) { _ = key &#43; value }(key, value) } func DoNotDefer(key, value string) { _ = key &#43; value } 基准测试：
+func BenchmarkDoDefer(b *testing.B) { for i := 0; i &lt; b.N; i&#43;&#43; { DoDefer(&#34;煎鱼&#34;, &#34;https://github.com/EDDYCJY/blog&#34;) } } func BenchmarkDoNotDefer(b *testing.B) { for i := 0; i &lt; b.">
+<meta itemprop="datePublished" content="2019-06-16T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-06-16T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="326">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="Go1.12 defer 会有性能损耗，尽量不要用？" />
+<meta property="og:description" content="上个月在 @polaris @轩脉刃 的全栈技术群里看到一个小伙伴问 “说 defer 在栈退出时执行，会有性能损耗，尽量不要用，这个怎么解？”。
+恰好前段时间写了一篇 《深入理解 Go defer》 去详细剖析 defer 关键字。那么这一次简单结合前文对这个问题进行探讨一波，希望对你有所帮助，但在此之前希望你花几分钟，自己思考一下答案，再继续往下看。
+测试 func DoDefer(key, value string) { defer func(key, value string) { _ = key &#43; value }(key, value) } func DoNotDefer(key, value string) { _ = key &#43; value } 基准测试：
+func BenchmarkDoDefer(b *testing.B) { for i := 0; i &lt; b.N; i&#43;&#43; { DoDefer(&#34;煎鱼&#34;, &#34;https://github.com/EDDYCJY/blog&#34;) } } func BenchmarkDoNotDefer(b *testing.B) { for i := 0; i &lt; b." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2019-06-16-defer-loss/" />
+<meta property="article:published_time" content="2019-06-16T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-06-16T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Go1.12 defer 会有性能损耗，尽量不要用？"/>
+<meta name="twitter:description" content="上个月在 @polaris @轩脉刃 的全栈技术群里看到一个小伙伴问 “说 defer 在栈退出时执行，会有性能损耗，尽量不要用，这个怎么解？”。
+恰好前段时间写了一篇 《深入理解 Go defer》 去详细剖析 defer 关键字。那么这一次简单结合前文对这个问题进行探讨一波，希望对你有所帮助，但在此之前希望你花几分钟，自己思考一下答案，再继续往下看。
+测试 func DoDefer(key, value string) { defer func(key, value string) { _ = key &#43; value }(key, value) } func DoNotDefer(key, value string) { _ = key &#43; value } 基准测试：
+func BenchmarkDoDefer(b *testing.B) { for i := 0; i &lt; b.N; i&#43;&#43; { DoDefer(&#34;煎鱼&#34;, &#34;https://github.com/EDDYCJY/blog&#34;) } } func BenchmarkDoNotDefer(b *testing.B) { for i := 0; i &lt; b."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>Go1.12 defer 会有性能损耗，尽量不要用？</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Jun 16, 2019</span></div>
+				<h1>Go1.12 defer 会有性能损耗，尽量不要用？</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/27/3wuUYV.jpg" alt="image"></p>
+<p>上个月在 @polaris @轩脉刃 的全栈技术群里看到一个小伙伴问 <strong>“说 defer 在栈退出时执行，会有性能损耗，尽量不要用，这个怎么解？”</strong>。</p>
+<p>恰好前段时间写了一篇 <a href="https://segmentfault.com/a/1190000019303572">《深入理解 Go defer》</a> 去详细剖析 <code>defer</code> 关键字。那么这一次简单结合前文对这个问题进行探讨一波，希望对你有所帮助，但在此之前希望你花几分钟，自己思考一下答案，再继续往下看。</p>
+<h2 id="测试">测试<a href="#测试" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">DoDefer</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">value</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">defer</span> <span class="kd">func</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">value</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">_</span> <span class="p">=</span> <span class="nx">key</span> <span class="o">+</span> <span class="nx">value</span>
+    <span class="p">}(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">DoNotDefer</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">value</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">_</span> <span class="p">=</span> <span class="nx">key</span> <span class="o">+</span> <span class="nx">value</span>
+<span class="p">}</span>
+</code></pre></div><p>基准测试：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">BenchmarkDoDefer</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+        <span class="nf">DoDefer</span><span class="p">(</span><span class="s">&#34;煎鱼&#34;</span><span class="p">,</span> <span class="s">&#34;https://github.com/EDDYCJY/blog&#34;</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">BenchmarkDoNotDefer</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+        <span class="nf">DoNotDefer</span><span class="p">(</span><span class="s">&#34;煎鱼&#34;</span><span class="p">,</span> <span class="s">&#34;https://github.com/EDDYCJY/blog&#34;</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>$ go test -bench=. -benchmem -run=none
+goos: darwin
+goarch: amd64
+pkg: github.com/EDDYCJY/awesomeDefer
+BenchmarkDoDefer-4          20000000            91.4 ns/op        48 B/op          1 allocs/op
+BenchmarkDoNotDefer-4       30000000            41.6 ns/op        48 B/op          1 allocs/op
+PASS
+ok      github.com/EDDYCJY/awesomeDefer 3.234s
+</code></pre><p>从结果上来，使用 <code>defer</code> 后的函数开销确实比没使用高了不少，这损耗用到哪里去了呢？</p>
+<h2 id="想一下">想一下<a href="#想一下" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>$ go tool compile -S main.go
+&quot;&quot;.main STEXT size=163 args=0x0 locals=0x40
+    ...
+    0x0059 00089 (main.go:6)    MOVQ    AX, 16(SP)
+    0x005e 00094 (main.go:6)    MOVQ    $1, 24(SP)
+    0x0067 00103 (main.go:6)    MOVQ    $1, 32(SP)
+    0x0070 00112 (main.go:6)    CALL    runtime.deferproc(SB)
+    0x0075 00117 (main.go:6)    TESTL    AX, AX
+    0x0077 00119 (main.go:6)    JNE    137
+    0x0079 00121 (main.go:7)    XCHGL    AX, AX
+    0x007a 00122 (main.go:7)    CALL    runtime.deferreturn(SB)
+    0x007f 00127 (main.go:7)    MOVQ    56(SP), BP
+    0x0084 00132 (main.go:7)    ADDQ    $64, SP
+    0x0088 00136 (main.go:7)    RET
+    0x0089 00137 (main.go:6)    XCHGL    AX, AX
+    0x008a 00138 (main.go:6)    CALL    runtime.deferreturn(SB)
+    0x008f 00143 (main.go:6)    MOVQ    56(SP), BP
+    0x0094 00148 (main.go:6)    ADDQ    $64, SP
+    0x0098 00152 (main.go:6)    RET
+    ...
+</code></pre><p>我们在前文提到 <code>defer</code> 关键字其实涉及了一系列的连锁调用，内部 <code>runtime</code> 函数的调用就至少多了三步，分别是 <code>runtime.deferproc</code> 一次和 <code>runtime.deferreturn</code> 两次。</p>
+<p>而这还只是在运行时的显式动作，另外编译器做的事也不少，例如：</p>
+<ul>
+<li>在 <code>deferproc</code> 阶段（注册延迟调用），还得获取/传入目标函数地址、函数参数等等。</li>
+<li>在 <code>deferreturn</code> 阶段，需要在函数调用结尾处插入该方法的调用，同时若有被 <code>defer</code> 的函数，还需要使用 <code>runtime·jmpdefer</code> 进行跳转以便于后续调用。</li>
+</ul>
+<p>这一些动作途中还要涉及最小单元 <code>_defer</code> 的获取/生成， <code>defer</code> 和 <code>recover</code> 链表的逻辑处理和消耗等动作。</p>
+<h2 id="qa">Q&amp;A<a href="#qa" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>最后讨论的时候有提到 <strong>“问题指的是本来就是用来执行 close() 一些操作的，然后说尽量不能用，例子就把 defer db.close() 前面的 defer 删去了”</strong> 这个疑问。</p>
+<p>这是一个比较类似 “教科书” 式的说法，在一些入门教程中会潜移默化的告诉你在资源控制后加个 <code>defer</code> 延迟关闭一下。例如：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">err</span>
+<span class="p">}</span>
+<span class="k">defer</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Body</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</code></pre></div><p>但是一定得这么写吗？其实并不，很多人给出的理由都是 “怕你忘记” 这种说辞，这没有毛病。但需要认清场景，假设我的应用场景如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">err</span>
+<span class="p">}</span>
+<span class="k">defer</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Body</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+<span class="c1">// do something
+</span><span class="c1"></span><span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</code></pre></div><p>嗯，一个请求当然没问题，流量、并发一下子大了呢，那可能就是个灾难了。你想想为什么？从常见的 <code>defer</code> + <code>close</code> 的使用组合来讲，用之前建议先看清楚应用场景，在保证无异常的情况下确保尽早关闭才是首选。如果只是小范围调用很快就返回的话，偷个懒直接一套组合拳出去也未尝不可。</p>
+<h2 id="结论">结论<a href="#结论" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>一个 <code>defer</code> 关键字实际上包含了不少的动作和处理，和你单纯调用一个函数一条指令是没法比的。而与对照物相比，它确确实实是有性能损耗，目前延迟调用的全部开销大约在 50ns，但 <code>defer</code> 所提供的作用远远大于此，你从全局来看，它的损耗非常小，并且官方还不断地在优化中。</p>
+<p>因此，对于 “Go defer 会有性能损耗，尽量不能用？” 这个问题，我认为<strong>该用就用，应该及时关闭就不要延迟，在 hot paths 用时一定要想清楚场景</strong>。</p>
+<h2 id="补充">补充<a href="#补充" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>最后补充上柴大的回复：<strong>“不是性能问题，defer 最大的功能是 Panic 后依然有效。如果没有 defer，Panic 后就会导致 unlock 丢失，从而导致死锁了”</strong>，非常经典。</p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>326 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-06-16 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#测试">测试</a></li>
+    <li><a href="#想一下">想一下</a></li>
+    <li><a href="#qa">Q&amp;A</a></li>
+    <li><a href="#结论">结论</a></li>
+    <li><a href="#补充">补充</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/grpc-gateway/2019-06-22-grpc-gateway-tls/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载四」gRPC&#43;gRPC Gateway 能不能不用证书？</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/defer/2019-05-27-defer/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>深入理解 Go defer</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

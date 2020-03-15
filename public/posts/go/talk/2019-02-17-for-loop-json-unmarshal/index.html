@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="for-loop 与 json.Unmarshal 性能分析概要">
+<meta itemprop="description" content="在项目中，常常会遇到循环交换赋值的数据处理场景，尤其是 RPC，数据交互格式要转为 Protobuf，赋值是无法避免的。一般会有如下几种做法：
+ for for range json.Marshal/Unmarshal  这时候又面临 “选择困难症”，用哪个好？又想代码量少，又担心性能有没有影响啊&hellip;
+为了弄清楚这个疑惑，接下来将分别编写三种使用场景。来简单看看它们的性能情况，看看谁更 “好”
+功能代码 ... type Person struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } type AgainPerson struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } const MAX = 10000 func InitPerson() []Person { var persons []Person for i := 0; i &lt; MAX; i&#43;&#43; { persons = append(persons, Person{ Name: &#34;EDDYCJY&#34;, Age: i, Avatar: &#34;https://github.">
+<meta itemprop="datePublished" content="2019-02-17T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-02-17T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="673">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="for-loop 与 json.Unmarshal 性能分析概要" />
+<meta property="og:description" content="在项目中，常常会遇到循环交换赋值的数据处理场景，尤其是 RPC，数据交互格式要转为 Protobuf，赋值是无法避免的。一般会有如下几种做法：
+ for for range json.Marshal/Unmarshal  这时候又面临 “选择困难症”，用哪个好？又想代码量少，又担心性能有没有影响啊&hellip;
+为了弄清楚这个疑惑，接下来将分别编写三种使用场景。来简单看看它们的性能情况，看看谁更 “好”
+功能代码 ... type Person struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } type AgainPerson struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } const MAX = 10000 func InitPerson() []Person { var persons []Person for i := 0; i &lt; MAX; i&#43;&#43; { persons = append(persons, Person{ Name: &#34;EDDYCJY&#34;, Age: i, Avatar: &#34;https://github." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2019-02-17-for-loop-json-unmarshal/" />
+<meta property="article:published_time" content="2019-02-17T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-02-17T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="for-loop 与 json.Unmarshal 性能分析概要"/>
+<meta name="twitter:description" content="在项目中，常常会遇到循环交换赋值的数据处理场景，尤其是 RPC，数据交互格式要转为 Protobuf，赋值是无法避免的。一般会有如下几种做法：
+ for for range json.Marshal/Unmarshal  这时候又面临 “选择困难症”，用哪个好？又想代码量少，又担心性能有没有影响啊&hellip;
+为了弄清楚这个疑惑，接下来将分别编写三种使用场景。来简单看看它们的性能情况，看看谁更 “好”
+功能代码 ... type Person struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } type AgainPerson struct { Name string `json:&#34;name&#34;` Age int `json:&#34;age&#34;` Avatar string `json:&#34;avatar&#34;` Type string `json:&#34;type&#34;` } const MAX = 10000 func InitPerson() []Person { var persons []Person for i := 0; i &lt; MAX; i&#43;&#43; { persons = append(persons, Person{ Name: &#34;EDDYCJY&#34;, Age: i, Avatar: &#34;https://github."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>for-loop 与 json.Unmarshal 性能分析概要</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Feb 17, 2019</span></div>
+				<h1>for-loop 与 json.Unmarshal 性能分析概要</h1>
+			</header>
+			<div class="content">
+				<p>在项目中，常常会遇到循环交换赋值的数据处理场景，尤其是 RPC，数据交互格式要转为 Protobuf，赋值是无法避免的。一般会有如下几种做法：</p>
+<ul>
+<li>for</li>
+<li>for range</li>
+<li>json.Marshal/Unmarshal</li>
+</ul>
+<p>这时候又面临 “选择困难症”，用哪个好？又想代码量少，又担心性能有没有影响啊&hellip;</p>
+<p>为了弄清楚这个疑惑，接下来将分别编写三种使用场景。来简单看看它们的性能情况，看看谁更 “好”</p>
+<h2 id="功能代码">功能代码<a href="#功能代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">type</span> <span class="nx">Person</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Name</span>   <span class="kt">string</span> <span class="s">`json:&#34;name&#34;`</span>
+	<span class="nx">Age</span>    <span class="kt">int</span>    <span class="s">`json:&#34;age&#34;`</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span> <span class="s">`json:&#34;avatar&#34;`</span>
+	<span class="nx">Type</span>   <span class="kt">string</span> <span class="s">`json:&#34;type&#34;`</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">AgainPerson</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Name</span>   <span class="kt">string</span> <span class="s">`json:&#34;name&#34;`</span>
+	<span class="nx">Age</span>    <span class="kt">int</span>    <span class="s">`json:&#34;age&#34;`</span>
+	<span class="nx">Avatar</span> <span class="kt">string</span> <span class="s">`json:&#34;avatar&#34;`</span>
+	<span class="nx">Type</span>   <span class="kt">string</span> <span class="s">`json:&#34;type&#34;`</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MAX</span> <span class="p">=</span> <span class="mi">10000</span>
+
+<span class="kd">func</span> <span class="nf">InitPerson</span><span class="p">()</span> <span class="p">[]</span><span class="nx">Person</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">persons</span> <span class="p">[]</span><span class="nx">Person</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">MAX</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">persons</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">persons</span><span class="p">,</span> <span class="nx">Person</span><span class="p">{</span>
+			<span class="nx">Name</span><span class="p">:</span>   <span class="s">&#34;EDDYCJY&#34;</span><span class="p">,</span>
+			<span class="nx">Age</span><span class="p">:</span>    <span class="nx">i</span><span class="p">,</span>
+			<span class="nx">Avatar</span><span class="p">:</span> <span class="s">&#34;https://github.com/EDDYCJY&#34;</span><span class="p">,</span>
+			<span class="nx">Type</span><span class="p">:</span>   <span class="s">&#34;Person&#34;</span><span class="p">,</span>
+		<span class="p">})</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">persons</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">ForStruct</span><span class="p">(</span><span class="nx">p</span> <span class="p">[]</span><span class="nx">Person</span><span class="p">,</span> <span class="nx">count</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">count</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">p</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">ForRangeStruct</span><span class="p">(</span><span class="nx">p</span> <span class="p">[]</span><span class="nx">Person</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">p</span> <span class="p">{</span>
+		<span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">v</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">JsonToStruct</span><span class="p">(</span><span class="nx">data</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">againPerson</span> <span class="p">[]</span><span class="nx">AgainPerson</span><span class="p">)</span> <span class="p">([]</span><span class="nx">AgainPerson</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">againPerson</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nx">againPerson</span><span class="p">,</span> <span class="nx">err</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">JsonIteratorToStruct</span><span class="p">(</span><span class="nx">data</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">againPerson</span> <span class="p">[]</span><span class="nx">AgainPerson</span><span class="p">)</span> <span class="p">([]</span><span class="nx">AgainPerson</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">jsonIter</span> <span class="p">=</span> <span class="nx">jsoniter</span><span class="p">.</span><span class="nx">ConfigCompatibleWithStandardLibrary</span>
+	<span class="nx">err</span> <span class="o">:=</span> <span class="nx">jsonIter</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">againPerson</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nx">againPerson</span><span class="p">,</span> <span class="nx">err</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="测试代码">测试代码<a href="#测试代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">func</span> <span class="nf">BenchmarkForStruct</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">person</span> <span class="o">:=</span> <span class="nf">InitPerson</span><span class="p">()</span>
+	<span class="nx">count</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">person</span><span class="p">)</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nf">ResetTimer</span><span class="p">()</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nf">ForStruct</span><span class="p">(</span><span class="nx">person</span><span class="p">,</span> <span class="nx">count</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">BenchmarkForRangeStruct</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">person</span> <span class="o">:=</span> <span class="nf">InitPerson</span><span class="p">()</span>
+
+	<span class="nx">b</span><span class="p">.</span><span class="nf">ResetTimer</span><span class="p">()</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nf">ForRangeStruct</span><span class="p">(</span><span class="nx">person</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">BenchmarkJsonToStruct</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="p">(</span>
+		<span class="nx">person</span> <span class="p">=</span> <span class="nf">InitPerson</span><span class="p">()</span>
+		<span class="nx">againPersons</span> <span class="p">[]</span><span class="nx">AgainPerson</span>
+	<span class="p">)</span>
+	<span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">person</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">b</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;json.Marshal err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">b</span><span class="p">.</span><span class="nf">ResetTimer</span><span class="p">()</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nf">JsonToStruct</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">againPersons</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">BenchmarkJsonIteratorToStruct</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="p">(</span>
+		<span class="nx">person</span> <span class="p">=</span> <span class="nf">InitPerson</span><span class="p">()</span>
+		<span class="nx">againPersons</span> <span class="p">[]</span><span class="nx">AgainPerson</span>
+	<span class="p">)</span>
+	<span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">person</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">b</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;json.Marshal err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">b</span><span class="p">.</span><span class="nf">ResetTimer</span><span class="p">()</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nf">JsonIteratorToStruct</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">againPersons</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="测试结果">测试结果<a href="#测试结果" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>BenchmarkForStruct-4              	  500000	      3289 ns/op	       0 B/op	       0 allocs/op
+BenchmarkForRangeStruct-4         	  200000	      9178 ns/op	       0 B/op	       0 allocs/op
+BenchmarkJsonToStruct-4           	     100	  19173117 ns/op	 2618509 B/op	   40036 allocs/op
+BenchmarkJsonIteratorToStruct-4   	     300	   4116491 ns/op	 3694017 B/op	   30047 allocs/op
+</code></pre><p>从测试结果来看，性能排名为：for &lt; for range &lt; json-iterator &lt; encoding/json。接下来我们看看是什么原因导致了这样子的排名？</p>
+<h2 id="性能对比">性能对比<a href="#性能对比" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wuywR.png" alt="image"></p>
+<h3 id="for-loop">for-loop<a href="#for-loop" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在测试结果中，<code>for range</code> 在性能上相较 <code>for</code> 差。这是为什么呢？在这里我们可以参见 <code>for range</code> 的 <a href="https://github.com/gcc-mirror/gcc/blob/master/gcc/go/gofrontend/statements.cc">实现</a>，伪实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">for_temp</span> <span class="o">:=</span> <span class="k">range</span>
+<span class="nx">len_temp</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">for_temp</span><span class="p">)</span>
+<span class="k">for</span> <span class="nx">index_temp</span> <span class="p">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">index_temp</span> <span class="p">&lt;</span> <span class="nx">len_temp</span><span class="p">;</span> <span class="nx">index_temp</span><span class="o">++</span> <span class="p">{</span>
+    <span class="nx">value_temp</span> <span class="p">=</span> <span class="nx">for_temp</span><span class="p">[</span><span class="nx">index_temp</span><span class="p">]</span>
+    <span class="nx">index</span> <span class="p">=</span> <span class="nx">index_temp</span>
+    <span class="nx">value</span> <span class="p">=</span> <span class="nx">value_temp</span>
+    <span class="nx">original</span> <span class="nx">body</span>
+<span class="p">}</span>
+</code></pre></div><p>通过分析伪实现，可得知 <code>for range</code> 相较 <code>for</code> 多做了如下事项</p>
+<h4 id="expression">Expression<a href="#expression" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>RangeClause = [ ExpressionList &quot;=&quot; | IdentifierList &quot;:=&quot; ] &quot;range&quot; Expression .
+</code></pre><p>在循环开始之前会对范围表达式进行求值，多做了 “解” 表达式的动作，得到了最终的范围值</p>
+<h4 id="copy">Copy<a href="#copy" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="nx">value_temp</span> <span class="p">=</span> <span class="nx">for_temp</span><span class="p">[</span><span class="nx">index_temp</span><span class="p">]</span>
+<span class="nx">index</span> <span class="p">=</span> <span class="nx">index_temp</span>
+<span class="nx">value</span> <span class="p">=</span> <span class="nx">value_temp</span>
+<span class="o">...</span>
+</code></pre></div><p>从伪实现上可以得出，<code>for range</code> 始终使用<strong>值拷贝</strong>的方式来生成循环变量。通俗来讲，就是在每次循环时，都会对循环变量重新分配</p>
+<h4 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>通过上述的分析，可得知其比 <code>for</code> 慢的原因是 <code>for range</code> 有额外的性能开销，主要为<strong>值拷贝的动作</strong>导致的性能下降。这是它慢的原因</p>
+<p>那么其实在 <code>for range</code> 中，我们可以使用 <code>_</code> 和 <code>T[i]</code> 也能达到和 <code>for</code> 差不多的性能。但这可能不是 <code>for range</code> 的设计本意了</p>
+<h3 id="jsonmarshalunmarshal">json.Marshal/Unmarshal<a href="#jsonmarshalunmarshal" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="encodingjson">encoding/json<a href="#encodingjson" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>json 互转是在三种方案中最慢的，这是为什么呢？</p>
+<p>众所皆知，官方的 <code>encoding/json</code> 标准库，是通过大量反射来实现的。那么 “慢”，也是必然的。可参见下述代码：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">func</span> <span class="nf">newTypeEncoder</span><span class="p">(</span><span class="nx">t</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">allowAddr</span> <span class="kt">bool</span><span class="p">)</span> <span class="nx">encoderFunc</span> <span class="p">{</span>
+    <span class="o">...</span>
+	<span class="k">switch</span> <span class="nx">t</span><span class="p">.</span><span class="nf">Kind</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Bool</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">boolEncoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Int8</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Int16</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Int32</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Int64</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">intEncoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uint</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uint8</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uint16</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uint32</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uint64</span><span class="p">,</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Uintptr</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">uintEncoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Float32</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">float32Encoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Float64</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">float64Encoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">String</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">stringEncoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Interface</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">interfaceEncoder</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Struct</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nf">newStructEncoder</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Map</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nf">newMapEncoder</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Slice</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nf">newSliceEncoder</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Array</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nf">newArrayEncoder</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">reflect</span><span class="p">.</span><span class="nx">Ptr</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nf">newPtrEncoder</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="k">default</span><span class="p">:</span>
+		<span class="k">return</span> <span class="nx">unsupportedTypeEncoder</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>既然官方的标准库存在一定的 “问题”，那么有没有其他解决方法呢？目前在社区里，大多为两类方案。如下：</p>
+<ul>
+<li>预编译生成代码（提前确定类型），可以解决运行时的反射带来的性能开销。缺点是增加了预生成的步骤</li>
+<li>优化序列化的逻辑，性能达到最大化</li>
+</ul>
+<p>接下来的实验，我们用第二种方案的库来测试，看看有没有改变。另外也推荐大家了解如下项目：</p>
+<ul>
+<li><a href="https://github.com/json-iterator/go">json-iterator/go</a></li>
+<li><a href="https://github.com/mailru/easyjson">mailru/easyjson</a></li>
+<li><a href="https://github.com/pquerna/ffjson">pquerna/ffjson</a></li>
+</ul>
+<h4 id="json-iteratorgo">json-iterator/go<a href="#json-iteratorgo" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>目前社区较常用的是 json-iterator/go，我们在测试代码中用到了它</p>
+<p>它的用法与标准库 100% 兼容，并且性能有较大提升。我们一起粗略的看下是怎么做到的，如下：</p>
+<h5 id="reflect2">reflect2<a href="#reflect2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>利用 <a href="https://github.com/modern-go/reflect2">modern-go/reflect2</a> 减少运行时调度开销</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">type</span> <span class="nx">StructDescriptor</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Type</span>   <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span>
+	<span class="nx">Fields</span> <span class="p">[]</span><span class="o">*</span><span class="nx">Binding</span>
+<span class="p">}</span>
+
+<span class="o">...</span>
+<span class="kd">type</span> <span class="nx">Binding</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">levels</span>    <span class="p">[]</span><span class="kt">int</span>
+	<span class="nx">Field</span>     <span class="nx">reflect2</span><span class="p">.</span><span class="nx">StructField</span>
+	<span class="nx">FromNames</span> <span class="p">[]</span><span class="kt">string</span>
+	<span class="nx">ToNames</span>   <span class="p">[]</span><span class="kt">string</span>
+	<span class="nx">Encoder</span>   <span class="nx">ValEncoder</span>
+	<span class="nx">Decoder</span>   <span class="nx">ValDecoder</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">Extension</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">UpdateStructDescriptor</span><span class="p">(</span><span class="nx">structDescriptor</span> <span class="o">*</span><span class="nx">StructDescriptor</span><span class="p">)</span>
+	<span class="nf">CreateMapKeyDecoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">)</span> <span class="nx">ValDecoder</span>
+	<span class="nf">CreateMapKeyEncoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">)</span> <span class="nx">ValEncoder</span>
+	<span class="nf">CreateDecoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">)</span> <span class="nx">ValDecoder</span>
+	<span class="nf">CreateEncoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">)</span> <span class="nx">ValEncoder</span>
+	<span class="nf">DecorateDecoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">decoder</span> <span class="nx">ValDecoder</span><span class="p">)</span> <span class="nx">ValDecoder</span>
+	<span class="nf">DecorateEncoder</span><span class="p">(</span><span class="nx">typ</span> <span class="nx">reflect2</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">encoder</span> <span class="nx">ValEncoder</span><span class="p">)</span> <span class="nx">ValEncoder</span>
+<span class="p">}</span>
+</code></pre></div><h5 id="struct-encoderdecoder-cache">struct Encoder/Decoder Cache<a href="#struct-encoderdecoder-cache" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>类型为 struct 时，只需要反射一次 Name 和 Type，会缓存 struct Encoder 和 Decoder</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">typeDecoders</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ValDecoder</span><span class="p">{}</span>
+<span class="kd">var</span> <span class="nx">fieldDecoders</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ValDecoder</span><span class="p">{}</span>
+<span class="kd">var</span> <span class="nx">typeEncoders</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ValEncoder</span><span class="p">{}</span>
+<span class="kd">var</span> <span class="nx">fieldEncoders</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ValEncoder</span><span class="p">{}</span>
+<span class="kd">var</span> <span class="nx">extensions</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">Extension</span><span class="p">{}</span>
+
+<span class="o">...</span><span class="p">.</span>
+
+<span class="nx">fieldNames</span> <span class="o">:=</span> <span class="nf">calcFieldNames</span><span class="p">(</span><span class="nx">field</span><span class="p">.</span><span class="nf">Name</span><span class="p">(),</span> <span class="nx">tagParts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">tag</span><span class="p">)</span>
+<span class="nx">fieldCacheKey</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s/%s&#34;</span><span class="p">,</span> <span class="nx">typ</span><span class="p">.</span><span class="nf">String</span><span class="p">(),</span> <span class="nx">field</span><span class="p">.</span><span class="nf">Name</span><span class="p">())</span>
+<span class="nx">decoder</span> <span class="o">:=</span> <span class="nx">fieldDecoders</span><span class="p">[</span><span class="nx">fieldCacheKey</span><span class="p">]</span>
+<span class="k">if</span> <span class="nx">decoder</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+	<span class="nx">decoder</span> <span class="p">=</span> <span class="nf">decoderOfType</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">field</span><span class="p">.</span><span class="nf">Name</span><span class="p">()),</span> <span class="nx">field</span><span class="p">.</span><span class="nf">Type</span><span class="p">())</span>
+<span class="p">}</span>
+<span class="nx">encoder</span> <span class="o">:=</span> <span class="nx">fieldEncoders</span><span class="p">[</span><span class="nx">fieldCacheKey</span><span class="p">]</span>
+<span class="k">if</span> <span class="nx">encoder</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+	<span class="nx">encoder</span> <span class="p">=</span> <span class="nf">encoderOfType</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">field</span><span class="p">.</span><span class="nf">Name</span><span class="p">()),</span> <span class="nx">field</span><span class="p">.</span><span class="nf">Type</span><span class="p">())</span>
+<span class="p">}</span>
+</code></pre></div><h5 id="文本解析优化">文本解析优化<a href="#文本解析优化" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<h4 id="小结-1">小结<a href="#小结-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>相较于官方标准库，第三方库 <code>json-iterator/go</code> 在运行时上做的更好。这是它快的原因</p>
+<p>有个需要注意的点，在 Go1.10 后 <code>map</code> 类型与标准库的已经没有太大的性能差异。但是，例如 <code>struct</code> 类型等仍然有较大的性能提高</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本文中，我们首先进行了性能测试，再分析了不同方案，得知为什么了快慢的原因。那么最终在选择方案时，可以根据不同的应用场景去抉择：</p>
+<ul>
+<li>对性能开销有较高要求：选用 <code>for</code>，开销最小</li>
+<li>中规中矩：选用 <code>for range</code>，大对象慎用</li>
+<li>量小、占用小、数量可控：选用 <code>json.Marshal/Unmarshal</code> 的方案也可以。其<strong>重复代码</strong>少，但开销最大</li>
+</ul>
+<p>在绝大多数场景中，使用哪种并没有太大的影响。但作为工程师你应当清楚其利弊。以上就是不同的方案<strong>分析概要</strong>，希望对你有所帮助 :)</p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>673 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-02-17 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#功能代码">功能代码</a></li>
+    <li><a href="#测试代码">测试代码</a></li>
+    <li><a href="#测试结果">测试结果</a></li>
+    <li><a href="#性能对比">性能对比</a>
+      <ul>
+        <li><a href="#for-loop">for-loop</a></li>
+        <li><a href="#jsonmarshalunmarshal">json.Marshal/Unmarshal</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/map/2019-03-05-map-access/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>深入理解 Go map：初始化和访问元素</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/talk/2019-01-20-control-goroutine/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>来，控制一下 goroutine 的并发数量</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>源码分析 on 煎鱼</title>
+    <link>https://eddycjy.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/</link>
+    <description>Recent content in 源码分析 on 煎鱼</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-hans</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright>
+    <lastBuildDate>Mon, 27 May 2019 12:30:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://eddycjy.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>深入理解 Go defer</title>
+      <link>https://eddycjy.com/posts/go/defer/2019-05-27-defer/</link>
+      <pubDate>Mon, 27 May 2019 12:30:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/defer/2019-05-27-defer/</guid>
+      <description>在上一章节 《深入理解 Go panic and recover》中，我们发现了 defer 与其关联性极大，还是觉得非常有必要深入一下。希望通过本章节大家可以对 defer 关键字有一个深刻的理解，那么我们开始吧。你先等等，请排好队，我们这儿采取后进先出 LIFO 的出站方式&amp;hellip;
+特性 我们简单的过一下 defer 关键字的基础使用，让大家先有一个基础的认知
+一、延迟调用 func main() { defer log.Println(&amp;#34;EDDYCJY.&amp;#34;) log.Println(&amp;#34;end.&amp;#34;) } 输出结果：
+$ go run main.go 2019/05/19 21:15:02 end. 2019/05/19 21:15:02 EDDYCJY. 二、后进先出 func main() { for i := 0; i &amp;lt; 6; i++ { defer log.Println(&amp;#34;EDDYCJY&amp;#34; + strconv.Itoa(i) + &amp;#34;.&amp;#34;) } log.Println(&amp;#34;end.&amp;#34;) } 输出结果：
+$ go run main.go 2019/05/19 21:19:17 end. 2019/05/19 21:19:17 EDDYCJY5. 2019/05/19 21:19:17 EDDYCJY4.</description>
+    </item>
+    
+    <item>
+      <title>深入理解 Go panic and recover</title>
+      <link>https://eddycjy.com/posts/go/panic/2019-05-21-panic-and-recover/</link>
+      <pubDate>Tue, 21 May 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/panic/2019-05-21-panic-and-recover/</guid>
+      <description>作为一个 gophper，我相信你对于 panic 和 recover 肯定不陌生，但是你有没有想过。当我们执行了这两条语句之后。底层到底发生了什么事呢？前几天和同事刚好聊到相关的话题，发现其实大家对这块理解还是比较模糊的。希望这篇文章能够从更深入的角度告诉你为什么，它到底做了什么事？
+思考 一、为什么会中止运行 func main() { panic(&amp;quot;EDDYCJY.&amp;quot;) } 输出结果：
+$ go run main.go panic: EDDYCJY. goroutine 1 [running]: main.main() /Users/eddycjy/go/src/github.com/EDDYCJY/awesomeProject/main.go:4 +0x39 exit status 2 请思考一下，为什么执行 panic 后会导致应用程序运行中止？（而不是单单说执行了 panic 所以就结束了这么含糊）
+二、为什么不会中止运行 func main() { defer func() { if err := recover(); err != nil { log.Printf(&amp;quot;recover: %v&amp;quot;, err) } }() panic(&amp;quot;EDDYCJY.&amp;quot;) } 输出结果：
+$ go run main.go 2019/05/11 23:39:47 recover: EDDYCJY. 请思考一下，为什么加上 defer + recover 组合就可以保护应用程序？</description>
+    </item>
+    
+    <item>
+      <title>为什么遍历 Go map 是无序的</title>
+      <link>https://eddycjy.com/posts/go/map/2019-04-07-why-map-no-order/</link>
+      <pubDate>Sun, 07 Apr 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/map/2019-04-07-why-map-no-order/</guid>
+      <description>有的小伙伴没留意过 Go map 输出顺序，以为它是稳定的有序的；有的小伙伴知道是无序的，但却不知道为什么？有的却理解错误？今天我们将通过本文，揭开 for range map 的 “神秘” 面纱，看看它内部实现到底是怎么样的，输出顺序到底是怎么样？
+前言 func main() { m := make(map[int32]string) m[0] = &amp;#34;EDDYCJY1&amp;#34; m[1] = &amp;#34;EDDYCJY2&amp;#34; m[2] = &amp;#34;EDDYCJY3&amp;#34; m[3] = &amp;#34;EDDYCJY4&amp;#34; m[4] = &amp;#34;EDDYCJY5&amp;#34; for k, v := range m { log.Printf(&amp;#34;k: %v, v: %v&amp;#34;, k, v) } } 假设运行这段代码，输出结果是按顺序？还是无序输出呢？
+2019/04/03 23:27:29 k: 3, v: EDDYCJY4 2019/04/03 23:27:29 k: 4, v: EDDYCJY5 2019/04/03 23:27:29 k: 0, v: EDDYCJY1 2019/04/03 23:27:29 k: 1, v: EDDYCJY2 2019/04/03 23:27:29 k: 2, v: EDDYCJY3 从输出结果上来讲，是非固定顺序输出的，也就是每次都不一样（标题也讲了）。但这是为什么呢？</description>
+    </item>
+    
+    <item>
+      <title>深入理解 Go map：赋值和扩容迁移</title>
+      <link>https://eddycjy.com/posts/go/map/2019-03-24-map-assign/</link>
+      <pubDate>Sun, 24 Mar 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/map/2019-03-24-map-assign/</guid>
+      <description>概要 在 上一章节 中，数据结构小节里讲解了大量基础字段，可能你会疑惑需要 #&amp;amp;（！……#（！￥！ 来干嘛？接下来我们一起简单了解一下基础概念。再开始研讨今天文章的重点内容。我相信这样你能更好的读懂这篇文章
+哈希函数 哈希函数，又称散列算法、散列函数。主要作用是通过特定算法将数据根据一定规则组合重新生成得到一个散列值
+而在哈希表中，其生成的散列值常用于寻找其键映射到哪一个桶上。而一个好的哈希函数，应当尽量少的出现哈希冲突，以此保证操作哈希表的时间复杂度（但是哈希冲突在目前来讲，是无法避免的。我们需要 “解决” 它）
+链地址法 在哈希操作中，相当核心的一个处理动作就是 “哈希冲突” 的解决。而在 Go map 中采用的就是 &amp;ldquo;链地址法 &amp;quot; 去解决哈希冲突，又称 &amp;ldquo;拉链法&amp;rdquo;。其主要做法是数组 + 链表的数据结构，其溢出节点的存储内存都是动态申请的，因此相对更灵活。而每一个元素都是一个链表。如下图：
+桶/溢出桶 type hmap struct { ... buckets unsafe.Pointer ... extra *mapextra } type mapextra struct { overflow *[]*bmap oldoverflow *[]*bmap nextOverflow *bmap } 在上章节中，我们介绍了 Go map 中的桶和溢出桶的概念，在其桶中只能存储 8 个键值对元素。当超过 8 个时，将会使用溢出桶进行存储或进行扩容
+你可能会有疑问，hint 大于 8 又会怎么样？答案很明显，性能问题，其时间复杂度改变（也就是执行效率出现问题）
+前言 概要复习的差不多后，接下来我们将一同研讨 Go map 的另外三个核心行为：赋值、扩容、迁移。正式开始我们的研讨之旅吧 ：）
+赋值 m := make(map[int32]string) m[0] = &amp;#34;EDDYCJY&amp;#34; 函数原型 在 map 的赋值动作中，依旧是针对 32/64 位、string、pointer 类型有不同的转换处理，总的函数原型如下：</description>
+    </item>
+    
+    <item>
+      <title>深入理解 Go map：初始化和访问元素</title>
+      <link>https://eddycjy.com/posts/go/map/2019-03-05-map-access/</link>
+      <pubDate>Tue, 05 Mar 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/map/2019-03-05-map-access/</guid>
+      <description>从本文开始咱们一起探索 Go map 里面的奥妙吧，看看它的内在是怎么构成的，又分别有什么值得留意的地方？
+第一篇将探讨初始化和访问元素相关板块，咱们带着疑问去学习，例如：
+ 初始化的时候会马上分配内存吗？ 底层数据是如何存储的？ 底层是如何使用 key 去寻找数据的？ 底层是用什么方式解决哈希冲突的？ 数据类型那么多，底层又是怎么处理的呢？  &amp;hellip;
+数据结构 首先我们一起看看 Go map 的基础数据结构，先有一个大致的印象
+hmap type hmap struct { count int flags uint8 B uint8 noverflow uint16 hash0 uint32 buckets unsafe.Pointer oldbuckets unsafe.Pointer nevacuate uintptr extra *mapextra } type mapextra struct { overflow *[]*bmap oldoverflow *[]*bmap nextOverflow *bmap }  count：map 的大小，也就是 len() 的值。代指 map 中的键值对个数 flags：状态标识，主要是 goroutine 写入和扩容机制的相关状态控制。并发读写的判断条件之一就是该值 B：桶，最大可容纳的元素数量，值为 负载因子（默认 6.5） * 2 ^ B，是 2 的指数 noverflow：溢出桶的数量 hash0：哈希因子 buckets：保存当前桶数据的指针地址（指向一段连续的内存地址，主要存储键值对数据） oldbuckets，保存旧桶的指针地址 nevacuate：迁移进度 extra：原有 buckets 满载后，会发生扩容动作，在 Go 的机制中使用了增量扩容，如下为细项：  overflow 为 hmap.</description>
+    </item>
+    
+    <item>
+      <title>Go Slice 最大容量大小是怎么来的</title>
+      <link>https://eddycjy.com/posts/go/slice/2019-01-06-why-slice-max/</link>
+      <pubDate>Sun, 06 Jan 2019 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/slice/2019-01-06-why-slice-max/</guid>
+      <description>前言 在《深入理解 Go Slice》中，我们提到了 “根据其类型大小去获取能够申请的最大容量大小” 的处理逻辑。今天我们将更深入地去探究一下，底层到底做了什么东西，涉及什么知识点？
+Go Slice 对应代码如下：
+func makeslice(et *_type, len, cap int) slice { maxElements := maxSliceCap(et.size) if len &amp;lt; 0 || uintptr(len) &amp;gt; maxElements { ... } if cap &amp;lt; len || uintptr(cap) &amp;gt; maxElements { ... } p := mallocgc(et.size*uintptr(cap), et, true) return slice{p, len, cap} } 根据想要追寻的逻辑，定位到了 maxSliceCap 方法，它会根据当前类型的大小获取到了所允许的最大容量大小来进行阈值判断，也就是安全检查。这是浅层的了解，我们继续追下去看看还做了些什么？
+maxSliceCap func maxSliceCap(elemsize uintptr) uintptr { if elemsize &amp;lt; uintptr(len(maxElems)) { return maxElems[elemsize] } return maxAlloc / elemsize } maxElems var maxElems = [.</description>
+    </item>
+    
+    <item>
+      <title>有点不安全却又一亮的 Go unsafe.Pointer</title>
+      <link>https://eddycjy.com/posts/go/pkg/2018-12-15-unsafe/</link>
+      <pubDate>Sat, 15 Dec 2018 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/pkg/2018-12-15-unsafe/</guid>
+      <description>在上一篇文章《深入理解 Go Slice》中，大家会发现其底层数据结构使用了 unsafe.Pointer。因此想着再介绍一下其关联知识
+前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？
+首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它
+错误示例 func main(){ num := 5 numPointer := &amp;amp;num flnum := (*float32)(numPointer) fmt.Println(flnum) } 输出结果：
+# command-line-arguments ...: cannot convert numPointer (type *int) to type *float32 在示例中，我们创建了一个 num 变量，值为 5，类型为 int。取了其对于的指针地址后，试图强制转换为 *float32，结果失败&amp;hellip;
+unsafe 针对刚刚的 “错误示例”，我们可以采用今天的男主角 unsafe 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：
+ 围绕 Go 程序内存安全及类型的操作 很可能会是不可移植的 不受 Go 1 兼容性指南的保护  简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄
+Pointer 为了解决这个问题，需要用到 unsafe.Pointer。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）</description>
+    </item>
+    
+    <item>
+      <title>深入理解 Go Slice</title>
+      <link>https://eddycjy.com/posts/go/slice/2018-12-11-slice/</link>
+      <pubDate>Tue, 11 Dec 2018 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/slice/2018-12-11-slice/</guid>
+      <description>是什么 在 Go 中，Slice（切片）是抽象在 Array（数组）之上的特殊类型。为了更好地了解 Slice，第一步需要先对 Array 进行理解。深刻了解 Slice 与 Array 之间的区别后，就能更好的对其底层一番摸索 😄
+用法 Array func main() { nums := [3]int{} nums[0] = 1 n := nums[0] n = 2 fmt.Printf(&amp;#34;nums: %v\n&amp;#34;, nums) fmt.Printf(&amp;#34;n: %d\n&amp;#34;, n) } 我们可得知在 Go 中，数组类型需要指定长度和元素类型。在上述代码中，可得知 [3]int{} 表示 3 个整数的数组，并进行了初始化。底层数据存储为一段连续的内存空间，通过固定的索引值（下标）进行检索
+数组在声明后，其元素的初始值（也就是零值）为 0。并且该变量可以直接使用，不需要特殊操作
+同时数组的长度是固定的，它的长度是类型的一部分，因此 [3]int 和 [4]int 在类型上是不同的，不能称为 “一个东西”
+输出结果 nums: [1 0 0] n: 2 Slice func main() { nums := [3]int{} nums[0] = 1 dnums := nums[:] fmt.</description>
+    </item>
+    
+    <item>
+      <title>fmt 标准库 --- Print* 是怎么样输出的？</title>
+      <link>https://eddycjy.com/posts/go/pkg/2018-12-04-fmt/</link>
+      <pubDate>Tue, 04 Dec 2018 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/pkg/2018-12-04-fmt/</guid>
+      <description>前言 package main import ( &amp;quot;fmt&amp;quot; ) func main() { fmt.Println(&amp;quot;Hello World!&amp;quot;) } 标准开场见多了，那内部标准库又是怎么输出这段英文的呢？今天一起来围观下源码吧 🤭
+原型 func Print(a ...interface{}) (n int, err error) { return Fprint(os.Stdout, a...) } func Println(a ...interface{}) (n int, err error) { return Fprintln(os.Stdout, a...) } func Printf(format string, a ...interface{}) (n int, err error) { return Fprintf(os.Stdout, format, a...) }  Print：使用默认格式说明符打印格式并写入标准输出。当两者都不是字符串时，在操作数之间添加空格 Println：同上，不同的地方是始终在操作数之间添加空格，并附加换行符 Printf：根据格式说明符进行格式化并写入标准输出  以上三类就是最常见的格式化 I/O 的方法，我们将基于此去进行拆解描述
+执行流程 案例一：Print 在这里我们使用 Print 方法做一个分析，便于后面的加深理解 😄
+func Print(a .</description>
+    </item>
+    
+    <item>
+      <title>log 标准库</title>
+      <link>https://eddycjy.com/posts/go/pkg/2018-09-28-log/</link>
+      <pubDate>Fri, 28 Sep 2018 12:00:00 +0000</pubDate>
+      
+      <guid>https://eddycjy.com/posts/go/pkg/2018-09-28-log/</guid>
+      <description>日志 输出 2018/09/28 20:03:08 EDDYCJY Blog... 构成 [日期]&amp;lt;空格&amp;gt;[时分秒]&amp;lt;空格&amp;gt;[内容]&amp;lt;\n&amp;gt;
+源码剖析 Logger type Logger struct { mu sync.Mutex prefix string flag int out io.Writer buf []byte }  mu：互斥锁，用于确保原子的写入 prefix：每行需写入的日志前缀内容 flag：设置日志辅助信息（时间、文件名、行号）的写入。可选如下标识位：  const ( Ldate = 1 &amp;lt;&amp;lt; iota // value: 1 Ltime // value: 2 Lmicroseconds // value: 4 Llongfile // value: 8 Lshortfile // value: 16 LUTC // value: 32 LstdFlags = Ldate | Ltime // value: 3 )  Ldate：当地时区的格式化日期：2009/01/23 Ltime：当地时区的格式化时间：01:23:23 Lmicroseconds：在 Ltime 的基础上，增加微秒的时间数值显示 Llongfile：完整的文件名和行号：/a/b/c/d.</description>
+    </item>
+    
+  </channel>
+</rss>

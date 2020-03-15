@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载三」Gin搭建Blog API&#39;s （二）">
+<meta itemprop="description" content="涉及知识点  Gin：Golang 的一个微框架，性能极佳。 beego-validation：本节采用的 beego 的表单验证库，中文文档。 gorm，对开发人员友好的 ORM 框架，英文文档 com，一个小而美的工具包。  本文目标  完成博客的标签类接口定义和编写  定义接口 本节正是编写标签的逻辑，我们想一想，一般接口为增删改查是基础的，那么我们定义一下接口吧！
+ 获取标签列表：GET(&quot;/tags&rdquo;) 新建标签：POST(&quot;/tags&rdquo;) 更新指定标签：PUT(&quot;/tags/:id&rdquo;) 删除指定标签：DELETE(&quot;/tags/:id&rdquo;)   编写路由空壳 开始编写路由文件逻辑，在routers下新建api目录，我们当前是第一个 API 大版本，因此在api下新建v1目录，再新建tag.go文件，写入内容：
+package v1 import ( &#34;github.com/gin-gonic/gin&#34; ) //获取多个文章标签 func GetTags(c *gin.Context) { } //新增文章标签 func AddTag(c *gin.Context) { } //修改文章标签 func EditTag(c *gin.Context) { } //删除文章标签 func DeleteTag(c *gin.Context) { } 注册路由 我们打开routers下的router.go文件，修改文件内容为：
+package routers import ( &#34;github.com/gin-gonic/gin&#34; &#34;gin-blog/routers/api/v1&#34; &#34;gin-blog/pkg/setting&#34; ) func InitRouter() *gin.">
+<meta itemprop="datePublished" content="2018-02-12T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-02-12T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="853">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载三」Gin搭建Blog API&#39;s （二）" />
+<meta property="og:description" content="涉及知识点  Gin：Golang 的一个微框架，性能极佳。 beego-validation：本节采用的 beego 的表单验证库，中文文档。 gorm，对开发人员友好的 ORM 框架，英文文档 com，一个小而美的工具包。  本文目标  完成博客的标签类接口定义和编写  定义接口 本节正是编写标签的逻辑，我们想一想，一般接口为增删改查是基础的，那么我们定义一下接口吧！
+ 获取标签列表：GET(&quot;/tags&rdquo;) 新建标签：POST(&quot;/tags&rdquo;) 更新指定标签：PUT(&quot;/tags/:id&rdquo;) 删除指定标签：DELETE(&quot;/tags/:id&rdquo;)   编写路由空壳 开始编写路由文件逻辑，在routers下新建api目录，我们当前是第一个 API 大版本，因此在api下新建v1目录，再新建tag.go文件，写入内容：
+package v1 import ( &#34;github.com/gin-gonic/gin&#34; ) //获取多个文章标签 func GetTags(c *gin.Context) { } //新增文章标签 func AddTag(c *gin.Context) { } //修改文章标签 func EditTag(c *gin.Context) { } //删除文章标签 func DeleteTag(c *gin.Context) { } 注册路由 我们打开routers下的router.go文件，修改文件内容为：
+package routers import ( &#34;github.com/gin-gonic/gin&#34; &#34;gin-blog/routers/api/v1&#34; &#34;gin-blog/pkg/setting&#34; ) func InitRouter() *gin." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-02-12-api-02/" />
+<meta property="article:published_time" content="2018-02-12T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-02-12T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载三」Gin搭建Blog API&#39;s （二）"/>
+<meta name="twitter:description" content="涉及知识点  Gin：Golang 的一个微框架，性能极佳。 beego-validation：本节采用的 beego 的表单验证库，中文文档。 gorm，对开发人员友好的 ORM 框架，英文文档 com，一个小而美的工具包。  本文目标  完成博客的标签类接口定义和编写  定义接口 本节正是编写标签的逻辑，我们想一想，一般接口为增删改查是基础的，那么我们定义一下接口吧！
+ 获取标签列表：GET(&quot;/tags&rdquo;) 新建标签：POST(&quot;/tags&rdquo;) 更新指定标签：PUT(&quot;/tags/:id&rdquo;) 删除指定标签：DELETE(&quot;/tags/:id&rdquo;)   编写路由空壳 开始编写路由文件逻辑，在routers下新建api目录，我们当前是第一个 API 大版本，因此在api下新建v1目录，再新建tag.go文件，写入内容：
+package v1 import ( &#34;github.com/gin-gonic/gin&#34; ) //获取多个文章标签 func GetTags(c *gin.Context) { } //新增文章标签 func AddTag(c *gin.Context) { } //修改文章标签 func EditTag(c *gin.Context) { } //删除文章标签 func DeleteTag(c *gin.Context) { } 注册路由 我们打开routers下的router.go文件，修改文件内容为：
+package routers import ( &#34;github.com/gin-gonic/gin&#34; &#34;gin-blog/routers/api/v1&#34; &#34;gin-blog/pkg/setting&#34; ) func InitRouter() *gin."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载三」Gin搭建Blog API&#39;s （二）</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Feb 12, 2018</span></div>
+				<h1>「连载三」Gin搭建Blog API&#39;s （二）</h1>
+			</header>
+			<div class="content">
+				<h2 id="涉及知识点">涉及知识点<a href="#涉及知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="https://github.com/gin-gonic/gin">Gin</a>：Golang 的一个微框架，性能极佳。</li>
+<li><a href="https://github.com/astaxie/beego/tree/master/validation">beego-validation</a>：本节采用的 beego 的表单验证库，<a href="https://beego.me/docs/mvc/controller/validation.md">中文文档</a>。</li>
+<li><a href="https://github.com/jinzhu/gorm">gorm</a>，对开发人员友好的 ORM 框架，<a href="http://gorm.io/docs/">英文文档</a></li>
+<li><a href="https://github.com/Unknwon/com">com</a>，一个小而美的工具包。</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>完成博客的标签类接口定义和编写</li>
+</ul>
+<h2 id="定义接口">定义接口<a href="#定义接口" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>本节正是编写标签的逻辑，我们想一想，一般接口为增删改查是基础的，那么我们定义一下接口吧！</p>
+<ul>
+<li>获取标签列表：GET(&quot;/tags&rdquo;)</li>
+<li>新建标签：POST(&quot;/tags&rdquo;)</li>
+<li>更新指定标签：PUT(&quot;/tags/:id&rdquo;)</li>
+<li>删除指定标签：DELETE(&quot;/tags/:id&rdquo;)</li>
+</ul>
+<hr>
+<h2 id="编写路由空壳">编写路由空壳<a href="#编写路由空壳" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>开始编写路由文件逻辑，在<code>routers</code>下新建<code>api</code>目录，我们当前是第一个 API 大版本，因此在<code>api</code>下新建<code>v1</code>目录，再新建<code>tag.go</code>文件，写入内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">v1</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;github.com/gin-gonic/gin&#34;</span>
+<span class="p">)</span>
+
+<span class="c1">//获取多个文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetTags</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="c1">//新增文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">AddTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="c1">//修改文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">EditTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="c1">//删除文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">DeleteTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="注册路由">注册路由<a href="#注册路由" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>我们打开<code>routers</code>下的<code>router.go</code>文件，修改文件内容为：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">routers</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;github.com/gin-gonic/gin&#34;</span>
+
+    <span class="s">&#34;gin-blog/routers/api/v1&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/setting&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">InitRouter</span><span class="p">()</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Engine</span> <span class="p">{</span>
+    <span class="nx">r</span> <span class="o">:=</span> <span class="nx">gin</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+
+    <span class="nx">r</span><span class="p">.</span><span class="nf">Use</span><span class="p">(</span><span class="nx">gin</span><span class="p">.</span><span class="nf">Logger</span><span class="p">())</span>
+
+    <span class="nx">r</span><span class="p">.</span><span class="nf">Use</span><span class="p">(</span><span class="nx">gin</span><span class="p">.</span><span class="nf">Recovery</span><span class="p">())</span>
+
+    <span class="nx">gin</span><span class="p">.</span><span class="nf">SetMode</span><span class="p">(</span><span class="nx">setting</span><span class="p">.</span><span class="nx">RunMode</span><span class="p">)</span>
+
+    <span class="nx">apiv1</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">Group</span><span class="p">(</span><span class="s">&#34;/api/v1&#34;</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="c1">//获取标签列表
+</span><span class="c1"></span>        <span class="nx">apiv1</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/tags&#34;</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">GetTags</span><span class="p">)</span>
+        <span class="c1">//新建标签
+</span><span class="c1"></span>        <span class="nx">apiv1</span><span class="p">.</span><span class="nf">POST</span><span class="p">(</span><span class="s">&#34;/tags&#34;</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">AddTag</span><span class="p">)</span>
+        <span class="c1">//更新指定标签
+</span><span class="c1"></span>        <span class="nx">apiv1</span><span class="p">.</span><span class="nf">PUT</span><span class="p">(</span><span class="s">&#34;/tags/:id&#34;</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EditTag</span><span class="p">)</span>
+        <span class="c1">//删除指定标签
+</span><span class="c1"></span>        <span class="nx">apiv1</span><span class="p">.</span><span class="nf">DELETE</span><span class="p">(</span><span class="s">&#34;/tags/:id&#34;</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">DeleteTag</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nx">r</span>
+<span class="p">}</span>
+</code></pre></div><p>当前目录结构：</p>
+<pre><code>gin-blog/
+├── conf
+│   └── app.ini
+├── main.go
+├── middleware
+├── models
+│   └── models.go
+├── pkg
+│   ├── e
+│   │   ├── code.go
+│   │   └── msg.go
+│   ├── setting
+│   │   └── setting.go
+│   └── util
+│       └── pagination.go
+├── routers
+│   ├── api
+│   │   └── v1
+│   │       └── tag.go
+│   └── router.go
+├── runtime
+</code></pre><h2 id="检验路由是否注册成功">检验路由是否注册成功<a href="#检验路由是否注册成功" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>回到命令行，执行<code>go run main.go</code>，检查路由规则是否注册成功。</p>
+<pre><code>$ go run main.go
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/tags              --&gt; gin-blog/routers/api/v1.GetTags (3 handlers)
+[GIN-debug] POST   /api/v1/tags              --&gt; gin-blog/routers/api/v1.AddTag (3 handlers)
+[GIN-debug] PUT    /api/v1/tags/:id          --&gt; gin-blog/routers/api/v1.EditTag (3 handlers)
+[GIN-debug] DELETE /api/v1/tags/:id          --&gt; gin-blog/routers/api/v1.DeleteTag (3 handlers)
+</code></pre><p>运行成功，那么我们愉快的<strong>开始编写我们的接口</strong>吧！</p>
+<h2 id="下载依赖包">下载依赖包<a href="#下载依赖包" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<hr>
+<p>首先我们要拉取<code>validation</code>的依赖包，在后面的接口里会使用到表单验证</p>
+<pre><code>$ go get -u github.com/astaxie/beego/validation
+</code></pre><h2 id="编写标签列表的-models-逻辑">编写标签列表的 models 逻辑<a href="#编写标签列表的-models-逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>创建<code>models</code>目录下的<code>tag.go</code>，写入文件内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">models</span>
+
+<span class="kd">type</span> <span class="nx">Tag</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">Model</span>
+
+    <span class="nx">Name</span> <span class="kt">string</span> <span class="s">`json:&#34;name&#34;`</span>
+    <span class="nx">CreatedBy</span> <span class="kt">string</span> <span class="s">`json:&#34;created_by&#34;`</span>
+    <span class="nx">ModifiedBy</span> <span class="kt">string</span> <span class="s">`json:&#34;modified_by&#34;`</span>
+    <span class="nx">State</span> <span class="kt">int</span> <span class="s">`json:&#34;state&#34;`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetTags</span><span class="p">(</span><span class="nx">pageNum</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">pageSize</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">maps</span> <span class="kd">interface</span> <span class="p">{})</span> <span class="p">(</span><span class="nx">tags</span> <span class="p">[]</span><span class="nx">Tag</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Where</span><span class="p">(</span><span class="nx">maps</span><span class="p">).</span><span class="nf">Offset</span><span class="p">(</span><span class="nx">pageNum</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">).</span><span class="nf">Find</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tags</span><span class="p">)</span>
+
+    <span class="k">return</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetTagTotal</span><span class="p">(</span><span class="nx">maps</span> <span class="kd">interface</span> <span class="p">{})</span> <span class="p">(</span><span class="nx">count</span> <span class="kt">int</span><span class="p">){</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Model</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Tag</span><span class="p">{}).</span><span class="nf">Where</span><span class="p">(</span><span class="nx">maps</span><span class="p">).</span><span class="nf">Count</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">count</span><span class="p">)</span>
+
+    <span class="k">return</span>
+<span class="p">}</span>
+</code></pre></div><ol>
+<li>
+<p>我们创建了一个<code>Tag struct{}</code>，用于<code>Gorm</code>的使用。并给予了附属属性<code>json</code>，这样子在<code>c.JSON</code>的时候就会自动转换格式，非常的便利</p>
+</li>
+<li>
+<p>可能会有的初学者看到<code>return</code>，而后面没有跟着变量，会不理解；其实你可以看到在函数末端，我们已经显示声明了返回值，这个变量在函数体内也可以直接使用，因为他在一开始就被声明了</p>
+</li>
+<li>
+<p>有人会疑惑<code>db</code>是哪里来的；因为在同个<code>models</code>包下，因此<code>db *gorm.DB</code>是可以直接使用的</p>
+</li>
+</ol>
+<h2 id="编写标签列表的路由逻辑">编写标签列表的路由逻辑<a href="#编写标签列表的路由逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>打开<code>routers</code>目录下 v1 版本的<code>tag.go</code>，第一我们先编写<strong>获取标签列表的接口</strong></p>
+<p>修改文件内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">v1</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;net/http&#34;</span>
+
+    <span class="s">&#34;github.com/gin-gonic/gin&#34;</span>
+    <span class="c1">//&#34;github.com/astaxie/beego/validation&#34;
+</span><span class="c1"></span>    <span class="s">&#34;github.com/Unknwon/com&#34;</span>
+
+    <span class="s">&#34;gin-blog/pkg/e&#34;</span>
+    <span class="s">&#34;gin-blog/models&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/util&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/setting&#34;</span>
+<span class="p">)</span>
+
+<span class="c1">//获取多个文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetTags</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">name</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span>
+
+    <span class="nx">maps</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+    <span class="nx">data</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+
+    <span class="k">if</span> <span class="nx">name</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+        <span class="nx">maps</span><span class="p">[</span><span class="s">&#34;name&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">name</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">state</span> <span class="kt">int</span> <span class="p">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">if</span> <span class="nx">arg</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;state&#34;</span><span class="p">);</span> <span class="nx">arg</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+        <span class="nx">state</span> <span class="p">=</span> <span class="nx">com</span><span class="p">.</span><span class="nf">StrTo</span><span class="p">(</span><span class="nx">arg</span><span class="p">).</span><span class="nf">MustInt</span><span class="p">()</span>
+        <span class="nx">maps</span><span class="p">[</span><span class="s">&#34;state&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">state</span>
+    <span class="p">}</span>
+
+    <span class="nx">code</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span>
+
+    <span class="nx">data</span><span class="p">[</span><span class="s">&#34;lists&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">models</span><span class="p">.</span><span class="nf">GetTags</span><span class="p">(</span><span class="nx">util</span><span class="p">.</span><span class="nf">GetPage</span><span class="p">(</span><span class="nx">c</span><span class="p">),</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">PageSize</span><span class="p">,</span> <span class="nx">maps</span><span class="p">)</span>
+    <span class="nx">data</span><span class="p">[</span><span class="s">&#34;total&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">models</span><span class="p">.</span><span class="nf">GetTagTotal</span><span class="p">(</span><span class="nx">maps</span><span class="p">)</span>
+
+    <span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+        <span class="s">&#34;code&#34;</span> <span class="p">:</span> <span class="nx">code</span><span class="p">,</span>
+        <span class="s">&#34;msg&#34;</span> <span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nf">GetMsg</span><span class="p">(</span><span class="nx">code</span><span class="p">),</span>
+        <span class="s">&#34;data&#34;</span> <span class="p">:</span> <span class="nx">data</span><span class="p">,</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="c1">//新增文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">AddTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="c1">//修改文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">EditTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="c1">//删除文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">DeleteTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div><ol>
+<li><code>c.Query</code>可用于获取<code>?name=test&amp;state=1</code>这类 URL 参数，而<code>c.DefaultQuery</code>则支持设置一个默认值</li>
+<li><code>code</code>变量使用了<code>e</code>模块的错误编码，这正是先前规划好的错误码，方便排错和识别记录</li>
+<li><code>util.GetPage</code>保证了各接口的<code>page</code>处理是一致的</li>
+<li><code>c *gin.Context</code>是<code>Gin</code>很重要的组成部分，可以理解为上下文，它允许我们在中间件之间传递变量、管理流、验证请求的 JSON 和呈现 JSON 响应</li>
+</ol>
+<p>在本机执行<code>curl 127.0.0.1:8000/api/v1/tags</code>，正确的返回值为<code>{&quot;code&quot;:200,&quot;data&quot;:{&quot;lists&quot;:[],&quot;total&quot;:0},&quot;msg&quot;:&quot;ok&quot;}</code>，若存在问题请结合 gin 结果进行拍错。</p>
+<p>在获取标签列表接口中，我们可以根据<code>name</code>、<code>state</code>、<code>page</code>来筛选查询条件，分页的步长可通过<code>app.ini</code>进行配置，以<code>lists</code>、<code>total</code>的组合返回达到分页效果。</p>
+<h2 id="编写新增标签的-models-逻辑">编写新增标签的 models 逻辑<a href="#编写新增标签的-models-逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>接下来我们编写<strong>新增标签</strong>的接口</p>
+<p>打开<code>models</code>目录下的<code>tag.go</code>，修改文件（增加 2 个方法）：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">func</span> <span class="nf">ExistTagByName</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">tag</span> <span class="nx">Tag</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Select</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">).</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;name = ?&#34;</span><span class="p">,</span> <span class="nx">name</span><span class="p">).</span><span class="nf">First</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tag</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">ID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">AddTag</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">state</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">createdBy</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">bool</span><span class="p">{</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Create</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Tag</span> <span class="p">{</span>
+        <span class="nx">Name</span> <span class="p">:</span> <span class="nx">name</span><span class="p">,</span>
+        <span class="nx">State</span> <span class="p">:</span> <span class="nx">state</span><span class="p">,</span>
+        <span class="nx">CreatedBy</span> <span class="p">:</span> <span class="nx">createdBy</span><span class="p">,</span>
+    <span class="p">})</span>
+
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+<span class="o">...</span>
+</code></pre></div><h2 id="编写新增标签的路由逻辑">编写新增标签的路由逻辑<a href="#编写新增标签的路由逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>打开<code>routers</code>目录下的<code>tag.go</code>，修改文件（变动 AddTag 方法）：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">v1</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;log&#34;</span>
+    <span class="s">&#34;net/http&#34;</span>
+
+    <span class="s">&#34;github.com/gin-gonic/gin&#34;</span>
+    <span class="s">&#34;github.com/astaxie/beego/validation&#34;</span>
+    <span class="s">&#34;github.com/Unknwon/com&#34;</span>
+
+    <span class="s">&#34;gin-blog/pkg/e&#34;</span>
+    <span class="s">&#34;gin-blog/models&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/util&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/setting&#34;</span>
+<span class="p">)</span>
+
+<span class="o">...</span>
+
+<span class="c1">//新增文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">AddTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">name</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span>
+    <span class="nx">state</span> <span class="o">:=</span> <span class="nx">com</span><span class="p">.</span><span class="nf">StrTo</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nf">DefaultQuery</span><span class="p">(</span><span class="s">&#34;state&#34;</span><span class="p">,</span> <span class="s">&#34;0&#34;</span><span class="p">)).</span><span class="nf">MustInt</span><span class="p">()</span>
+    <span class="nx">createdBy</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;created_by&#34;</span><span class="p">)</span>
+
+    <span class="nx">valid</span> <span class="o">:=</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">Validation</span><span class="p">{}</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Required</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;名称不能为空&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">MaxSize</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;名称最长为100字符&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Required</span><span class="p">(</span><span class="nx">createdBy</span><span class="p">,</span> <span class="s">&#34;created_by&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;创建人不能为空&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">MaxSize</span><span class="p">(</span><span class="nx">createdBy</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s">&#34;created_by&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;创建人最长为100字符&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Range</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;state&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;状态只允许0或1&#34;</span><span class="p">)</span>
+
+    <span class="nx">code</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">INVALID_PARAMS</span>
+    <span class="k">if</span> <span class="p">!</span> <span class="nx">valid</span><span class="p">.</span><span class="nf">HasErrors</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">!</span> <span class="nx">models</span><span class="p">.</span><span class="nf">ExistTagByName</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span>
+            <span class="nx">models</span><span class="p">.</span><span class="nf">AddTag</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">createdBy</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ERROR_EXIST_TAG</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+        <span class="s">&#34;code&#34;</span> <span class="p">:</span> <span class="nx">code</span><span class="p">,</span>
+        <span class="s">&#34;msg&#34;</span> <span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nf">GetMsg</span><span class="p">(</span><span class="nx">code</span><span class="p">),</span>
+        <span class="s">&#34;data&#34;</span> <span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+<span class="o">...</span>
+</code></pre></div><p>用<code>Postman</code>用 POST 访问<code>http://127.0.0.1:8000/api/v1/tags?name=1&amp;state=1&amp;created_by=test</code>，查看<code>code</code>是否返回<code>200</code>及<code>blog_tag</code>表中是否有值，有值则正确。</p>
+<h2 id="编写-models-callbacks">编写 models callbacks<a href="#编写-models-callbacks" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>但是这个时候大家会发现，我明明新增了标签，但<code>created_on</code>居然没有值，那做修改标签的时候<code>modified_on</code>会不会也存在这个问题？</p>
+<p>为了解决这个问题，我们需要打开<code>models</code>目录下的<code>tag.go</code>文件，修改文件内容（修改包引用和增加 2 个方法）：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">models</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;time&#34;</span>
+
+    <span class="s">&#34;github.com/jinzhu/gorm&#34;</span>
+<span class="p">)</span>
+
+<span class="o">...</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tag</span> <span class="o">*</span><span class="nx">Tag</span><span class="p">)</span> <span class="nf">BeforeCreate</span><span class="p">(</span><span class="nx">scope</span> <span class="o">*</span><span class="nx">gorm</span><span class="p">.</span><span class="nx">Scope</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">scope</span><span class="p">.</span><span class="nf">SetColumn</span><span class="p">(</span><span class="s">&#34;CreatedOn&#34;</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tag</span> <span class="o">*</span><span class="nx">Tag</span><span class="p">)</span> <span class="nf">BeforeUpdate</span><span class="p">(</span><span class="nx">scope</span> <span class="o">*</span><span class="nx">gorm</span><span class="p">.</span><span class="nx">Scope</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">scope</span><span class="p">.</span><span class="nf">SetColumn</span><span class="p">(</span><span class="s">&#34;ModifiedOn&#34;</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>重启服务，再在用<code>Postman</code>用 POST 访问<code>http://127.0.0.1:8000/api/v1/tags?name=2&amp;state=1&amp;created_by=test</code>，发现<code>created_on</code>已经有值了！</p>
+<p><strong>在这几段代码中，涉及到知识点：</strong></p>
+<p>这属于<code>gorm</code>的<code>Callbacks</code>，可以将回调方法定义为模型结构的指针，在创建、更新、查询、删除时将被调用，如果任何回调返回错误，gorm 将停止未来操作并回滚所有更改。</p>
+<p><code>gorm</code>所支持的回调方法：</p>
+<ul>
+<li>创建：BeforeSave、BeforeCreate、AfterCreate、AfterSave</li>
+<li>更新：BeforeSave、BeforeUpdate、AfterUpdate、AfterSave</li>
+<li>删除：BeforeDelete、AfterDelete</li>
+<li>查询：AfterFind</li>
+</ul>
+<hr>
+<h2 id="编写其余接口的路由逻辑">编写其余接口的路由逻辑<a href="#编写其余接口的路由逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>接下来，我们一口气把剩余的两个接口（EditTag、DeleteTag）完成吧</p>
+<p>打开<code>routers</code>目录下 v1 版本的<code>tag.go</code>文件，修改内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+
+<span class="c1">//修改文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">EditTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">id</span> <span class="o">:=</span> <span class="nx">com</span><span class="p">.</span><span class="nf">StrTo</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nf">Param</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">)).</span><span class="nf">MustInt</span><span class="p">()</span>
+    <span class="nx">name</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span>
+    <span class="nx">modifiedBy</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;modified_by&#34;</span><span class="p">)</span>
+
+    <span class="nx">valid</span> <span class="o">:=</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">Validation</span><span class="p">{}</span>
+
+    <span class="kd">var</span> <span class="nx">state</span> <span class="kt">int</span> <span class="p">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">if</span> <span class="nx">arg</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Query</span><span class="p">(</span><span class="s">&#34;state&#34;</span><span class="p">);</span> <span class="nx">arg</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+        <span class="nx">state</span> <span class="p">=</span> <span class="nx">com</span><span class="p">.</span><span class="nf">StrTo</span><span class="p">(</span><span class="nx">arg</span><span class="p">).</span><span class="nf">MustInt</span><span class="p">()</span>
+        <span class="nx">valid</span><span class="p">.</span><span class="nf">Range</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;state&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;状态只允许0或1&#34;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Required</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="s">&#34;id&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;ID不能为空&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Required</span><span class="p">(</span><span class="nx">modifiedBy</span><span class="p">,</span> <span class="s">&#34;modified_by&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;修改人不能为空&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">MaxSize</span><span class="p">(</span><span class="nx">modifiedBy</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s">&#34;modified_by&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;修改人最长为100字符&#34;</span><span class="p">)</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">MaxSize</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;名称最长为100字符&#34;</span><span class="p">)</span>
+
+    <span class="nx">code</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">INVALID_PARAMS</span>
+    <span class="k">if</span> <span class="p">!</span> <span class="nx">valid</span><span class="p">.</span><span class="nf">HasErrors</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span>
+        <span class="k">if</span> <span class="nx">models</span><span class="p">.</span><span class="nf">ExistTagByID</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">data</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+            <span class="nx">data</span><span class="p">[</span><span class="s">&#34;modified_by&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">modifiedBy</span>
+            <span class="k">if</span> <span class="nx">name</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+                <span class="nx">data</span><span class="p">[</span><span class="s">&#34;name&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">name</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="nx">state</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+                <span class="nx">data</span><span class="p">[</span><span class="s">&#34;state&#34;</span><span class="p">]</span> <span class="p">=</span> <span class="nx">state</span>
+            <span class="p">}</span>
+
+            <span class="nx">models</span><span class="p">.</span><span class="nf">EditTag</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ERROR_NOT_EXIST_TAG</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+        <span class="s">&#34;code&#34;</span> <span class="p">:</span> <span class="nx">code</span><span class="p">,</span>
+        <span class="s">&#34;msg&#34;</span> <span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nf">GetMsg</span><span class="p">(</span><span class="nx">code</span><span class="p">),</span>
+        <span class="s">&#34;data&#34;</span> <span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="c1">//删除文章标签
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">DeleteTag</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">id</span> <span class="o">:=</span> <span class="nx">com</span><span class="p">.</span><span class="nf">StrTo</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nf">Param</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">)).</span><span class="nf">MustInt</span><span class="p">()</span>
+
+    <span class="nx">valid</span> <span class="o">:=</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">Validation</span><span class="p">{}</span>
+    <span class="nx">valid</span><span class="p">.</span><span class="nf">Min</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;id&#34;</span><span class="p">).</span><span class="nf">Message</span><span class="p">(</span><span class="s">&#34;ID必须大于0&#34;</span><span class="p">)</span>
+
+    <span class="nx">code</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">INVALID_PARAMS</span>
+    <span class="k">if</span> <span class="p">!</span> <span class="nx">valid</span><span class="p">.</span><span class="nf">HasErrors</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span>
+        <span class="k">if</span> <span class="nx">models</span><span class="p">.</span><span class="nf">ExistTagByID</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">models</span><span class="p">.</span><span class="nf">DeleteTag</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">code</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ERROR_NOT_EXIST_TAG</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+        <span class="s">&#34;code&#34;</span> <span class="p">:</span> <span class="nx">code</span><span class="p">,</span>
+        <span class="s">&#34;msg&#34;</span> <span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nf">GetMsg</span><span class="p">(</span><span class="nx">code</span><span class="p">),</span>
+        <span class="s">&#34;data&#34;</span> <span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="编写其余接口的-models-逻辑">编写其余接口的 models 逻辑<a href="#编写其余接口的-models-逻辑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>打开<code>models</code>下的<code>tag.go</code>，修改文件内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+
+<span class="kd">func</span> <span class="nf">ExistTagByID</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">tag</span> <span class="nx">Tag</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Select</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">).</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;id = ?&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">).</span><span class="nf">First</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tag</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">ID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">DeleteTag</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;id = ?&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">).</span><span class="nf">Delete</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Tag</span><span class="p">{})</span>
+
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">EditTag</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">data</span> <span class="kd">interface</span> <span class="p">{})</span> <span class="kt">bool</span> <span class="p">{</span>
+    <span class="nx">db</span><span class="p">.</span><span class="nf">Model</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Tag</span><span class="p">{}).</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;id = ?&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">).</span><span class="nf">Updates</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+<span class="o">...</span>
+</code></pre></div><h2 id="验证功能">验证功能<a href="#验证功能" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>重启服务，用 Postman</p>
+<ul>
+<li>PUT 访问 http://127.0.0.1:8000/api/v1/tags/1?name=edit1&amp;state=0&amp;modified_by=edit1 ，查看 code 是否返回 200</li>
+<li>DELETE 访问 http://127.0.0.1:8000/api/v1/tags/1 ，查看 code 是否返回 200</li>
+</ul>
+<p>至此，Tag 的 API&rsquo;s 完成，下一节我们将开始 Article 的 API&rsquo;s 编写！</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 01 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>853 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-02-12 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#涉及知识点">涉及知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#定义接口">定义接口</a></li>
+    <li><a href="#编写路由空壳">编写路由空壳</a></li>
+    <li><a href="#注册路由">注册路由</a></li>
+    <li><a href="#检验路由是否注册成功">检验路由是否注册成功</a></li>
+    <li><a href="#下载依赖包">下载依赖包</a></li>
+    <li><a href="#编写标签列表的-models-逻辑">编写标签列表的 models 逻辑</a></li>
+    <li><a href="#编写标签列表的路由逻辑">编写标签列表的路由逻辑</a></li>
+    <li><a href="#编写新增标签的-models-逻辑">编写新增标签的 models 逻辑</a></li>
+    <li><a href="#编写新增标签的路由逻辑">编写新增标签的路由逻辑</a></li>
+    <li><a href="#编写-models-callbacks">编写 models callbacks</a></li>
+    <li><a href="#编写其余接口的路由逻辑">编写其余接口的路由逻辑</a></li>
+    <li><a href="#编写其余接口的-models-逻辑">编写其余接口的 models 逻辑</a></li>
+    <li><a href="#验证功能">验证功能</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/gin/2018-02-13-api-03/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载四」Gin搭建Blog API&#39;s （三）</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/gin/2018-02-11-api-01/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载二」Gin搭建Blog API&#39;s （一）</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载十一」Cron定时任务">
+<meta itemprop="description" content="知识点  完成定时任务的功能  本文目标 在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询，在本文中我们将结合我们的项目讲述 Cron。
+介绍 我们将使用 cron 这个包，它实现了 cron 规范解析器和任务运行器，简单来讲就是包含了定时任务所需的功能
+Cron 表达式格式    字段名 是否必填 允许的值 允许的特殊字符     秒（Seconds） Yes 0-59 * / , -   分（Minutes） Yes 0-59 * / , -   时（Hours） Yes 0-23 * / , -   一个月中的某天（Day of month） Yes 1-31 * / , - ?   月（Month） Yes 1-12 or JAN-DEC * / , -   星期几（Day of week） Yes 0-6 or SUN-SAT * / , - ?">
+<meta itemprop="datePublished" content="2018-04-29T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-04-29T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="579">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载十一」Cron定时任务" />
+<meta property="og:description" content="知识点  完成定时任务的功能  本文目标 在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询，在本文中我们将结合我们的项目讲述 Cron。
+介绍 我们将使用 cron 这个包，它实现了 cron 规范解析器和任务运行器，简单来讲就是包含了定时任务所需的功能
+Cron 表达式格式    字段名 是否必填 允许的值 允许的特殊字符     秒（Seconds） Yes 0-59 * / , -   分（Minutes） Yes 0-59 * / , -   时（Hours） Yes 0-23 * / , -   一个月中的某天（Day of month） Yes 1-31 * / , - ?   月（Month） Yes 1-12 or JAN-DEC * / , -   星期几（Day of week） Yes 0-6 or SUN-SAT * / , - ?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-04-29-cron/" />
+<meta property="article:published_time" content="2018-04-29T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-04-29T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载十一」Cron定时任务"/>
+<meta name="twitter:description" content="知识点  完成定时任务的功能  本文目标 在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询，在本文中我们将结合我们的项目讲述 Cron。
+介绍 我们将使用 cron 这个包，它实现了 cron 规范解析器和任务运行器，简单来讲就是包含了定时任务所需的功能
+Cron 表达式格式    字段名 是否必填 允许的值 允许的特殊字符     秒（Seconds） Yes 0-59 * / , -   分（Minutes） Yes 0-59 * / , -   时（Hours） Yes 0-23 * / , -   一个月中的某天（Day of month） Yes 1-31 * / , - ?   月（Month） Yes 1-12 or JAN-DEC * / , -   星期几（Day of week） Yes 0-6 or SUN-SAT * / , - ?"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载十一」Cron定时任务</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Apr 29, 2018</span></div>
+				<h1>「连载十一」Cron定时任务</h1>
+			</header>
+			<div class="content">
+				<h2 id="知识点">知识点<a href="#知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>完成定时任务的功能</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在实际的应用项目中，定时任务的使用是很常见的。你是否有过 Golang 如何做定时任务的疑问，莫非是轮询，在本文中我们将结合我们的项目讲述 Cron。</p>
+<h2 id="介绍">介绍<a href="#介绍" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>我们将使用 <a href="https://github.com/robfig/cron">cron</a> 这个包，它实现了 cron 规范解析器和任务运行器，简单来讲就是包含了定时任务所需的功能</p>
+<h3 id="cron-表达式格式">Cron 表达式格式<a href="#cron-表达式格式" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>是否必填</th>
+<th>允许的值</th>
+<th>允许的特殊字符</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>秒（Seconds）</td>
+<td>Yes</td>
+<td>0-59</td>
+<td>* / , -</td>
+</tr>
+<tr>
+<td>分（Minutes）</td>
+<td>Yes</td>
+<td>0-59</td>
+<td>* / , -</td>
+</tr>
+<tr>
+<td>时（Hours）</td>
+<td>Yes</td>
+<td>0-23</td>
+<td>* / , -</td>
+</tr>
+<tr>
+<td>一个月中的某天（Day of month）</td>
+<td>Yes</td>
+<td>1-31</td>
+<td>* / , - ?</td>
+</tr>
+<tr>
+<td>月（Month）</td>
+<td>Yes</td>
+<td>1-12 or JAN-DEC</td>
+<td>* / , -</td>
+</tr>
+<tr>
+<td>星期几（Day of week）</td>
+<td>Yes</td>
+<td>0-6 or SUN-SAT</td>
+<td>* / , - ?</td>
+</tr>
+</tbody>
+</table>
+<p>Cron 表达式表示一组时间，使用 6 个空格分隔的字段</p>
+<p>可以留意到 Golang 的 Cron 比 Crontab 多了一个秒级，以后遇到秒级要求的时候就省事了</p>
+<h3 id="cron-特殊字符">Cron 特殊字符<a href="#cron-特殊字符" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、星号 ( * )</p>
+<p>星号表示将匹配字段的所有值</p>
+<p>2、斜线 ( / )</p>
+<p>斜线用户 描述范围的增量，表现为 “N-MAX/x”，first-last/x 的形式，例如 3-59/15 表示此时的第三分钟和此后的每 15 分钟，到 59 分钟为止。即从 N 开始，使用增量直到该特定范围结束。它不会重复</p>
+<p>3、逗号 ( , )</p>
+<p>逗号用于分隔列表中的项目。例如，在 Day of week 使用“MON，WED，FRI”将意味着星期一，星期三和星期五</p>
+<p>4、连字符 ( - )</p>
+<p>连字符用于定义范围。例如，9 - 17 表示从上午 9 点到下午 5 点的每个小时</p>
+<p>5、问号 ( ? )</p>
+<p>不指定值，用于代替 “ * ”，类似 “ _ ” 的存在，不难理解</p>
+<h3 id="预定义的-cron-时间表">预定义的 Cron 时间表<a href="#预定义的-cron-时间表" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>输入</th>
+<th>简述</th>
+<th>相当于</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@yearly (or @annually)</td>
+<td>1 月 1 日午夜运行一次</td>
+<td>0 0 0 1 1 *</td>
+</tr>
+<tr>
+<td>@monthly</td>
+<td>每个月的午夜，每个月的第一个月运行一次</td>
+<td>0 0 0 1 * *</td>
+</tr>
+<tr>
+<td>@weekly</td>
+<td>每周一次，周日午夜运行一次</td>
+<td>0 0 0 * * 0</td>
+</tr>
+<tr>
+<td>@daily (or @midnight)</td>
+<td>每天午夜运行一次</td>
+<td>0 0 0 * * *</td>
+</tr>
+<tr>
+<td>@hourly</td>
+<td>每小时运行一次</td>
+<td>0 0 * * * *</td>
+</tr>
+</tbody>
+</table>
+<h2 id="安装">安装<a href="#安装" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>$ go get -u github.com/robfig/cron
+</code></pre><h2 id="实践">实践<a href="#实践" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在上一章节 <a href="https://segmentfault.com/a/1190000014393602">Gin 实践 连载十 定制 GORM Callbacks</a> 中，我们使用了 GORM 的回调实现了软删除，同时也引入了另外一个问题</p>
+<p>就是我怎么硬删除，我什么时候硬删除？这个往往与业务场景有关系，大致为</p>
+<ul>
+<li>另外有一套硬删除接口</li>
+<li>定时任务清理（或转移、backup）无效数据</li>
+</ul>
+<p>在这里我们选用第二种解决方案来进行实践</p>
+<h3 id="编写硬删除代码">编写硬删除代码<a href="#编写硬删除代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>打开 models 目录下的 tag.go、article.go 文件，分别添加以下代码</p>
+<p>1、tag.go</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">CleanAllTag</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">Unscoped</span><span class="p">().</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;deleted_on != ? &#34;</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nf">Delete</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Tag</span><span class="p">{})</span>
+
+	<span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div><p>2、article.go</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">CleanAllArticle</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">Unscoped</span><span class="p">().</span><span class="nf">Where</span><span class="p">(</span><span class="s">&#34;deleted_on != ? &#34;</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nf">Delete</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Article</span><span class="p">{})</span>
+
+	<span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+</code></pre></div><p>注意硬删除要使用 <code>Unscoped()</code>，这是 GORM 的约定</p>
+<h3 id="编写-cron">编写 Cron<a href="#编写-cron" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在 项目根目录下新建 cron.go 文件，用于编写定时任务的代码，写入文件内容</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;time&#34;</span>
+	<span class="s">&#34;log&#34;</span>
+
+	<span class="s">&#34;github.com/robfig/cron&#34;</span>
+
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/models&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Starting...&#34;</span><span class="p">)</span>
+
+	<span class="nx">c</span> <span class="o">:=</span> <span class="nx">cron</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">AddFunc</span><span class="p">(</span><span class="s">&#34;* * * * * *&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Run models.CleanAllTag...&#34;</span><span class="p">)</span>
+		<span class="nx">models</span><span class="p">.</span><span class="nf">CleanAllTag</span><span class="p">()</span>
+	<span class="p">})</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">AddFunc</span><span class="p">(</span><span class="s">&#34;* * * * * *&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Run models.CleanAllArticle...&#34;</span><span class="p">)</span>
+		<span class="nx">models</span><span class="p">.</span><span class="nf">CleanAllArticle</span><span class="p">()</span>
+	<span class="p">})</span>
+
+	<span class="nx">c</span><span class="p">.</span><span class="nf">Start</span><span class="p">()</span>
+
+	<span class="nx">t1</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTimer</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="k">select</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">t1</span><span class="p">.</span><span class="nx">C</span><span class="p">:</span>
+			<span class="nx">t1</span><span class="p">.</span><span class="nf">Reset</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>在这段程序中，我们做了如下的事情</p>
+<h4 id="cronnew">cron.New()<a href="#cronnew" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>会根据本地时间创建一个新（空白）的 Cron job runner</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">New</span><span class="p">()</span> <span class="o">*</span><span class="nx">Cron</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nf">NewWithLocation</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Location</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="c1">// NewWithLocation returns a new Cron job runner.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewWithLocation</span><span class="p">(</span><span class="nx">location</span> <span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Location</span><span class="p">)</span> <span class="o">*</span><span class="nx">Cron</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">Cron</span><span class="p">{</span>
+		<span class="nx">entries</span><span class="p">:</span>  <span class="kc">nil</span><span class="p">,</span>
+		<span class="nx">add</span><span class="p">:</span>      <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">Entry</span><span class="p">),</span>
+		<span class="nx">stop</span><span class="p">:</span>     <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+		<span class="nx">snapshot</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="p">[]</span><span class="o">*</span><span class="nx">Entry</span><span class="p">),</span>
+		<span class="nx">running</span><span class="p">:</span>  <span class="kc">false</span><span class="p">,</span>
+		<span class="nx">ErrorLog</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span>
+		<span class="nx">location</span><span class="p">:</span> <span class="nx">location</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="caddfunc">c.AddFunc()<a href="#caddfunc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>AddFunc 会向 Cron job runner 添加一个 func ，以按给定的时间表运行</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cron</span><span class="p">)</span> <span class="nf">AddJob</span><span class="p">(</span><span class="nx">spec</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">cmd</span> <span class="nx">Job</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">schedule</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">Parse</span><span class="p">(</span><span class="nx">spec</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">Schedule</span><span class="p">(</span><span class="nx">schedule</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">)</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>会首先解析时间表，如果填写有问题会直接 err，无误则将 func 添加到 Schedule 队列中等待执行</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cron</span><span class="p">)</span> <span class="nf">Schedule</span><span class="p">(</span><span class="nx">schedule</span> <span class="nx">Schedule</span><span class="p">,</span> <span class="nx">cmd</span> <span class="nx">Job</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">entry</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Entry</span><span class="p">{</span>
+		<span class="nx">Schedule</span><span class="p">:</span> <span class="nx">schedule</span><span class="p">,</span>
+		<span class="nx">Job</span><span class="p">:</span>      <span class="nx">cmd</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">c</span><span class="p">.</span><span class="nx">running</span> <span class="p">{</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nx">entries</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">entries</span><span class="p">,</span> <span class="nx">entry</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">c</span><span class="p">.</span><span class="nx">add</span> <span class="o">&lt;-</span> <span class="nx">entry</span>
+<span class="p">}</span>
+</code></pre></div><p>3、c.Start()</p>
+<p>在当前执行的程序中启动 Cron 调度程序。其实这里的主体是 goroutine + for + select + timer 的调度控制哦</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cron</span><span class="p">)</span> <span class="nf">Run</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">running</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">running</span> <span class="p">=</span> <span class="kc">true</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">run</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="timenewtimer--for--select--t1reset">time.NewTimer + for + select + t1.Reset<a href="#timenewtimer--for--select--t1reset" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>如果你是初学者，大概会有疑问，这是干嘛用的？</p>
+<p>**（1）time.NewTimer **</p>
+<p>会创建一个新的定时器，持续你设定的时间 d 后发送一个 channel 消息</p>
+<p><strong>（2）for + select</strong></p>
+<p>阻塞 select 等待 channel</p>
+<p><strong>（3）t1.Reset</strong></p>
+<p>会重置定时器，让它重新开始计时</p>
+<p>注：本文适用于 “t.C 已经取走，可直接使用 Reset”。</p>
+<hr>
+<p>总的来说，这段程序是为了阻塞主程序而编写的，希望你带着疑问来想，有没有别的办法呢？</p>
+<p>有的，你直接 <code>select{}</code> 也可以完成这个需求 :)</p>
+<h2 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>$ go run cron.go
+2018/04/29 17:03:34 [info] replacing callback `gorm:update_time_stamp` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:56
+2018/04/29 17:03:34 [info] replacing callback `gorm:update_time_stamp` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:57
+2018/04/29 17:03:34 [info] replacing callback `gorm:delete` from /Users/eddycjy/go/src/github.com/EDDYCJY/go-gin-example/models/models.go:58
+2018/04/29 17:03:34 Starting...
+2018/04/29 17:03:35 Run models.CleanAllArticle...
+2018/04/29 17:03:35 Run models.CleanAllTag...
+2018/04/29 17:03:36 Run models.CleanAllArticle...
+2018/04/29 17:03:36 Run models.CleanAllTag...
+2018/04/29 17:03:37 Run models.CleanAllTag...
+2018/04/29 17:03:37 Run models.CleanAllArticle...
+</code></pre><p>检查输出日志正常，模拟已软删除的数据，定时任务工作 OK</p>
+<h2 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>定时任务很常见，希望你通过本文能够熟知 Golang 怎么实现一个简单的定时任务调度管理</p>
+<p>可以不依赖系统的 Crontab 设置，指不定哪一天就用上了呢</p>
+<h2 id="问题">问题<a href="#问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果你手动修改计算机的系统时间，是会导致定时任务错乱的，所以一般不要乱来。</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 02 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>579 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-04-29 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#知识点">知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#介绍">介绍</a>
+      <ul>
+        <li><a href="#cron-表达式格式">Cron 表达式格式</a></li>
+        <li><a href="#cron-特殊字符">Cron 特殊字符</a></li>
+        <li><a href="#预定义的-cron-时间表">预定义的 Cron 时间表</a></li>
+      </ul>
+    </li>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#实践">实践</a>
+      <ul>
+        <li><a href="#编写硬删除代码">编写硬删除代码</a></li>
+        <li><a href="#编写-cron">编写 Cron</a></li>
+      </ul>
+    </li>
+    <li><a href="#验证">验证</a></li>
+    <li><a href="#小结">小结</a></li>
+    <li><a href="#问题">问题</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/talk/2018-05-21-go-fake-useragent/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>Go 的 fake-useragent 了解一下</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/crawler/2018-04-28-go2018/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>了解一下Golang的市场行情</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

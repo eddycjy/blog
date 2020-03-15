@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载十五」生成二维码、合并海报">
+<meta itemprop="description" content="知识点  图片生成 二维码生成  本文目标 在文章的详情页中，我们常常会需要去宣传它，而目前最常见的就是发海报了，今天我们将实现如下功能：
+  生成二维码
+  合并海报（背景图 &#43; 二维码）
+  实现 首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 QrCodeSavePath，值为 qrcode/，经过多节连载的你应该能够完成，若有不懂可参照 go-gin-example。
+生成二维码 安装 $ go get -u github.com/boombuler/barcode 工具包 考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建 pkg/qrcode/qrcode.go 文件，写入内容：
+package qrcode import ( &#34;image/jpeg&#34; &#34;github.com/boombuler/barcode&#34; &#34;github.com/boombuler/barcode/qr&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/file&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/setting&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/util&#34; ) type QrCode struct { URL string Width int Height int Ext string Level qr.ErrorCorrectionLevel Mode qr.Encoding } const ( EXT_JPG = &#34;.jpg&#34; ) func NewQrCode(url string, width, height int, level qr.">
+<meta itemprop="datePublished" content="2018-07-05T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-07-05T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="863">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载十五」生成二维码、合并海报" />
+<meta property="og:description" content="知识点  图片生成 二维码生成  本文目标 在文章的详情页中，我们常常会需要去宣传它，而目前最常见的就是发海报了，今天我们将实现如下功能：
+  生成二维码
+  合并海报（背景图 &#43; 二维码）
+  实现 首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 QrCodeSavePath，值为 qrcode/，经过多节连载的你应该能够完成，若有不懂可参照 go-gin-example。
+生成二维码 安装 $ go get -u github.com/boombuler/barcode 工具包 考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建 pkg/qrcode/qrcode.go 文件，写入内容：
+package qrcode import ( &#34;image/jpeg&#34; &#34;github.com/boombuler/barcode&#34; &#34;github.com/boombuler/barcode/qr&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/file&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/setting&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/util&#34; ) type QrCode struct { URL string Width int Height int Ext string Level qr.ErrorCorrectionLevel Mode qr.Encoding } const ( EXT_JPG = &#34;.jpg&#34; ) func NewQrCode(url string, width, height int, level qr." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-07-05-image/" />
+<meta property="article:published_time" content="2018-07-05T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-07-05T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载十五」生成二维码、合并海报"/>
+<meta name="twitter:description" content="知识点  图片生成 二维码生成  本文目标 在文章的详情页中，我们常常会需要去宣传它，而目前最常见的就是发海报了，今天我们将实现如下功能：
+  生成二维码
+  合并海报（背景图 &#43; 二维码）
+  实现 首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 QrCodeSavePath，值为 qrcode/，经过多节连载的你应该能够完成，若有不懂可参照 go-gin-example。
+生成二维码 安装 $ go get -u github.com/boombuler/barcode 工具包 考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建 pkg/qrcode/qrcode.go 文件，写入内容：
+package qrcode import ( &#34;image/jpeg&#34; &#34;github.com/boombuler/barcode&#34; &#34;github.com/boombuler/barcode/qr&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/file&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/setting&#34; &#34;github.com/EDDYCJY/go-gin-example/pkg/util&#34; ) type QrCode struct { URL string Width int Height int Ext string Level qr.ErrorCorrectionLevel Mode qr.Encoding } const ( EXT_JPG = &#34;.jpg&#34; ) func NewQrCode(url string, width, height int, level qr."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载十五」生成二维码、合并海报</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Jul 5, 2018</span></div>
+				<h1>「连载十五」生成二维码、合并海报</h1>
+			</header>
+			<div class="content">
+				<h2 id="知识点">知识点<a href="#知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>图片生成</li>
+<li>二维码生成</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在文章的详情页中，我们常常会需要去宣传它，而目前最常见的就是发海报了，今天我们将实现如下功能：</p>
+<ul>
+<li>
+<p>生成二维码</p>
+</li>
+<li>
+<p>合并海报（背景图 + 二维码）</p>
+</li>
+</ul>
+<h2 id="实现">实现<a href="#实现" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>首先，你需要在 App 配置项中增加二维码及其海报的存储路径，我们约定配置项名称为 <code>QrCodeSavePath</code>，值为 <code>qrcode/</code>，经过多节连载的你应该能够完成，若有不懂可参照 <a href="https://github.com/EDDYCJY/go-gin-example/blob/master/conf/app.ini#L14">go-gin-example</a>。</p>
+<h2 id="生成二维码">生成二维码<a href="#生成二维码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="安装">安装<a href="#安装" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>$ go get -u github.com/boombuler/barcode
+</code></pre><h3 id="工具包">工具包<a href="#工具包" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>考虑生成二维码这一动作贴合工具包的定义，且有公用的可能性，新建 pkg/qrcode/qrcode.go 文件，写入内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">qrcode</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;image/jpeg&#34;</span>
+
+	<span class="s">&#34;github.com/boombuler/barcode&#34;</span>
+	<span class="s">&#34;github.com/boombuler/barcode/qr&#34;</span>
+
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/pkg/file&#34;</span>
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/pkg/setting&#34;</span>
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/pkg/util&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">QrCode</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">URL</span>    <span class="kt">string</span>
+	<span class="nx">Width</span>  <span class="kt">int</span>
+	<span class="nx">Height</span> <span class="kt">int</span>
+	<span class="nx">Ext</span>    <span class="kt">string</span>
+	<span class="nx">Level</span>  <span class="nx">qr</span><span class="p">.</span><span class="nx">ErrorCorrectionLevel</span>
+	<span class="nx">Mode</span>   <span class="nx">qr</span><span class="p">.</span><span class="nx">Encoding</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">EXT_JPG</span> <span class="p">=</span> <span class="s">&#34;.jpg&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">NewQrCode</span><span class="p">(</span><span class="nx">url</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">width</span><span class="p">,</span> <span class="nx">height</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">level</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">ErrorCorrectionLevel</span><span class="p">,</span> <span class="nx">mode</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">Encoding</span><span class="p">)</span> <span class="o">*</span><span class="nx">QrCode</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">QrCode</span><span class="p">{</span>
+		<span class="nx">URL</span><span class="p">:</span>    <span class="nx">url</span><span class="p">,</span>
+		<span class="nx">Width</span><span class="p">:</span>  <span class="nx">width</span><span class="p">,</span>
+		<span class="nx">Height</span><span class="p">:</span> <span class="nx">height</span><span class="p">,</span>
+		<span class="nx">Level</span><span class="p">:</span>  <span class="nx">level</span><span class="p">,</span>
+		<span class="nx">Mode</span><span class="p">:</span>   <span class="nx">mode</span><span class="p">,</span>
+		<span class="nx">Ext</span><span class="p">:</span>    <span class="nx">EXT_JPG</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetQrCodePath</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">AppSetting</span><span class="p">.</span><span class="nx">QrCodeSavePath</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetQrCodeFullPath</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">AppSetting</span><span class="p">.</span><span class="nx">RuntimeRootPath</span> <span class="o">+</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">AppSetting</span><span class="p">.</span><span class="nx">QrCodeSavePath</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetQrCodeFullUrl</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">AppSetting</span><span class="p">.</span><span class="nx">PrefixUrl</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span> <span class="o">+</span> <span class="nf">GetQrCodePath</span><span class="p">()</span> <span class="o">+</span> <span class="nx">name</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetQrCodeFileName</span><span class="p">(</span><span class="nx">value</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">util</span><span class="p">.</span><span class="nf">EncodeMD5</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">QrCode</span><span class="p">)</span> <span class="nf">GetQrCodeExt</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">q</span><span class="p">.</span><span class="nx">Ext</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">QrCode</span><span class="p">)</span> <span class="nf">CheckEncode</span><span class="p">(</span><span class="nx">path</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="nx">src</span> <span class="o">:=</span> <span class="nx">path</span> <span class="o">+</span> <span class="nf">GetQrCodeFileName</span><span class="p">(</span><span class="nx">q</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="o">+</span> <span class="nx">q</span><span class="p">.</span><span class="nf">GetQrCodeExt</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">file</span><span class="p">.</span><span class="nf">CheckNotExist</span><span class="p">(</span><span class="nx">src</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">false</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">QrCode</span><span class="p">)</span> <span class="nf">Encode</span><span class="p">(</span><span class="nx">path</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">name</span> <span class="o">:=</span> <span class="nf">GetQrCodeFileName</span><span class="p">(</span><span class="nx">q</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="o">+</span> <span class="nx">q</span><span class="p">.</span><span class="nf">GetQrCodeExt</span><span class="p">()</span>
+	<span class="nx">src</span> <span class="o">:=</span> <span class="nx">path</span> <span class="o">+</span> <span class="nx">name</span>
+	<span class="k">if</span> <span class="nx">file</span><span class="p">.</span><span class="nf">CheckNotExist</span><span class="p">(</span><span class="nx">src</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">{</span>
+		<span class="nx">code</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">qr</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">q</span><span class="p">.</span><span class="nx">URL</span><span class="p">,</span> <span class="nx">q</span><span class="p">.</span><span class="nx">Level</span><span class="p">,</span> <span class="nx">q</span><span class="p">.</span><span class="nx">Mode</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">code</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">barcode</span><span class="p">.</span><span class="nf">Scale</span><span class="p">(</span><span class="nx">code</span><span class="p">,</span> <span class="nx">q</span><span class="p">.</span><span class="nx">Width</span><span class="p">,</span> <span class="nx">q</span><span class="p">.</span><span class="nx">Height</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">f</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">file</span><span class="p">.</span><span class="nf">MustOpen</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">path</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="k">defer</span> <span class="nx">f</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+		<span class="nx">err</span> <span class="p">=</span> <span class="nx">jpeg</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">f</span><span class="p">,</span> <span class="nx">code</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">path</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>这里主要聚焦 <code>func (q *QrCode) Encode</code> 方法，做了如下事情：</p>
+<ul>
+<li>获取二维码生成路径</li>
+<li>创建二维码</li>
+<li>缩放二维码到指定大小</li>
+<li>新建存放二维码图片的文件</li>
+<li>将图像（二维码）以 JPEG 4：2：0 基线格式写入文件</li>
+</ul>
+<p>另外在 <code>jpeg.Encode(f, code, nil)</code> 中，第三个参数可设置其图像质量，默认值为 75</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// DefaultQuality is the default quality encoding parameter.
+</span><span class="c1"></span><span class="kd">const</span> <span class="nx">DefaultQuality</span> <span class="p">=</span> <span class="mi">75</span>
+
+<span class="c1">// Options are the encoding parameters.
+</span><span class="c1">// Quality ranges from 1 to 100 inclusive, higher is better.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Options</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Quality</span> <span class="kt">int</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="路由方法">路由方法<a href="#路由方法" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、第一步</p>
+<p>在 routers/api/v1/article.go 新增 GenerateArticlePoster 方法用于接口开发</p>
+<p>2、第二步</p>
+<p>在 routers/router.go 的 apiv1 中新增 <code>apiv1.POST(&quot;/articles/poster/generate&quot;, v1.GenerateArticlePoster)</code> 路由</p>
+<p>3、第三步</p>
+<p>修改 GenerateArticlePoster 方法，编写对应的生成逻辑，如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">QRCODE_URL</span> <span class="p">=</span> <span class="s">&#34;https://github.com/EDDYCJY/blog#gin%E7%B3%BB%E5%88%97%E7%9B%AE%E5%BD%95&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">GenerateArticlePoster</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">appG</span> <span class="o">:=</span> <span class="nx">app</span><span class="p">.</span><span class="nx">Gin</span><span class="p">{</span><span class="nx">c</span><span class="p">}</span>
+	<span class="nx">qrc</span> <span class="o">:=</span> <span class="nx">qrcode</span><span class="p">.</span><span class="nf">NewQrCode</span><span class="p">(</span><span class="nx">QRCODE_URL</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">M</span><span class="p">,</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">Auto</span><span class="p">)</span>
+	<span class="nx">path</span> <span class="o">:=</span> <span class="nx">qrcode</span><span class="p">.</span><span class="nf">GetQrCodeFullPath</span><span class="p">()</span>
+	<span class="nx">_</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">qrc</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">appG</span><span class="p">.</span><span class="nf">Response</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ERROR</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">appG</span><span class="p">.</span><span class="nf">Response</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>通过 POST 方法访问 <code>http://127.0.0.1:8000/api/v1/articles/poster/generate?token=$token</code>（注意 $token）</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xQmb6.jpg" alt="image"></p>
+<p>通过检查两个点确定功能是否正常，如下：</p>
+<p>1、访问结果是否 200</p>
+<p>2、本地目录是否成功生成二维码图片</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xQCUU.jpg" alt="image"></p>
+<h2 id="合并海报">合并海报<a href="#合并海报" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在这一节，将实现二维码图片与背景图合并成新的一张图，可用于常见的宣传海报等业务场景</p>
+<h3 id="背景图">背景图<a href="#背景图" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xMXgs.jpg" alt="image"></p>
+<p>将背景图另存为 runtime/qrcode/bg.jpg（实际应用，可存在 OSS 或其他地方）</p>
+<h3 id="service-方法">service 方法<a href="#service-方法" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>打开 service/article_service 目录，新建 article_poster.go 文件，写入内容：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">article_service</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;image&#34;</span>
+	<span class="s">&#34;image/draw&#34;</span>
+	<span class="s">&#34;image/jpeg&#34;</span>
+	<span class="s">&#34;os&#34;</span>
+
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/pkg/file&#34;</span>
+	<span class="s">&#34;github.com/EDDYCJY/go-gin-example/pkg/qrcode&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">ArticlePoster</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">PosterName</span> <span class="kt">string</span>
+	<span class="o">*</span><span class="nx">Article</span>
+	<span class="nx">Qr</span> <span class="o">*</span><span class="nx">qrcode</span><span class="p">.</span><span class="nx">QrCode</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">NewArticlePoster</span><span class="p">(</span><span class="nx">posterName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">article</span> <span class="o">*</span><span class="nx">Article</span><span class="p">,</span> <span class="nx">qr</span> <span class="o">*</span><span class="nx">qrcode</span><span class="p">.</span><span class="nx">QrCode</span><span class="p">)</span> <span class="o">*</span><span class="nx">ArticlePoster</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">ArticlePoster</span><span class="p">{</span>
+		<span class="nx">PosterName</span><span class="p">:</span> <span class="nx">posterName</span><span class="p">,</span>
+		<span class="nx">Article</span><span class="p">:</span>    <span class="nx">article</span><span class="p">,</span>
+		<span class="nx">Qr</span><span class="p">:</span>         <span class="nx">qr</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">GetPosterFlag</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="s">&#34;poster&#34;</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">a</span> <span class="o">*</span><span class="nx">ArticlePoster</span><span class="p">)</span> <span class="nf">CheckMergedImage</span><span class="p">(</span><span class="nx">path</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">file</span><span class="p">.</span><span class="nf">CheckNotExist</span><span class="p">(</span><span class="nx">path</span><span class="o">+</span><span class="nx">a</span><span class="p">.</span><span class="nx">PosterName</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">false</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">a</span> <span class="o">*</span><span class="nx">ArticlePoster</span><span class="p">)</span> <span class="nf">OpenMergedImage</span><span class="p">(</span><span class="nx">path</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">os</span><span class="p">.</span><span class="nx">File</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">f</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">file</span><span class="p">.</span><span class="nf">MustOpen</span><span class="p">(</span><span class="nx">a</span><span class="p">.</span><span class="nx">PosterName</span><span class="p">,</span> <span class="nx">path</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">f</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">ArticlePosterBg</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Name</span> <span class="kt">string</span>
+	<span class="o">*</span><span class="nx">ArticlePoster</span>
+	<span class="o">*</span><span class="nx">Rect</span>
+	<span class="o">*</span><span class="nx">Pt</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">Rect</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Name</span> <span class="kt">string</span>
+	<span class="nx">X0</span>   <span class="kt">int</span>
+	<span class="nx">Y0</span>   <span class="kt">int</span>
+	<span class="nx">X1</span>   <span class="kt">int</span>
+	<span class="nx">Y1</span>   <span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">Pt</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">X</span> <span class="kt">int</span>
+	<span class="nx">Y</span> <span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">NewArticlePosterBg</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">ap</span> <span class="o">*</span><span class="nx">ArticlePoster</span><span class="p">,</span> <span class="nx">rect</span> <span class="o">*</span><span class="nx">Rect</span><span class="p">,</span> <span class="nx">pt</span> <span class="o">*</span><span class="nx">Pt</span><span class="p">)</span> <span class="o">*</span><span class="nx">ArticlePosterBg</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">ArticlePosterBg</span><span class="p">{</span>
+		<span class="nx">Name</span><span class="p">:</span>          <span class="nx">name</span><span class="p">,</span>
+		<span class="nx">ArticlePoster</span><span class="p">:</span> <span class="nx">ap</span><span class="p">,</span>
+		<span class="nx">Rect</span><span class="p">:</span>          <span class="nx">rect</span><span class="p">,</span>
+		<span class="nx">Pt</span><span class="p">:</span>            <span class="nx">pt</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">a</span> <span class="o">*</span><span class="nx">ArticlePosterBg</span><span class="p">)</span> <span class="nf">Generate</span><span class="p">()</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">fullPath</span> <span class="o">:=</span> <span class="nx">qrcode</span><span class="p">.</span><span class="nf">GetQrCodeFullPath</span><span class="p">()</span>
+	<span class="nx">fileName</span><span class="p">,</span> <span class="nx">path</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">a</span><span class="p">.</span><span class="nx">Qr</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">fullPath</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="p">!</span><span class="nx">a</span><span class="p">.</span><span class="nf">CheckMergedImage</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">mergedF</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">a</span><span class="p">.</span><span class="nf">OpenMergedImage</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="k">defer</span> <span class="nx">mergedF</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+		<span class="nx">bgF</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">file</span><span class="p">.</span><span class="nf">MustOpen</span><span class="p">(</span><span class="nx">a</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">path</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="k">defer</span> <span class="nx">bgF</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+		<span class="nx">qrF</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">file</span><span class="p">.</span><span class="nf">MustOpen</span><span class="p">(</span><span class="nx">fileName</span><span class="p">,</span> <span class="nx">path</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="k">defer</span> <span class="nx">qrF</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+		<span class="nx">bgImage</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">jpeg</span><span class="p">.</span><span class="nf">Decode</span><span class="p">(</span><span class="nx">bgF</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="nx">qrImage</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">jpeg</span><span class="p">.</span><span class="nf">Decode</span><span class="p">(</span><span class="nx">qrF</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">jpg</span> <span class="o">:=</span> <span class="nx">image</span><span class="p">.</span><span class="nf">NewRGBA</span><span class="p">(</span><span class="nx">image</span><span class="p">.</span><span class="nf">Rect</span><span class="p">(</span><span class="nx">a</span><span class="p">.</span><span class="nx">Rect</span><span class="p">.</span><span class="nx">X0</span><span class="p">,</span> <span class="nx">a</span><span class="p">.</span><span class="nx">Rect</span><span class="p">.</span><span class="nx">Y0</span><span class="p">,</span> <span class="nx">a</span><span class="p">.</span><span class="nx">Rect</span><span class="p">.</span><span class="nx">X1</span><span class="p">,</span> <span class="nx">a</span><span class="p">.</span><span class="nx">Rect</span><span class="p">.</span><span class="nx">Y1</span><span class="p">))</span>
+
+		<span class="nx">draw</span><span class="p">.</span><span class="nf">Draw</span><span class="p">(</span><span class="nx">jpg</span><span class="p">,</span> <span class="nx">jpg</span><span class="p">.</span><span class="nf">Bounds</span><span class="p">(),</span> <span class="nx">bgImage</span><span class="p">,</span> <span class="nx">bgImage</span><span class="p">.</span><span class="nf">Bounds</span><span class="p">().</span><span class="nx">Min</span><span class="p">,</span> <span class="nx">draw</span><span class="p">.</span><span class="nx">Over</span><span class="p">)</span>
+		<span class="nx">draw</span><span class="p">.</span><span class="nf">Draw</span><span class="p">(</span><span class="nx">jpg</span><span class="p">,</span> <span class="nx">jpg</span><span class="p">.</span><span class="nf">Bounds</span><span class="p">(),</span> <span class="nx">qrImage</span><span class="p">,</span> <span class="nx">qrImage</span><span class="p">.</span><span class="nf">Bounds</span><span class="p">().</span><span class="nx">Min</span><span class="p">.</span><span class="nf">Sub</span><span class="p">(</span><span class="nx">image</span><span class="p">.</span><span class="nf">Pt</span><span class="p">(</span><span class="nx">a</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">X</span><span class="p">,</span> <span class="nx">a</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Y</span><span class="p">)),</span> <span class="nx">draw</span><span class="p">.</span><span class="nx">Over</span><span class="p">)</span>
+
+		<span class="nx">jpeg</span><span class="p">.</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">mergedF</span><span class="p">,</span> <span class="nx">jpg</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">fileName</span><span class="p">,</span> <span class="nx">path</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>这里重点留意 <code>func (a *ArticlePosterBg) Generate()</code> 方法，做了如下事情：</p>
+<ul>
+<li>获取二维码存储路径</li>
+<li>生成二维码图像</li>
+<li>检查合并后图像（指的是存放合并后的海报）是否存在</li>
+<li>若不存在，则生成待合并的图像 mergedF</li>
+<li>打开事先存放的背景图 bgF</li>
+<li>打开生成的二维码图像 qrF</li>
+<li>解码 bgF 和 qrF 返回 image.Image</li>
+<li>创建一个新的 RGBA 图像</li>
+<li>在 RGBA 图像上绘制 背景图（bgF）</li>
+<li>在已绘制背景图的 RGBA 图像上，在指定 Point 上绘制二维码图像（qrF）</li>
+<li>将绘制好的 RGBA 图像以 JPEG 4：2：0 基线格式写入合并后的图像文件（mergedF）</li>
+</ul>
+<h3 id="错误码">错误码<a href="#错误码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>新增 <a href="https://github.com/EDDYCJY/go-gin-example/blob/master/pkg/e/code.go#L27">错误码</a>，<a href="https://github.com/EDDYCJY/go-gin-example/blob/master/pkg/e/msg.go#L25">错误提示</a></p>
+<h3 id="路由方法-1">路由方法<a href="#路由方法-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>打开 routers/api/v1/article.go 文件，修改 GenerateArticlePoster 方法，编写最终的业务逻辑（含生成二维码及合并海报），如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">QRCODE_URL</span> <span class="p">=</span> <span class="s">&#34;https://github.com/EDDYCJY/blog#gin%E7%B3%BB%E5%88%97%E7%9B%AE%E5%BD%95&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">GenerateArticlePoster</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">appG</span> <span class="o">:=</span> <span class="nx">app</span><span class="p">.</span><span class="nx">Gin</span><span class="p">{</span><span class="nx">c</span><span class="p">}</span>
+	<span class="nx">article</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">article_service</span><span class="p">.</span><span class="nx">Article</span><span class="p">{}</span>
+	<span class="nx">qr</span> <span class="o">:=</span> <span class="nx">qrcode</span><span class="p">.</span><span class="nf">NewQrCode</span><span class="p">(</span><span class="nx">QRCODE_URL</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">M</span><span class="p">,</span> <span class="nx">qr</span><span class="p">.</span><span class="nx">Auto</span><span class="p">)</span> <span class="c1">// 目前写死 gin 系列路径，可自行增加业务逻辑
+</span><span class="c1"></span>	<span class="nx">posterName</span> <span class="o">:=</span> <span class="nx">article_service</span><span class="p">.</span><span class="nf">GetPosterFlag</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34;-&#34;</span> <span class="o">+</span> <span class="nx">qrcode</span><span class="p">.</span><span class="nf">GetQrCodeFileName</span><span class="p">(</span><span class="nx">qr</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="o">+</span> <span class="nx">qr</span><span class="p">.</span><span class="nf">GetQrCodeExt</span><span class="p">()</span>
+	<span class="nx">articlePoster</span> <span class="o">:=</span> <span class="nx">article_service</span><span class="p">.</span><span class="nf">NewArticlePoster</span><span class="p">(</span><span class="nx">posterName</span><span class="p">,</span> <span class="nx">article</span><span class="p">,</span> <span class="nx">qr</span><span class="p">)</span>
+	<span class="nx">articlePosterBgService</span> <span class="o">:=</span> <span class="nx">article_service</span><span class="p">.</span><span class="nf">NewArticlePosterBg</span><span class="p">(</span>
+		<span class="s">&#34;bg.jpg&#34;</span><span class="p">,</span>
+		<span class="nx">articlePoster</span><span class="p">,</span>
+		<span class="o">&amp;</span><span class="nx">article_service</span><span class="p">.</span><span class="nx">Rect</span><span class="p">{</span>
+			<span class="nx">X0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+			<span class="nx">Y0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+			<span class="nx">X1</span><span class="p">:</span> <span class="mi">550</span><span class="p">,</span>
+			<span class="nx">Y1</span><span class="p">:</span> <span class="mi">700</span><span class="p">,</span>
+		<span class="p">},</span>
+		<span class="o">&amp;</span><span class="nx">article_service</span><span class="p">.</span><span class="nx">Pt</span><span class="p">{</span>
+			<span class="nx">X</span><span class="p">:</span> <span class="mi">125</span><span class="p">,</span>
+			<span class="nx">Y</span><span class="p">:</span> <span class="mi">298</span><span class="p">,</span>
+		<span class="p">},</span>
+	<span class="p">)</span>
+
+	<span class="nx">_</span><span class="p">,</span> <span class="nx">filePath</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">articlePosterBgService</span><span class="p">.</span><span class="nf">Generate</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">appG</span><span class="p">.</span><span class="nf">Response</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ERROR_GEN_ARTICLE_POSTER_FAIL</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">appG</span><span class="p">.</span><span class="nf">Response</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">SUCCESS</span><span class="p">,</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+		<span class="s">&#34;poster_url&#34;</span><span class="p">:</span>      <span class="nx">qrcode</span><span class="p">.</span><span class="nf">GetQrCodeFullUrl</span><span class="p">(</span><span class="nx">posterName</span><span class="p">),</span>
+		<span class="s">&#34;poster_save_url&#34;</span><span class="p">:</span> <span class="nx">filePath</span> <span class="o">+</span> <span class="nx">posterName</span><span class="p">,</span>
+	<span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div><p>这块涉及到大量知识，强烈建议阅读下，如下：</p>
+<ul>
+<li><a href="https://golang.org/pkg/image/#Rect">image.Rect</a></li>
+<li><a href="https://golang.org/pkg/image/#Pt">image.Pt</a></li>
+<li><a href="https://golang.org/pkg/image/#NewRGBA">image.NewRGBA</a></li>
+<li><a href="https://golang.org/pkg/image/jpeg/#Encode">jpeg.Encode</a></li>
+<li><a href="https://golang.org/pkg/image/jpeg/#Decode">jpeg.Decode</a></li>
+<li><a href="https://golang.org/pkg/image/draw/#Op">draw.Op</a></li>
+<li><a href="https://golang.org/pkg/image/draw/#Draw">draw.Draw</a></li>
+<li><a href="https://blog.golang.org/go-imagedraw-package">go-imagedraw-package</a></li>
+</ul>
+<p>其所涉及、关联的库都建议研究一下</p>
+<h3 id="staticfs">StaticFS<a href="#staticfs" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在 routers/router.go 文件，增加如下代码:</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">r</span><span class="p">.</span><span class="nf">StaticFS</span><span class="p">(</span><span class="s">&#34;/qrcode&#34;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nf">Dir</span><span class="p">(</span><span class="nx">qrcode</span><span class="p">.</span><span class="nf">GetQrCodeFullPath</span><span class="p">()))</span>
+</code></pre></div><h3 id="验证-1">验证<a href="#验证-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xMLCQ.jpg" alt="image"></p>
+<p>访问完整的 URL 路径，返回合成后的海报并扫除二维码成功则正确 🤓</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xMhjI.jpg" alt="image"></p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本章节实现了两个很常见的业务功能，分别是生成二维码和合并海报。希望你能够仔细阅读我给出的链接，这块的知识量不少，想要用好图像处理的功能，必须理解对应的思路，举一反三</p>
+<p>最后希望对你有所帮助 👌</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 02 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>863 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-07-05 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#知识点">知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#生成二维码">生成二维码</a>
+      <ul>
+        <li><a href="#安装">安装</a></li>
+        <li><a href="#工具包">工具包</a></li>
+        <li><a href="#路由方法">路由方法</a></li>
+        <li><a href="#验证">验证</a></li>
+      </ul>
+    </li>
+    <li><a href="#合并海报">合并海报</a>
+      <ul>
+        <li><a href="#背景图">背景图</a></li>
+        <li><a href="#service-方法">service 方法</a></li>
+        <li><a href="#错误码">错误码</a></li>
+        <li><a href="#路由方法-1">路由方法</a></li>
+        <li><a href="#staticfs">StaticFS</a></li>
+        <li><a href="#验证-1">验证</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/gin/2018-07-07-font/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载十六」在图片上绘制文字</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/gin/2018-06-14-excel/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载十四」实现导出、导入 Excel</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

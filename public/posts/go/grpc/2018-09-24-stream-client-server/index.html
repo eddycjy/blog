@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载三」gRPC Streaming, Client and Server">
+<meta itemprop="description" content="前言 本章节将介绍 gRPC 的流式，分为三种类型：
+ Server-side streaming RPC：服务器端流式 RPC Client-side streaming RPC：客户端流式 RPC Bidirectional streaming RPC：双向流式 RPC  流 任何技术，因为有痛点，所以才有了存在的必要性。如果您想要了解 gRPC 的流式调用，请继续
+图 gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
+为什么不用 Simple RPC 流式为什么要存在呢，是 Simple RPC 有什么问题吗？通过模拟业务场景，可得知在使用 Simple RPC 时，有如下问题：
+ 数据包过大造成的瞬时压力 接收数据包时，需要所有数据包都接受成功且正确后，才能够回调响应，进行业务处理（无法客户端边发送，服务端边处理）  为什么用 Streaming RPC  大规模数据包 实时场景  模拟场景 每天早上 6 点，都有一批百万级别的数据集要同从 A 同步到 B，在同步的时候，会做一系列操作（归档、数据分析、画像、日志等）。这一次性涉及的数据量确实大
+在同步完成后，也有人马上会去查阅数据，为了新的一天筹备。也符合实时性。
+两者相较下，这个场景下更适合使用 Streaming RPC
+gRPC 在讲解具体的 gRPC 流式代码时，会着重在第一节讲解，因为三种模式其实是不同的组合。希望你能够注重理解，举一反三，其实都是一样的知识点 👍
+目录结构 $ tree go-grpc-example go-grpc-example ├── client │ ├── simple_client │ │ └── client.">
+<meta itemprop="datePublished" content="2018-09-24T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-09-24T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1209">
+
+
+
+<meta itemprop="keywords" content="go,grpc," /><meta property="og:title" content="「连载三」gRPC Streaming, Client and Server" />
+<meta property="og:description" content="前言 本章节将介绍 gRPC 的流式，分为三种类型：
+ Server-side streaming RPC：服务器端流式 RPC Client-side streaming RPC：客户端流式 RPC Bidirectional streaming RPC：双向流式 RPC  流 任何技术，因为有痛点，所以才有了存在的必要性。如果您想要了解 gRPC 的流式调用，请继续
+图 gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
+为什么不用 Simple RPC 流式为什么要存在呢，是 Simple RPC 有什么问题吗？通过模拟业务场景，可得知在使用 Simple RPC 时，有如下问题：
+ 数据包过大造成的瞬时压力 接收数据包时，需要所有数据包都接受成功且正确后，才能够回调响应，进行业务处理（无法客户端边发送，服务端边处理）  为什么用 Streaming RPC  大规模数据包 实时场景  模拟场景 每天早上 6 点，都有一批百万级别的数据集要同从 A 同步到 B，在同步的时候，会做一系列操作（归档、数据分析、画像、日志等）。这一次性涉及的数据量确实大
+在同步完成后，也有人马上会去查阅数据，为了新的一天筹备。也符合实时性。
+两者相较下，这个场景下更适合使用 Streaming RPC
+gRPC 在讲解具体的 gRPC 流式代码时，会着重在第一节讲解，因为三种模式其实是不同的组合。希望你能够注重理解，举一反三，其实都是一样的知识点 👍
+目录结构 $ tree go-grpc-example go-grpc-example ├── client │ ├── simple_client │ │ └── client." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/grpc/2018-09-24-stream-client-server/" />
+<meta property="article:published_time" content="2018-09-24T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-09-24T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载三」gRPC Streaming, Client and Server"/>
+<meta name="twitter:description" content="前言 本章节将介绍 gRPC 的流式，分为三种类型：
+ Server-side streaming RPC：服务器端流式 RPC Client-side streaming RPC：客户端流式 RPC Bidirectional streaming RPC：双向流式 RPC  流 任何技术，因为有痛点，所以才有了存在的必要性。如果您想要了解 gRPC 的流式调用，请继续
+图 gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解
+为什么不用 Simple RPC 流式为什么要存在呢，是 Simple RPC 有什么问题吗？通过模拟业务场景，可得知在使用 Simple RPC 时，有如下问题：
+ 数据包过大造成的瞬时压力 接收数据包时，需要所有数据包都接受成功且正确后，才能够回调响应，进行业务处理（无法客户端边发送，服务端边处理）  为什么用 Streaming RPC  大规模数据包 实时场景  模拟场景 每天早上 6 点，都有一批百万级别的数据集要同从 A 同步到 B，在同步的时候，会做一系列操作（归档、数据分析、画像、日志等）。这一次性涉及的数据量确实大
+在同步完成后，也有人马上会去查阅数据，为了新的一天筹备。也符合实时性。
+两者相较下，这个场景下更适合使用 Streaming RPC
+gRPC 在讲解具体的 gRPC 流式代码时，会着重在第一节讲解，因为三种模式其实是不同的组合。希望你能够注重理解，举一反三，其实都是一样的知识点 👍
+目录结构 $ tree go-grpc-example go-grpc-example ├── client │ ├── simple_client │ │ └── client."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载三」gRPC Streaming, Client and Server</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Sep 24, 2018</span></div>
+				<h1>「连载三」gRPC Streaming, Client and Server</h1>
+			</header>
+			<div class="content">
+				<h2 id="前言">前言<a href="#前言" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>本章节将介绍 gRPC 的流式，分为三种类型：</p>
+<ul>
+<li>Server-side streaming RPC：服务器端流式 RPC</li>
+<li>Client-side streaming RPC：客户端流式 RPC</li>
+<li>Bidirectional streaming RPC：双向流式 RPC</li>
+</ul>
+<h2 id="流">流<a href="#流" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>任何技术，因为有痛点，所以才有了存在的必要性。如果您想要了解 gRPC 的流式调用，请继续</p>
+<h3 id="图">图<a href="#图" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8812038d20ffece377c0e4901c9a9231.png" alt="image"></p>
+<p>gRPC Streaming 是基于 HTTP/2 的，后续章节再进行详细讲解</p>
+<h3 id="为什么不用-simple-rpc">为什么不用 Simple RPC<a href="#为什么不用-simple-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>流式为什么要存在呢，是 Simple RPC 有什么问题吗？通过模拟业务场景，可得知在使用 Simple RPC 时，有如下问题：</p>
+<ul>
+<li>数据包过大造成的瞬时压力</li>
+<li>接收数据包时，需要所有数据包都接受成功且正确后，才能够回调响应，进行业务处理（无法客户端边发送，服务端边处理）</li>
+</ul>
+<h3 id="为什么用-streaming-rpc">为什么用 Streaming RPC<a href="#为什么用-streaming-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>大规模数据包</li>
+<li>实时场景</li>
+</ul>
+<h4 id="模拟场景">模拟场景<a href="#模拟场景" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>每天早上 6 点，都有一批百万级别的数据集要同从 A 同步到 B，在同步的时候，会做一系列操作（归档、数据分析、画像、日志等）。这一次性涉及的数据量确实大</p>
+<p>在同步完成后，也有人马上会去查阅数据，为了新的一天筹备。也符合实时性。</p>
+<p>两者相较下，这个场景下更适合使用 Streaming RPC</p>
+<h2 id="grpc">gRPC<a href="#grpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在讲解具体的 gRPC 流式代码时，会<strong>着重在第一节讲解</strong>，因为三种模式其实是不同的组合。希望你能够注重理解，举一反三，其实都是一样的知识点 👍</p>
+<h3 id="目录结构">目录结构<a href="#目录结构" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>$ tree go-grpc-example
+go-grpc-example
+├── client
+│   ├── simple_client
+│   │   └── client.go
+│   └── stream_client
+│       └── client.go
+├── proto
+│   ├── search.proto
+│   └── stream.proto
+└── server
+    ├── simple_server
+    │   └── server.go
+    └── stream_server
+        └── server.go
+</code></pre><p>增加 stream_server、stream_client 存放服务端和客户端文件，proto/stream.proto 用于编写 IDL</p>
+<h3 id="idl">IDL<a href="#idl" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在 proto 文件夹下的 stream.proto 文件中，写入如下内容：</p>
+<pre><code>syntax = &quot;proto3&quot;;
+
+package proto;
+
+service StreamService {
+    rpc List(StreamRequest) returns (stream StreamResponse) {};
+
+    rpc Record(stream StreamRequest) returns (StreamResponse) {};
+
+    rpc Route(stream StreamRequest) returns (stream StreamResponse) {};
+}
+
+
+message StreamPoint {
+  string name = 1;
+  int32 value = 2;
+}
+
+message StreamRequest {
+  StreamPoint pt = 1;
+}
+
+message StreamResponse {
+  StreamPoint pt = 1;
+}
+</code></pre><p>注意关键字 stream，声明其为一个流方法。这里共涉及三个方法，对应关系为</p>
+<ul>
+<li>List：服务器端流式 RPC</li>
+<li>Record：客户端流式 RPC</li>
+<li>Route：双向流式 RPC</li>
+</ul>
+<h3 id="基础模板--空定义">基础模板 + 空定义<a href="#基础模板--空定义" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="server">Server<a href="#server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;log&#34;</span>
+	<span class="s">&#34;net&#34;</span>
+
+	<span class="s">&#34;google.golang.org/grpc&#34;</span>
+
+	<span class="nx">pb</span> <span class="s">&#34;github.com/EDDYCJY/go-grpc-example/proto&#34;</span>
+
+<span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">StreamService</span> <span class="kd">struct</span><span class="p">{}</span>
+
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">PORT</span> <span class="p">=</span> <span class="s">&#34;9002&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">server</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">()</span>
+	<span class="nx">pb</span><span class="p">.</span><span class="nf">RegisterStreamServiceServer</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">StreamService</span><span class="p">{})</span>
+
+	<span class="nx">lis</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span> <span class="s">&#34;:&#34;</span><span class="o">+</span><span class="nx">PORT</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;net.Listen err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">server</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">lis</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">List</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">,</span> <span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_ListServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Record</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RecordServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Route</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RouteServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>写代码前，建议先将 gRPC Server 的基础模板和接口给空定义出来。若有不清楚可参见上一章节的知识点</p>
+<h4 id="client">Client<a href="#client" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;log&#34;</span>
+
+	<span class="s">&#34;google.golang.org/grpc&#34;</span>
+
+	<span class="nx">pb</span> <span class="s">&#34;github.com/EDDYCJY/go-grpc-example/proto&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">PORT</span> <span class="p">=</span> <span class="s">&#34;9002&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">conn</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">Dial</span><span class="p">(</span><span class="s">&#34;:&#34;</span><span class="o">+</span><span class="nx">PORT</span><span class="p">,</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">WithInsecure</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;grpc.Dial err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+	<span class="nx">client</span> <span class="o">:=</span> <span class="nx">pb</span><span class="p">.</span><span class="nf">NewStreamServiceClient</span><span class="p">(</span><span class="nx">conn</span><span class="p">)</span>
+
+	<span class="nx">err</span> <span class="p">=</span> <span class="nf">printLists</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">{</span><span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;gRPC Stream Client: List&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="mi">2018</span><span class="p">}})</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;printLists.err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">err</span> <span class="p">=</span> <span class="nf">printRecord</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">{</span><span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;gRPC Stream Client: Record&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="mi">2018</span><span class="p">}})</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;printRecord.err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">err</span> <span class="p">=</span> <span class="nf">printRoute</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">{</span><span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;gRPC Stream Client: Route&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="mi">2018</span><span class="p">}})</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;printRoute.err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">printLists</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">printRecord</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">printRoute</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="一server-side-streaming-rpc服务器端流式-rpc">一、Server-side streaming RPC：服务器端流式 RPC<a href="#一server-side-streaming-rpc服务器端流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>服务器端流式 RPC，显然是单向流，并代指 Server 为 Stream 而 Client 为普通 RPC 请求</p>
+<p>简单来讲就是客户端发起一次普通的 RPC 请求，服务端通过流式响应多次发送数据集，客户端 Recv 接收数据集。大致如图：</p>
+<p><img src="https://image.eddycjy.com/b25a47e2f2fb2a8c352a547f7612808b.png" alt="image"></p>
+<h4 id="server-1">Server<a href="#server-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">List</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">,</span> <span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_ListServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span>
+			<span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span>
+				<span class="nx">Name</span><span class="p">:</span>  <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span>
+				<span class="nx">Value</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span> <span class="o">+</span> <span class="nb">int32</span><span class="p">(</span><span class="nx">n</span><span class="p">),</span>
+			<span class="p">},</span>
+		<span class="p">})</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>在 Server，主要留意 <code>stream.Send</code> 方法。它看上去能发送 N 次？有没有大小限制？</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">StreamService_ListServer</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">Send</span><span class="p">(</span><span class="o">*</span><span class="nx">StreamResponse</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="nx">grpc</span><span class="p">.</span><span class="nx">ServerStream</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">x</span> <span class="o">*</span><span class="nx">streamServiceListServer</span><span class="p">)</span> <span class="nf">Send</span><span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">StreamResponse</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">x</span><span class="p">.</span><span class="nx">ServerStream</span><span class="p">.</span><span class="nf">SendMsg</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>通过阅读源码，可得知是 protoc 在生成时，根据定义生成了各式各样符合标准的接口方法。最终再统一调度内部的 <code>SendMsg</code> 方法，该方法涉及以下过程:</p>
+<ul>
+<li>消息体（对象）序列化</li>
+<li>压缩序列化后的消息体</li>
+<li>对正在传输的消息体增加 5 个字节的 header</li>
+<li>判断压缩+序列化后的消息体总字节长度是否大于预设的 maxSendMessageSize（预设值为 <code>math.MaxInt32</code>），若超出则提示错误</li>
+<li>写入给流的数据集</li>
+</ul>
+<h4 id="client-1">Client<a href="#client-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printLists</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">List</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">r</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;resp: pj.name: %s, pt.value: %d&#34;</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>在 Client，主要留意 <code>stream.Recv()</code> 方法。什么情况下 <code>io.EOF</code> ？什么情况下存在错误信息呢?</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">StreamService_ListClient</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">Recv</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">StreamResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+	<span class="nx">grpc</span><span class="p">.</span><span class="nx">ClientStream</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">x</span> <span class="o">*</span><span class="nx">streamServiceListClient</span><span class="p">)</span> <span class="nf">Recv</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">StreamResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">m</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">StreamResponse</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">x</span><span class="p">.</span><span class="nx">ClientStream</span><span class="p">.</span><span class="nf">RecvMsg</span><span class="p">(</span><span class="nx">m</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">m</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>RecvMsg 会从流中读取完整的 gRPC 消息体，另外通过阅读源码可得知：</p>
+<p>（1）RecvMsg 是阻塞等待的</p>
+<p>（2）RecvMsg 当流成功/结束（调用了 Close）时，会返回 <code>io.EOF</code></p>
+<p>（3）RecvMsg 当流出现任何错误时，流会被中止，错误信息会包含 RPC 错误码。而在 RecvMsg 中可能出现如下错误：</p>
+<ul>
+<li>io.EOF</li>
+<li>io.ErrUnexpectedEOF</li>
+<li>transport.ConnectionError</li>
+<li>google.golang.org/grpc/codes</li>
+</ul>
+<p>同时需要注意，默认的 MaxReceiveMessageSize 值为 1024 _ 1024 _ 4，建议不要超出</p>
+<h4 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>运行 stream_server/server.go：</p>
+<pre><code>$ go run server.go
+</code></pre><p>运行 stream_client/client.go：</p>
+<pre><code>$ go run client.go
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2018
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2019
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2020
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2021
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2022
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2023
+2018/09/24 16:18:25 resp: pj.name: gRPC Stream Client: List, pt.value: 2024
+</code></pre><h3 id="二client-side-streaming-rpc客户端流式-rpc">二、Client-side streaming RPC：客户端流式 RPC<a href="#二client-side-streaming-rpc客户端流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>客户端流式 RPC，单向流，客户端通过流式发起<strong>多次</strong> RPC 请求给服务端，服务端发起<strong>一次</strong>响应给客户端，大致如图：</p>
+<p><img src="https://image.eddycjy.com/97473884d939ec91d6cdf53090bef92e.png" alt="image"></p>
+<h4 id="server-2">Server<a href="#server-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Record</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RecordServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">SendAndClose</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span><span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;gRPC Stream Server: Record&#34;</span><span class="p">,</span> <span class="nx">Value</span><span class="p">:</span> <span class="mi">1</span><span class="p">}})</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;stream.Recv pt.name: %s, pt.value: %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>多了一个从未见过的方法 <code>stream.SendAndClose</code>，它是做什么用的呢？</p>
+<p>在这段程序中，我们对每一个 Recv 都进行了处理，当发现 <code>io.EOF</code> (流关闭) 后，需要将最终的响应结果发送给客户端，同时关闭正在另外一侧等待的 Recv</p>
+<h4 id="client-2">Client<a href="#client-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printRecord</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Record</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="p">&lt;</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">r</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">CloseAndRecv</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;resp: pj.name: %s, pt.value: %d&#34;</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p><code>stream.CloseAndRecv</code> 和 <code>stream.SendAndClose</code> 是配套使用的流方法，相信聪明的你已经秒懂它的作用了</p>
+<h4 id="验证-1">验证<a href="#验证-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>重启 stream_server/server.go，再次运行 stream_client/client.go：</p>
+<h5 id="stream_client">stream_client：<a href="#stream_client" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ go run client.go
+2018/09/24 16:23:03 resp: pj.name: gRPC Stream Server: Record, pt.value: 1
+</code></pre><h5 id="stream_server">stream_server：<a href="#stream_server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ go run server.go
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+2018/09/24 16:23:03 stream.Recv pt.name: gRPC Stream Client: Record, pt.value: 2018
+</code></pre><h3 id="三bidirectional-streaming-rpc双向流式-rpc">三、Bidirectional streaming RPC：双向流式 RPC<a href="#三bidirectional-streaming-rpc双向流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>双向流式 RPC，顾名思义是双向流。由客户端以流式的方式发起请求，服务端同样以流式的方式响应请求</p>
+<p>首个请求一定是 Client 发起，但具体交互方式（谁先谁后、一次发多少、响应多少、什么时候关闭）根据程序编写的方式来确定（可以结合协程）</p>
+<p>假设该双向流是<strong>按顺序发送</strong>的话，大致如图：</p>
+<p><img src="https://image.eddycjy.com/ab80297cd6715048a235e0c9b0f36091.png" alt="image"></p>
+<p>还是要强调，双向流变化很大，因程序编写的不同而不同。<strong>双向流图示无法适用不同的场景</strong></p>
+<h4 id="server-3">Server<a href="#server-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Route</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RouteServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span>
+			<span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span>
+				<span class="nx">Name</span><span class="p">:</span>  <span class="s">&#34;gPRC Stream Client: Route&#34;</span><span class="p">,</span>
+				<span class="nx">Value</span><span class="p">:</span> <span class="nb">int32</span><span class="p">(</span><span class="nx">n</span><span class="p">),</span>
+			<span class="p">},</span>
+		<span class="p">})</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">r</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">n</span><span class="o">++</span>
+
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;stream.Recv pt.name: %s, pt.value: %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="client-3">Client<a href="#client-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printRoute</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Route</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">err</span> <span class="p">=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">r</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;resp: pj.name: %s, pt.value: %d&#34;</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Pt</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">stream</span><span class="p">.</span><span class="nf">CloseSend</span><span class="p">()</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="验证-2">验证<a href="#验证-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>重启 stream_server/server.go，再次运行 stream_client/client.go：</p>
+<h5 id="stream_server-1">stream_server<a href="#stream_server-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ go run server.go
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+2018/09/24 16:29:43 stream.Recv pt.name: gRPC Stream Client: Route, pt.value: 2018
+</code></pre><h5 id="stream_client-1">stream_client<a href="#stream_client-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ go run client.go
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 0
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 1
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 2
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 3
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 4
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 5
+2018/09/24 16:29:43 resp: pj.name: gPRC Stream Client: Route, pt.value: 6
+</code></pre><h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本文共介绍了三类流的交互方式，可以根据实际的业务场景去选择合适的方式。会事半功倍哦 🎑</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-grpc-example">go-grpc-example</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/grpc">grpc</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>1209 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-09-24 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#流">流</a>
+      <ul>
+        <li><a href="#图">图</a></li>
+        <li><a href="#为什么不用-simple-rpc">为什么不用 Simple RPC</a></li>
+        <li><a href="#为什么用-streaming-rpc">为什么用 Streaming RPC</a></li>
+      </ul>
+    </li>
+    <li><a href="#grpc">gRPC</a>
+      <ul>
+        <li><a href="#目录结构">目录结构</a></li>
+        <li><a href="#idl">IDL</a></li>
+        <li><a href="#基础模板--空定义">基础模板 + 空定义</a></li>
+        <li><a href="#一server-side-streaming-rpc服务器端流式-rpc">一、Server-side streaming RPC：服务器端流式 RPC</a></li>
+        <li><a href="#二client-side-streaming-rpc客户端流式-rpc">二、Client-side streaming RPC：客户端流式 RPC</a></li>
+        <li><a href="#三bidirectional-streaming-rpc双向流式-rpc">三、Bidirectional streaming RPC：双向流式 RPC</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/pkg/2018-09-28-log/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>log 标准库</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/grpc/2018-09-23-client-and-server/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载二」gRPC Client and Server</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

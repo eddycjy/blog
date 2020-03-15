@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载九」将Golang应用部署到Docker">
+<meta itemprop="description" content="涉及知识点  Go &#43; Docker  本文目标 将我们的 go-gin-example 应用部署到一个 Docker 里，你需要先准备好如下东西：
+ 你需要安装好 docker。 如果上外网比较吃力，需要配好镜像源。  Docker 在这里简单介绍下 Docker，建议深入学习
+Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持 Docker 的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境
+ 简化配置 代码流水线管理 提高开发效率 隔离应用 快速、持续部署   接下来我们正式开始对项目进行 docker 的所需处理和编写，每一个大标题为步骤大纲
+Golang 一、编写 Dockerfile 在 go-gin-example 项目根目录创建 Dockerfile 文件，写入内容
+FROM golang:latest ENV GOPROXY https://goproxy.cn,direct WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example RUN go build . EXPOSE 8000 ENTRYPOINT [&quot;./go-gin-example&quot;] 作用 golang:latest 镜像为基础镜像，将工作目录设置为 $GOPATH/src/go-gin-example，并将当前上下文目录的内容复制到 $GOPATH/src/go-gin-example 中
+在进行 go build 编译完毕后，将容器启动程序设置为 .">
+<meta itemprop="datePublished" content="2018-03-24T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-03-24T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="866">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载九」将Golang应用部署到Docker" />
+<meta property="og:description" content="涉及知识点  Go &#43; Docker  本文目标 将我们的 go-gin-example 应用部署到一个 Docker 里，你需要先准备好如下东西：
+ 你需要安装好 docker。 如果上外网比较吃力，需要配好镜像源。  Docker 在这里简单介绍下 Docker，建议深入学习
+Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持 Docker 的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境
+ 简化配置 代码流水线管理 提高开发效率 隔离应用 快速、持续部署   接下来我们正式开始对项目进行 docker 的所需处理和编写，每一个大标题为步骤大纲
+Golang 一、编写 Dockerfile 在 go-gin-example 项目根目录创建 Dockerfile 文件，写入内容
+FROM golang:latest ENV GOPROXY https://goproxy.cn,direct WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example RUN go build . EXPOSE 8000 ENTRYPOINT [&quot;./go-gin-example&quot;] 作用 golang:latest 镜像为基础镜像，将工作目录设置为 $GOPATH/src/go-gin-example，并将当前上下文目录的内容复制到 $GOPATH/src/go-gin-example 中
+在进行 go build 编译完毕后，将容器启动程序设置为 ." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-03-24-golang-docker/" />
+<meta property="article:published_time" content="2018-03-24T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-03-24T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载九」将Golang应用部署到Docker"/>
+<meta name="twitter:description" content="涉及知识点  Go &#43; Docker  本文目标 将我们的 go-gin-example 应用部署到一个 Docker 里，你需要先准备好如下东西：
+ 你需要安装好 docker。 如果上外网比较吃力，需要配好镜像源。  Docker 在这里简单介绍下 Docker，建议深入学习
+Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持 Docker 的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境
+ 简化配置 代码流水线管理 提高开发效率 隔离应用 快速、持续部署   接下来我们正式开始对项目进行 docker 的所需处理和编写，每一个大标题为步骤大纲
+Golang 一、编写 Dockerfile 在 go-gin-example 项目根目录创建 Dockerfile 文件，写入内容
+FROM golang:latest ENV GOPROXY https://goproxy.cn,direct WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example RUN go build . EXPOSE 8000 ENTRYPOINT [&quot;./go-gin-example&quot;] 作用 golang:latest 镜像为基础镜像，将工作目录设置为 $GOPATH/src/go-gin-example，并将当前上下文目录的内容复制到 $GOPATH/src/go-gin-example 中
+在进行 go build 编译完毕后，将容器启动程序设置为 ."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载九」将Golang应用部署到Docker</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Mar 24, 2018</span></div>
+				<h1>「连载九」将Golang应用部署到Docker</h1>
+			</header>
+			<div class="content">
+				<h2 id="涉及知识点">涉及知识点<a href="#涉及知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>Go + Docker</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>将我们的 <code>go-gin-example</code> 应用部署到一个 Docker 里，你需要先准备好如下东西：</p>
+<ul>
+<li>你需要安装好 <code>docker</code>。</li>
+<li>如果上外网比较吃力，需要配好镜像源。</li>
+</ul>
+<h2 id="docker">Docker<a href="#docker" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在这里简单介绍下 Docker，建议深入学习</p>
+<p><img src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1521800047226&amp;di=28b2764fccca8a943aea7d79ad8aed98&amp;imgtype=0&amp;src=http%3A%2F%2Fwww.cww.net.cn%2FupLoadFile%2F2014%2F6%2F13%2F201461382247734.png" alt="image"></p>
+<p>Docker 是一个开源的轻量级容器技术，让开发者可以打包他们的应用以及应用运行的上下文环境到一个可移植的镜像中，然后发布到任何支持 Docker 的系统上运行。 通过容器技术，在几乎没有性能开销的情况下，Docker 为应用提供了一个隔离运行环境</p>
+<ul>
+<li>简化配置</li>
+<li>代码流水线管理</li>
+<li>提高开发效率</li>
+<li>隔离应用</li>
+<li>快速、持续部署</li>
+</ul>
+<hr>
+<p>接下来我们正式开始对项目进行 <code>docker</code> 的所需处理和编写，每一个大标题为步骤大纲</p>
+<h2 id="golang">Golang<a href="#golang" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="一编写-dockerfile">一、编写 Dockerfile<a href="#一编写-dockerfile" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在 <code>go-gin-example</code> 项目根目录创建 Dockerfile 文件，写入内容</p>
+<pre><code>FROM golang:latest
+
+ENV GOPROXY https://goproxy.cn,direct
+WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
+COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
+RUN go build .
+
+EXPOSE 8000
+ENTRYPOINT [&quot;./go-gin-example&quot;]
+</code></pre><h4 id="作用">作用<a href="#作用" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><code>golang:latest</code> 镜像为基础镜像，将工作目录设置为 <code>$GOPATH/src/go-gin-example</code>，并将当前上下文目录的内容复制到 <code>$GOPATH/src/go-gin-example</code> 中</p>
+<p>在进行 <code>go build</code> 编译完毕后，将容器启动程序设置为 <code>./go-gin-example</code>，也就是我们所编译的可执行文件</p>
+<p>注意 <code>go-gin-example</code> 在 <code>docker</code> 容器里编译，并没有在宿主机现场编译</p>
+<h4 id="说明">说明<a href="#说明" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>Dockerfile 文件是用于定义 Docker 镜像生成流程的配置文件，文件内容是一条条指令，每一条指令构建一层，因此每一条指令的内容，就是描述该层应当如何构建；这些指令应用于基础镜像并最终创建一个新的镜像</p>
+<p>你可以认为用于快速创建自定义的 Docker 镜像</p>
+<p><strong>1、 FROM</strong></p>
+<p>指定基础镜像（必须有的指令，并且必须是第一条指令）</p>
+<p><strong>2、 WORKDIR</strong></p>
+<p>格式为 <code>WORKDIR</code> &lt;工作目录路径&gt;</p>
+<p>使用 <code>WORKDIR</code> 指令可以来<strong>指定工作目录</strong>（或者称为当前目录），以后各层的当前目录就被改为指定的目录，如果目录不存在，<code>WORKDIR</code> 会帮你建立目录</p>
+<p><strong>3、COPY</strong></p>
+<p>格式：</p>
+<pre><code>COPY &lt;源路径&gt;... &lt;目标路径&gt;
+COPY [&quot;&lt;源路径1&gt;&quot;,... &quot;&lt;目标路径&gt;&quot;]
+</code></pre>
+<p><code>COPY</code> 指令将从构建上下文目录中 &lt;源路径&gt; 的文件/目录<strong>复制</strong>到新的一层的镜像内的 &lt;目标路径&gt; 位置</p>
+<p><strong>4、RUN</strong></p>
+<p>用于执行命令行命令</p>
+<p>格式：<code>RUN</code> &lt;命令&gt;</p>
+<p><strong>5、EXPOSE</strong></p>
+<p>格式为 <code>EXPOSE</code> &lt;端口 1&gt; [&lt;端口 2&gt;&hellip;]</p>
+<p><code>EXPOSE</code> 指令是<strong>声明运行时容器提供服务端口，这只是一个声明</strong>，在运行时并不会因为这个声明应用就会开启这个端口的服务</p>
+<p>在 Dockerfile 中写入这样的声明有两个好处</p>
+<ul>
+<li>帮助镜像使用者理解这个镜像服务的守护端口，以方便配置映射</li>
+<li>运行时使用随机端口映射时，也就是 <code>docker run -P</code> 时，会自动随机映射 <code>EXPOSE</code> 的端口</li>
+</ul>
+<p><strong>6、ENTRYPOINT</strong></p>
+<p><code>ENTRYPOINT</code> 的格式和 <code>RUN</code> 指令格式一样，分为两种格式</p>
+<ul>
+<li><code>exec</code> 格式：</li>
+</ul>
+<pre><code>&lt;ENTRYPOINT&gt; &quot;&lt;CMD&gt;&quot;
+</code></pre><ul>
+<li><code>shell</code> 格式：</li>
+</ul>
+<pre><code>ENTRYPOINT [ &quot;curl&quot;, &quot;-s&quot;, &quot;http://ip.cn&quot; ]
+</code></pre><p><code>ENTRYPOINT</code> 指令是<strong>指定容器启动程序及参数</strong></p>
+<h3 id="二构建镜像">二、构建镜像<a href="#二构建镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><code>go-gin-example</code> 的项目根目录下<strong>执行</strong> <code>docker build -t gin-blog-docker .</code></p>
+<p>该命令作用是创建/构建镜像，<code>-t</code> 指定名称为 <code>gin-blog-docker</code>，<code>.</code> 构建内容为当前上下文目录</p>
+<pre><code>$ docker build -t gin-blog-docker .
+Sending build context to Docker daemon 96.39 MB
+Step 1/6 : FROM golang:latest
+ ---&gt; d632bbfe5767
+Step 2/6 : WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
+ ---&gt; 56294f978c5d
+Removing intermediate container e112997b995d
+Step 3/6 : COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
+ ---&gt; 3b60960120cf
+Removing intermediate container 63e310b3f60c
+Step 4/6 : RUN go build .
+ ---&gt; Running in 52648a431450
+go: downloading github.com/gin-gonic/gin v1.3.0
+go: downloading github.com/go-ini/ini v1.32.1-0.20180214101753-32e4be5f41bb
+go: downloading github.com/swaggo/gin-swagger v1.0.1-0.20190110070702-0c6fcfd3c7f3
+...
+ ---&gt; 7bfbeb301fea
+Removing intermediate container 52648a431450
+Step 5/6 : EXPOSE 8000
+ ---&gt; Running in 98f5b387d1bb
+ ---&gt; b65bd4076c65
+Removing intermediate container 98f5b387d1bb
+Step 6/6 : ENTRYPOINT ./go-gin-example
+ ---&gt; Running in c4f6cdeb667b
+ ---&gt; d8a109c7697c
+Removing intermediate container c4f6cdeb667b
+Successfully built d8a109c7697c
+</code></pre><h3 id="三验证镜像">三、验证镜像<a href="#三验证镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>查看所有的镜像，确定刚刚构建的 <code>gin-blog-docker</code> 镜像是否存在</p>
+<pre><code>$ docker images
+REPOSITORY              TAG                 IMAGE ID            CREATED              SIZE
+gin-blog-docker         latest              d8a109c7697c        About a minute ago   946 MB
+docker.io/golang        latest              d632bbfe5767        8 days ago           779 MB
+...
+</code></pre><h3 id="四创建并运行一个新容器">四、创建并运行一个新容器<a href="#四创建并运行一个新容器" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>执行命令 <code>docker run -p 8000:8000 gin-blog-docker</code></p>
+<pre><code>$ docker run -p 8000:8000 gin-blog-docker
+dial tcp 127.0.0.1:3306: connect: connection refused
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+...
+Actual pid is 1
+
+</code></pre><p>运行成功，你以为大功告成了吗？</p>
+<p>你想太多了，仔细看看控制台的输出了一条错误 <code>dial tcp 127.0.0.1:3306: connect: connection refused</code></p>
+<p>我们研判一下，发现是 <code>Mysql</code> 的问题，接下来第二项我们将解决这个问题</p>
+<h2 id="mysql">Mysql<a href="#mysql" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="一拉取镜像">一、拉取镜像<a href="#一拉取镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>从 <code>Docker</code> 的公共仓库 <code>Dockerhub</code> 下载 <code>MySQL</code> 镜像（国内建议配个镜像）</p>
+<pre><code>$ docker pull mysql
+</code></pre><h3 id="二创建并运行一个新容器">二、创建并运行一个新容器<a href="#二创建并运行一个新容器" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>运行 <code>Mysql</code> 容器，并设置执行成功后返回容器 ID</p>
+<pre><code>$ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -d mysql
+8c86ac986da4922492934b6fe074254c9165b8ee3e184d29865921b0fef29e64
+</code></pre><h4 id="连接-mysql">连接 Mysql<a href="#连接-mysql" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>初始化的 <code>Mysql</code> 应该如图</p>
+<p><img src="https://i.loli.net/2018/03/23/5ab4caab04cf1.png" alt="image"></p>
+<h2 id="golang--mysql">Golang + Mysql<a href="#golang--mysql" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="一删除镜像">一、删除镜像<a href="#一删除镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>由于原本的镜像存在问题，我们需要删除它，此处有几种做法</p>
+<ul>
+<li>删除原本有问题的镜像，重新构建一个新镜像</li>
+<li>重新构建一个不同 <code>name</code>、<code>tag</code> 的新镜像</li>
+</ul>
+<p>删除原本的有问题的镜像，<code>-f</code> 是强制删除及其关联状态</p>
+<p>若不执行 <code>-f</code>，你需要执行 <code>docker ps -a</code> 查到所关联的容器，将其 <code>rm</code> 解除两者依赖关系</p>
+<pre><code>$ docker rmi -f gin-blog-docker
+Untagged: gin-blog-docker:latest
+Deleted: sha256:d8a109c7697c3c2d9b4de7dbb49669d10106902122817b6467a031706bc52ab4
+Deleted: sha256:b65bd4076c65a3c24029ca4def3b3f37001ff7c9eca09e2590c4d29e1e23dce5
+Deleted: sha256:7bfbeb301fea9d8912a4b7c43e4bb8b69bdc57f0b416b372bfb6510e476a7dee
+Deleted: sha256:3b60960120cf619181c1762cdc1b8ce318b8c815e056659809252dd321bcb642
+Deleted: sha256:56294f978c5dfcfa4afa8ad033fd76b755b7ecb5237c6829550741a4d2ce10bc
+</code></pre><h3 id="二修改配置文件">二、修改配置文件<a href="#二修改配置文件" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>将项目的配置文件 <code>conf/app.ini</code>，内容修改为</p>
+<div class="highlight"><pre class="chroma"><code class="language-ini" data-lang="ini"><span class="c1">#debug or release</span>
+<span class="na">RUN_MODE</span> <span class="o">=</span> <span class="s">debug</span>
+
+<span class="k">[app]</span>
+<span class="na">PAGE_SIZE</span> <span class="o">=</span> <span class="s">10</span>
+<span class="na">JWT_SECRET</span> <span class="o">=</span> <span class="s">233</span>
+
+<span class="k">[server]</span>
+<span class="na">HTTP_PORT</span> <span class="o">=</span> <span class="s">8000</span>
+<span class="na">READ_TIMEOUT</span> <span class="o">=</span> <span class="s">60</span>
+<span class="na">WRITE_TIMEOUT</span> <span class="o">=</span> <span class="s">60</span>
+
+<span class="k">[database]</span>
+<span class="na">TYPE</span> <span class="o">=</span> <span class="s">mysql</span>
+<span class="na">USER</span> <span class="o">=</span> <span class="s">root</span>
+<span class="na">PASSWORD</span> <span class="o">=</span> <span class="s">rootroot</span>
+<span class="na">HOST</span> <span class="o">=</span> <span class="s">mysql:3306</span>
+<span class="na">NAME</span> <span class="o">=</span> <span class="s">blog</span>
+<span class="na">TABLE_PREFIX</span> <span class="o">=</span> <span class="s">blog_</span>
+
+</code></pre></div><h3 id="三重新构建镜像">三、重新构建镜像<a href="#三重新构建镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>重复先前的步骤，回到 <code>gin-blog</code> 的项目根目录下<strong>执行</strong> <code>docker build -t gin-blog-docker .</code></p>
+<h3 id="四创建并运行一个新容器-1">四、创建并运行一个新容器<a href="#四创建并运行一个新容器-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h2 id="关联">关联<a href="#关联" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>Q：我们需要将 <code>Golang</code> 容器和 <code>Mysql</code> 容器关联起来，那么我们需要怎么做呢？</p>
+<p>A：增加命令 <code>--link mysql:mysql</code> 让 <code>Golang</code> 容器与 <code>Mysql</code> 容器互联；通过 <code>--link</code>，<strong>可以在容器内直接使用其关联的容器别名进行访问</strong>，而不通过 IP，但是<code>--link</code>只能解决单机容器间的关联，在分布式多机的情况下，需要通过别的方式进行连接</p>
+<h2 id="运行">运行<a href="#运行" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>执行命令 <code>docker run --link mysql:mysql -p 8000:8000 gin-blog-docker</code></p>
+<pre><code>$ docker run --link mysql:mysql -p 8000:8000 gin-blog-docker
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+...
+Actual pid is 1
+</code></pre><h2 id="结果">结果<a href="#结果" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>检查启动输出、接口测试、数据库内数据，均正常；我们的 <code>Golang</code> 容器和 <code>Mysql</code> 容器成功关联运行，大功告成 :)</p>
+<hr>
+<h2 id="review">Review<a href="#review" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="思考">思考<a href="#思考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>虽然应用已经能够跑起来了</p>
+<p>但如果对 <code>Golang</code> 和 <code>Docker</code> 有一定的了解，我希望你能够想到至少 2 个问题</p>
+<ul>
+<li>为什么 <code>gin-blog-docker</code> 占用空间这么大？（可用 <code>docker ps -as | grep gin-blog-docker</code> 查看）</li>
+<li><code>Mysql</code> 容器直接这么使用，数据存储到哪里去了？</li>
+</ul>
+<h3 id="创建超小的-golang-镜像">创建超小的 Golang 镜像<a href="#创建超小的-golang-镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Q：第一个问题，为什么这么镜像体积这么大？</p>
+<p>A：<code>FROM golang:latest</code> 拉取的是官方 <code>golang</code> 镜像，包含 Golang 的编译和运行环境，外加一堆 GCC、build 工具，相当齐全</p>
+<p>这是有问题的，<strong>我们可以不在 Golang 容器中现场编译的</strong>，压根用不到那些东西，我们只需要一个能够运行可执行文件的环境即可</p>
+<h4 id="构建-scratch-镜像">构建 Scratch 镜像<a href="#构建-scratch-镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>Scratch 镜像，简洁、小巧，基本是个空镜像</p>
+<h5 id="一修改-dockerfile">一、修改 Dockerfile<a href="#一修改-dockerfile" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>FROM scratch
+
+WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
+COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
+
+EXPOSE 8000
+CMD [&quot;./go-gin-example&quot;]
+</code></pre><h5 id="二编译可执行文件">二、编译可执行文件<a href="#二编译可执行文件" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-gin-example .
+</code></pre><p>编译所生成的可执行文件会依赖一些库，并且是动态链接。在这里因为使用的是 <code>scratch</code> 镜像，它是空镜像，因此我们需要将生成的可执行文件静态链接所依赖的库</p>
+<h5 id="三构建镜像">三、构建镜像<a href="#三构建镜像" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ docker build -t gin-blog-docker-scratch .
+Sending build context to Docker daemon 133.1 MB
+Step 1/5 : FROM scratch
+ ---&gt;
+Step 2/5 : WORKDIR $GOPATH/src/github.com/EDDYCJY/go-gin-example
+ ---&gt; Using cache
+ ---&gt; ee07e166a638
+Step 3/5 : COPY . $GOPATH/src/github.com/EDDYCJY/go-gin-example
+ ---&gt; 1489a0693d51
+Removing intermediate container e3e9efc0fe4d
+Step 4/5 : EXPOSE 8000
+ ---&gt; Running in b5630de5544a
+ ---&gt; 6993e9f8c944
+Removing intermediate container b5630de5544a
+Step 5/5 : CMD ./go-gin-example
+ ---&gt; Running in eebc0d8628ae
+ ---&gt; 5310bebeb86a
+Removing intermediate container eebc0d8628ae
+Successfully built 5310bebeb86a
+</code></pre><p>注意，假设你的 Golang 应用没有依赖任何的配置等文件，是可以直接把可执行文件给拷贝进去即可，其他都不必关心</p>
+<p>这里可以有好几种解决方案</p>
+<ul>
+<li>依赖文件统一管理挂载</li>
+<li>go-bindata 一下</li>
+</ul>
+<p>&hellip;</p>
+<p>因此这里如果<strong>解决了文件依赖的问题</strong>后，就不需要把目录给 <code>COPY</code> 进去了</p>
+<h5 id="四运行">四、运行<a href="#四运行" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ docker run --link mysql:mysql -p 8000:8000 gin-blog-docker-scratch
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /auth                     --&gt; github.com/EDDYCJY/go-gin-example/routers/api.GetAuth (3 handlers)
+...
+</code></pre><p>成功运行，程序也正常接收请求</p>
+<p>接下来我们再看看占用大小，执行 <code>docker ps -as</code> 命令</p>
+<pre><code>$ docker ps -as
+CONTAINER ID        IMAGE                     COMMAND                  ...         SIZE
+9ebdba5a8445        gin-blog-docker-scratch   &quot;./go-gin-example&quot;       ...     0 B (virtual 132 MB)
+427ee79e6857        gin-blog-docker           &quot;./go-gin-example&quot;       ...     0 B (virtual 946 MB)
+</code></pre><p>从结果而言，占用大小以<code>Scratch</code>镜像为基础的容器完胜，完成目标</p>
+<h3 id="mysql-挂载数据卷">Mysql 挂载数据卷<a href="#mysql-挂载数据卷" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>倘若不做任何干涉，在每次启动一个 <code>Mysql</code> 容器时，数据库都是空的。另外容器删除之后，数据就丢失了（还有各类意外情况），非常糟糕！</p>
+<h4 id="数据卷">数据卷<a href="#数据卷" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>数据卷 是被设计用来持久化数据的，它的生命周期独立于容器，Docker 不会在容器被删除后自动删除 数据卷，并且也不存在垃圾回收这样的机制来处理没有任何容器引用的 数据卷。如果需要在删除容器的同时移除数据卷。可以在删除容器的时候使用 <code>docker rm -v</code> 这个命令</p>
+<p>数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：</p>
+<ul>
+<li>
+<p>数据卷 可以在容器之间共享和重用</p>
+</li>
+<li>
+<p>对 数据卷 的修改会立马生效</p>
+</li>
+<li>
+<p>对 数据卷 的更新，不会影响镜像</p>
+</li>
+<li>
+<p>数据卷 默认会一直存在，即使容器被删除</p>
+</li>
+</ul>
+<blockquote>
+<p>注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会隐藏掉，能显示看的是挂载的 数据卷。</p>
+</blockquote>
+<h4 id="如何挂载">如何挂载<a href="#如何挂载" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>首先创建一个目录用于存放数据卷；示例目录 <code>/data/docker-mysql</code>，注意 <code>--name</code> 原本名称为 <code>mysql</code> 的容器，需要将其删除 <code>docker rm</code></p>
+<pre><code>$ docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=rootroot -v /data/docker-mysql:/var/lib/mysql -d mysql
+54611dbcd62eca33fb320f3f624c7941f15697d998f40b24ee535a1acf93ae72
+</code></pre><p>创建成功，检查目录 <code>/data/docker-mysql</code>，下面多了不少数据库文件</p>
+<h4 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>接下来交由你进行验证，目标是创建一些测试表和数据，然后删除当前容器，重新创建的容器，数据库数据也依然存在（当然了数据卷指向要一致）</p>
+<p>我已验证完毕，你呢？</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h3 id="书籍">书籍<a href="#书籍" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://www.gitbook.com/book/yeasy/docker_practice/details">Docker —— 从入门到实践</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 01 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>866 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-03-24 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#涉及知识点">涉及知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#docker">Docker</a></li>
+    <li><a href="#golang">Golang</a>
+      <ul>
+        <li><a href="#一编写-dockerfile">一、编写 Dockerfile</a></li>
+        <li><a href="#二构建镜像">二、构建镜像</a></li>
+        <li><a href="#三验证镜像">三、验证镜像</a></li>
+        <li><a href="#四创建并运行一个新容器">四、创建并运行一个新容器</a></li>
+      </ul>
+    </li>
+    <li><a href="#mysql">Mysql</a>
+      <ul>
+        <li><a href="#一拉取镜像">一、拉取镜像</a></li>
+        <li><a href="#二创建并运行一个新容器">二、创建并运行一个新容器</a></li>
+      </ul>
+    </li>
+    <li><a href="#golang--mysql">Golang + Mysql</a>
+      <ul>
+        <li><a href="#一删除镜像">一、删除镜像</a></li>
+        <li><a href="#二修改配置文件">二、修改配置文件</a></li>
+        <li><a href="#三重新构建镜像">三、重新构建镜像</a></li>
+        <li><a href="#四创建并运行一个新容器-1">四、创建并运行一个新容器</a></li>
+      </ul>
+    </li>
+    <li><a href="#关联">关联</a></li>
+    <li><a href="#运行">运行</a></li>
+    <li><a href="#结果">结果</a></li>
+    <li><a href="#review">Review</a>
+      <ul>
+        <li><a href="#思考">思考</a></li>
+        <li><a href="#创建超小的-golang-镜像">创建超小的 Golang 镜像</a></li>
+        <li><a href="#mysql-挂载数据卷">Mysql 挂载数据卷</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+        <li><a href="#书籍">书籍</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/gin/2018-03-26-cgo/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「番外」Golang 交叉编译</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/crawler/2018-03-21-douban-top250/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>爬取豆瓣电影 Top250</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

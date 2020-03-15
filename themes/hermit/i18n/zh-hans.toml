@@ -1,0 +1,35 @@
+# Translations for Simplified Chinese - 简体中文
+# https://gohugo.io/content-management/multilingual/#translation-of-strings
+
+# 404.html
+#
+[notFound]
+other = "糟糕，您要访问的页面不存在……"
+
+[home]
+other = "主页"
+
+[archives]
+other = "归档"
+
+# posts/single.html
+#
+[wordCount]
+other = "{{ .WordCount }} 字"
+
+[tableOfContents]
+other = "目录"
+
+[newer]
+other = "新"
+
+[older]
+other = "旧"
+
+# partials/header.html
+#
+[menu]
+other = "菜单"
+
+[featuredImage]
+other = "特色图片"

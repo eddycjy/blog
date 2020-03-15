@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载十七」用Nginx部署Go应用">
+<meta itemprop="description" content="知识点  Nginx。 反向代理。  本文目标 简单部署后端服务。
+做什么 在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 go-gin-example 的部署，会实现反向代理和简单负载均衡的功能。
+Nginx 是什么 Nginx 是一个 Web Server，可以用作反向代理、负载均衡、邮件代理、TCP / UDP、HTTP 服务器等等，它拥有很多吸引人的特性，例如：
+ 以较低的内存占用率处理 10,000 多个并发连接（每 10k 非活动 HTTP 保持活动连接约 2.5 MB ） 静态服务器（处理静态文件） 正向、反向代理 负载均衡 通过 OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持 FastCGI、SCGI、uWSGI 的支持 WebSockets、HTTP/1.1 的支持 Nginx &#43; Lua  安装 请右拐谷歌或百度，安装好 Nginx 以备接下来的使用
+简单讲解 常用命令  nginx：启动 Nginx nginx -s stop：立刻停止 Nginx 服务 nginx -s reload：重新加载配置文件 nginx -s quit：平滑停止 Nginx 服务 nginx -t：测试配置文件是否正确 nginx -v：显示 Nginx 版本信息 nginx -V：显示 Nginx 版本信息、编译器和配置参数的信息  涉及配置 1、 proxy_pass：配置反向代理的路径。需要注意的是如果 proxy_pass 的 url 最后为 /，则表示绝对路径。否则（不含变量下）表示相对路径，所有的路径都会被代理过去">
+<meta itemprop="datePublished" content="2018-09-01T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-09-01T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="415">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载十七」用Nginx部署Go应用" />
+<meta property="og:description" content="知识点  Nginx。 反向代理。  本文目标 简单部署后端服务。
+做什么 在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 go-gin-example 的部署，会实现反向代理和简单负载均衡的功能。
+Nginx 是什么 Nginx 是一个 Web Server，可以用作反向代理、负载均衡、邮件代理、TCP / UDP、HTTP 服务器等等，它拥有很多吸引人的特性，例如：
+ 以较低的内存占用率处理 10,000 多个并发连接（每 10k 非活动 HTTP 保持活动连接约 2.5 MB ） 静态服务器（处理静态文件） 正向、反向代理 负载均衡 通过 OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持 FastCGI、SCGI、uWSGI 的支持 WebSockets、HTTP/1.1 的支持 Nginx &#43; Lua  安装 请右拐谷歌或百度，安装好 Nginx 以备接下来的使用
+简单讲解 常用命令  nginx：启动 Nginx nginx -s stop：立刻停止 Nginx 服务 nginx -s reload：重新加载配置文件 nginx -s quit：平滑停止 Nginx 服务 nginx -t：测试配置文件是否正确 nginx -v：显示 Nginx 版本信息 nginx -V：显示 Nginx 版本信息、编译器和配置参数的信息  涉及配置 1、 proxy_pass：配置反向代理的路径。需要注意的是如果 proxy_pass 的 url 最后为 /，则表示绝对路径。否则（不含变量下）表示相对路径，所有的路径都会被代理过去" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-09-01-nginx/" />
+<meta property="article:published_time" content="2018-09-01T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-09-01T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载十七」用Nginx部署Go应用"/>
+<meta name="twitter:description" content="知识点  Nginx。 反向代理。  本文目标 简单部署后端服务。
+做什么 在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 go-gin-example 的部署，会实现反向代理和简单负载均衡的功能。
+Nginx 是什么 Nginx 是一个 Web Server，可以用作反向代理、负载均衡、邮件代理、TCP / UDP、HTTP 服务器等等，它拥有很多吸引人的特性，例如：
+ 以较低的内存占用率处理 10,000 多个并发连接（每 10k 非活动 HTTP 保持活动连接约 2.5 MB ） 静态服务器（处理静态文件） 正向、反向代理 负载均衡 通过 OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持 FastCGI、SCGI、uWSGI 的支持 WebSockets、HTTP/1.1 的支持 Nginx &#43; Lua  安装 请右拐谷歌或百度，安装好 Nginx 以备接下来的使用
+简单讲解 常用命令  nginx：启动 Nginx nginx -s stop：立刻停止 Nginx 服务 nginx -s reload：重新加载配置文件 nginx -s quit：平滑停止 Nginx 服务 nginx -t：测试配置文件是否正确 nginx -v：显示 Nginx 版本信息 nginx -V：显示 Nginx 版本信息、编译器和配置参数的信息  涉及配置 1、 proxy_pass：配置反向代理的路径。需要注意的是如果 proxy_pass 的 url 最后为 /，则表示绝对路径。否则（不含变量下）表示相对路径，所有的路径都会被代理过去"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载十七」用Nginx部署Go应用</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Sep 1, 2018</span></div>
+				<h1>「连载十七」用Nginx部署Go应用</h1>
+			</header>
+			<div class="content">
+				<h2 id="知识点">知识点<a href="#知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>Nginx。</li>
+<li>反向代理。</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>简单部署后端服务。</p>
+<h2 id="做什么">做什么<a href="#做什么" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本章节，我们将简单介绍 Nginx 以及使用 Nginx 来完成对 <a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a> 的部署，会实现反向代理和简单负载均衡的功能。</p>
+<h2 id="nginx">Nginx<a href="#nginx" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="是什么">是什么<a href="#是什么" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Nginx 是一个 Web Server，可以用作反向代理、负载均衡、邮件代理、TCP / UDP、HTTP 服务器等等，它拥有很多吸引人的特性，例如：</p>
+<ul>
+<li>以较低的内存占用率处理 10,000 多个并发连接（每 10k 非活动 HTTP 保持活动连接约 2.5 MB ）</li>
+<li>静态服务器（处理静态文件）</li>
+<li>正向、反向代理</li>
+<li>负载均衡</li>
+<li>通过 OpenSSL 对 TLS / SSL 与 SNI 和 OCSP 支持</li>
+<li>FastCGI、SCGI、uWSGI 的支持</li>
+<li>WebSockets、HTTP/1.1 的支持</li>
+<li>Nginx + Lua</li>
+</ul>
+<h3 id="安装">安装<a href="#安装" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>请右拐谷歌或百度，安装好 Nginx 以备接下来的使用</p>
+<h3 id="简单讲解">简单讲解<a href="#简单讲解" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="常用命令">常用命令<a href="#常用命令" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<ul>
+<li>nginx：启动 Nginx</li>
+<li>nginx -s stop：立刻停止 Nginx 服务</li>
+<li>nginx -s reload：重新加载配置文件</li>
+<li>nginx -s quit：平滑停止 Nginx 服务</li>
+<li>nginx -t：测试配置文件是否正确</li>
+<li>nginx -v：显示 Nginx 版本信息</li>
+<li>nginx -V：显示 Nginx 版本信息、编译器和配置参数的信息</li>
+</ul>
+<h4 id="涉及配置">涉及配置<a href="#涉及配置" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>1、 proxy_pass：配置<strong>反向代理的路径</strong>。需要注意的是如果 proxy_pass 的 url 最后为
+/，则表示绝对路径。否则（不含变量下）表示相对路径，所有的路径都会被代理过去</p>
+<p>2、 upstream：配置<strong>负载均衡</strong>，upstream 默认是以轮询的方式进行负载，另外还支持<strong>四种模式</strong>，分别是：</p>
+<p>（1）weight：权重，指定轮询的概率，weight 与访问概率成正比</p>
+<p>（2）ip_hash：按照访问 IP 的 hash 结果值分配</p>
+<p>（3）fair：按后端服务器响应时间进行分配，响应时间越短优先级别越高</p>
+<p>（4）url_hash：按照访问 URL 的 hash 结果值分配</p>
+<h2 id="部署">部署<a href="#部署" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在这里需要对 nginx.conf 进行配置，如果你不知道对应的配置文件是哪个，可执行 <code>nginx -t</code> 看一下</p>
+<pre><code>$ nginx -t
+nginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /usr/local/etc/nginx/nginx.conf test is successful
+</code></pre><p>显然，我的配置文件在 <code>/usr/local/etc/nginx/</code> 目录下，并且测试通过</p>
+<h3 id="反向代理">反向代理<a href="#反向代理" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>反向代理是指以代理服务器来接受网络上的连接请求，然后将请求转发给内部网络上的服务器，并将从服务器上得到的结果返回给请求连接的客户端，此时代理服务器对外就表现为一个反向代理服务器。（来自<a href="https://baike.baidu.com/item/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/7793488?fr=aladdin">百科</a>）</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xlQe0.png" alt="image"></p>
+<h4 id="配置-hosts">配置 hosts<a href="#配置-hosts" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>由于需要用本机作为演示，因此先把映射配上去，打开 <code>/etc/hosts</code>，增加内容：</p>
+<pre><code>127.0.0.1       api.blog.com
+</code></pre><h4 id="配置-nginxconf">配置 nginx.conf<a href="#配置-nginxconf" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>打开 nginx 的配置文件 nginx.conf（我的是 /usr/local/etc/nginx/nginx.conf），我们做了如下事情：</p>
+<p>增加 server 片段的内容，设置 server_name 为 api.blog.com 并且监听 8081 端口，将所有路径转发到 <code>http://127.0.0.1:8000/</code> 下</p>
+<pre><code>worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       8081;
+        server_name  api.blog.com;
+
+        location / {
+            proxy_pass http://127.0.0.1:8000/;
+        }
+    }
+}
+</code></pre><h4 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<h5 id="启动-go-gin-example">启动 go-gin-example<a href="#启动-go-gin-example" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>回到 <a href="github.com/EDDYCJY/go-gin-example">go-gin-example</a> 的项目下，执行 make，再运行 ./go-gin-exmaple</p>
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ make
+github.com/EDDYCJY/go-gin-example
+$ ls
+LICENSE        README.md      conf           go-gin-example middleware     pkg            runtime        vendor
+Makefile       README_ZH.md   docs           main.go        models         routers        service
+$ ./go-gin-example
+...
+<span class="o">[</span>GIN-debug<span class="o">]</span> DELETE /api/v1/articles/:id      --&gt; github.com/EDDYCJY/go-gin-example/routers/api/v1.DeleteArticle <span class="o">(</span><span class="m">4</span> handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug<span class="o">]</span> POST   /api/v1/articles/poster/generate --&gt; github.com/EDDYCJY/go-gin-example/routers/api/v1.GenerateArticlePoster <span class="o">(</span><span class="m">4</span> handlers<span class="o">)</span>
+Actual pid is <span class="m">14672</span>
+</code></pre></div><h5 id="重启-nginx">重启 nginx<a href="#重启-nginx" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ nginx -t
+nginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /usr/local/etc/nginx/nginx.conf <span class="nb">test</span> is successful
+$ nginx -s reload
+</code></pre></div><h5 id="访问接口">访问接口<a href="#访问接口" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xlEFS.jpg" alt="image"></p>
+<p>如此，就实现了一个简单的反向代理了，是不是很简单呢</p>
+<h3 id="负载均衡">负载均衡<a href="#负载均衡" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>负载均衡，英文名称为 Load Balance（常称 LB），其意思就是分摊到多个操作单元上进行执行（来自百科）</p>
+<p>你能从运维口中经常听见，XXX 负载怎么突然那么高。 那么它到底是什么呢？</p>
+<p>其背后一般有多台 server，系统会根据配置的策略（例如 Nginx 有提供四种选择）来进行动态调整，尽可能的达到各节点均衡，从而提高系统整体的吞吐量和快速响应</p>
+<h4 id="如何演示">如何演示<a href="#如何演示" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>前提条件为多个后端服务，那么势必需要多个 <a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a>，为了演示我们可以启动多个端口，达到模拟的效果</p>
+<p>为了便于演示，分别在启动前将 conf/app.ini 的应用端口修改为 8001 和 8002（也可以做成传入参数的模式），达到启动 2 个监听 8001 和 8002 的后端服务</p>
+<h4 id="配置-nginxconf-1">配置 nginx.conf<a href="#配置-nginxconf-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>回到 nginx.conf 的老地方，增加负载均衡所需的配置。新增 upstream 节点，设置其对应的 2 个后端服务，最后修改了 proxy_pass 指向（格式为 http:// + upstream 的节点名称）</p>
+<pre><code>worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    upstream api.blog.com {
+        server 127.0.0.1:8001;
+        server 127.0.0.1:8002;
+    }
+
+    server {
+        listen       8081;
+        server_name  api.blog.com;
+
+        location / {
+            proxy_pass http://api.blog.com/;
+        }
+    }
+}
+</code></pre><h5 id="重启-nginx-1">重启 nginx<a href="#重启-nginx-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ nginx -t
+nginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /usr/local/etc/nginx/nginx.conf <span class="nb">test</span> is successful
+$ nginx -s reload
+</code></pre></div><h4 id="验证-1">验证<a href="#验证-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>再重复访问 <code>http://api.blog.com:8081/auth?username={USER_NAME}}&amp;password={PASSWORD}</code>，多访问几次便于查看效果</p>
+<p>目前 Nginx 没有进行特殊配置，那么它是轮询策略，而 go-gin-example 默认开着 debug 模式，看看请求 log 就明白了</p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xlZWQ.jpg" alt="image"></p>
+<p><img src="https://s2.ax1x.com/2020/02/15/1xlnQs.jpg" alt="image"></p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本章节，希望您能够简单习得日常使用的 Web Server 背后都是一些什么逻辑，Nginx 是什么？反向代理？负载均衡？</p>
+<p>怎么简单部署，知道了吧。</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 01 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>415 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-09-01 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#知识点">知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#做什么">做什么</a></li>
+    <li><a href="#nginx">Nginx</a>
+      <ul>
+        <li><a href="#是什么">是什么</a></li>
+        <li><a href="#安装">安装</a></li>
+        <li><a href="#简单讲解">简单讲解</a></li>
+      </ul>
+    </li>
+    <li><a href="#部署">部署</a>
+      <ul>
+        <li><a href="#反向代理">反向代理</a></li>
+        <li><a href="#负载均衡">负载均衡</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/tools/2018-09-15-go-tool-pprof/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>Go 大杀器之性能剖析 PProf</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/gin/2018-08-26-makefile/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「番外」请入门 Makefile</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

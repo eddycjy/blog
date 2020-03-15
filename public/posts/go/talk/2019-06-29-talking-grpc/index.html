@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="从实践到原理，带你参透 gRPC">
+<meta itemprop="description" content="gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
+简述 gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C&#43;&#43;, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
+gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。
+调用模型 1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。
+2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）。
+3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回。
+4、对响应结果使用 Protobuf 进行对象序列化压缩（IDL）。
+5、客户端接受到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。
+调用方式 一、Unary RPC：一元 RPC Server type SearchService struct{} func (s *SearchService) Search(ctx context.Context, r *pb.">
+<meta itemprop="datePublished" content="2019-06-29T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-06-29T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1760">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="从实践到原理，带你参透 gRPC" />
+<meta property="og:description" content="gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
+简述 gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C&#43;&#43;, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
+gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。
+调用模型 1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。
+2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）。
+3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回。
+4、对响应结果使用 Protobuf 进行对象序列化压缩（IDL）。
+5、客户端接受到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。
+调用方式 一、Unary RPC：一元 RPC Server type SearchService struct{} func (s *SearchService) Search(ctx context.Context, r *pb." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2019-06-29-talking-grpc/" />
+<meta property="article:published_time" content="2019-06-29T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-06-29T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="从实践到原理，带你参透 gRPC"/>
+<meta name="twitter:description" content="gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
+简述 gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C&#43;&#43;, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。
+gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。
+调用模型 1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。
+2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）。
+3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回。
+4、对响应结果使用 Protobuf 进行对象序列化压缩（IDL）。
+5、客户端接受到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。
+调用方式 一、Unary RPC：一元 RPC Server type SearchService struct{} func (s *SearchService) Search(ctx context.Context, r *pb."/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>从实践到原理，带你参透 gRPC</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Jun 29, 2019</span></div>
+				<h1>从实践到原理，带你参透 gRPC</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/27/3wKfNq.png" alt="image"></p>
+<p>gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMMrQ.jpg" alt="image"></p>
+<h2 id="简述">简述<a href="#简述" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>gRPC 是一个高性能、开源和通用的 RPC 框架，面向移动和 HTTP/2 设计。目前提供 C、Java 和 Go 语言版本，分别是：grpc, grpc-java, grpc-go. 其中 C 版本支持 C, C++, Node.js, Python, Ruby, Objective-C, PHP 和 C# 支持。</p>
+<p>gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩、单 TCP 连接上的多复用请求等特性。这些特性使得其在移动设备上表现更好，更省电和节省空间占用。</p>
+<h2 id="调用模型">调用模型<a href="#调用模型" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p><img src="http://www.grpc.io/img/grpc_concept_diagram_00.png" alt="image"></p>
+<p>1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。</p>
+<p>2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）。</p>
+<p>3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回。</p>
+<p>4、对响应结果使用 Protobuf 进行对象序列化压缩（IDL）。</p>
+<p>5、客户端接受到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。</p>
+<h2 id="调用方式">调用方式<a href="#调用方式" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="一unary-rpc一元-rpc">一、Unary RPC：一元 RPC<a href="#一unary-rpc一元-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMNxU.png" alt="image"></p>
+<h4 id="server">Server<a href="#server" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SearchService</span> <span class="kd">struct</span><span class="p">{}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">SearchService</span><span class="p">)</span> <span class="nf">Search</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">SearchRequest</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">SearchResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">SearchResponse</span><span class="p">{</span><span class="nx">Response</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nf">GetRequest</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; Server&#34;</span><span class="p">},</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">PORT</span> <span class="p">=</span> <span class="s">&#34;9001&#34;</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">server</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">()</span>
+    <span class="nx">pb</span><span class="p">.</span><span class="nf">RegisterSearchServiceServer</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">SearchService</span><span class="p">{})</span>
+
+    <span class="nx">lis</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span> <span class="s">&#34;:&#34;</span><span class="o">+</span><span class="nx">PORT</span><span class="p">)</span>
+    <span class="o">...</span>
+
+    <span class="nx">server</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">lis</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><ul>
+<li>创建 gRPC Server 对象，你可以理解为它是 Server 端的抽象对象。</li>
+<li>将 SearchService（其包含需要被调用的服务端接口）注册到 gRPC Server。 的内部注册中心。这样可以在接受到请求时，通过内部的 “服务发现”，发现该服务端接口并转接进行逻辑处理。</li>
+<li>创建 Listen，监听 TCP 端口。</li>
+<li>gRPC Server 开始 lis.Accept，直到 Stop 或 GracefulStop。</li>
+</ul>
+<h4 id="client">Client<a href="#client" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">conn</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">Dial</span><span class="p">(</span><span class="s">&#34;:&#34;</span><span class="o">+</span><span class="nx">PORT</span><span class="p">,</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">WithInsecure</span><span class="p">())</span>
+    <span class="o">...</span>
+    <span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+    <span class="nx">client</span> <span class="o">:=</span> <span class="nx">pb</span><span class="p">.</span><span class="nf">NewSearchServiceClient</span><span class="p">(</span><span class="nx">conn</span><span class="p">)</span>
+    <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">SearchRequest</span><span class="p">{</span>
+        <span class="nx">Request</span><span class="p">:</span> <span class="s">&#34;gRPC&#34;</span><span class="p">,</span>
+    <span class="p">})</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div><ul>
+<li>创建与给定目标（服务端）的连接句柄。</li>
+<li>创建 SearchService 的客户端对象。</li>
+<li>发送 RPC 请求，等待同步响应，得到回调后返回响应结果。</li>
+</ul>
+<h3 id="二server-side-streaming-rpc服务端流式-rpc">二、Server-side streaming RPC：服务端流式 RPC<a href="#二server-side-streaming-rpc服务端流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMdr4.png" alt="image"></p>
+<h4 id="server-1">Server<a href="#server-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">List</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">,</span> <span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_ListServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+        <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span>
+            <span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span>
+                <span class="o">...</span>
+            <span class="p">},</span>
+        <span class="p">})</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="client-1">Client<a href="#client-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printLists</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">List</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">r</span><span class="p">)</span>
+    <span class="o">...</span>
+
+    <span class="k">for</span> <span class="p">{</span>
+        <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+            <span class="k">break</span>
+        <span class="p">}</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="三client-side-streaming-rpc客户端流式-rpc">三、Client-side streaming RPC：客户端流式 RPC<a href="#三client-side-streaming-rpc客户端流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMBZ9.png" alt="image"></p>
+<h4 id="server-2">Server<a href="#server-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Record</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RecordServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">{</span>
+        <span class="nx">r</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">SendAndClose</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span><span class="nx">Pt</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamPoint</span><span class="p">{</span><span class="o">...</span><span class="p">}})</span>
+        <span class="p">}</span>
+        <span class="o">...</span>
+
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="client-2">Client<a href="#client-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printRecord</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Record</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">())</span>
+    <span class="o">...</span>
+
+    <span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="p">&lt;</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+        <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">r</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">CloseAndRecv</span><span class="p">()</span>
+    <span class="o">...</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="四bidirectional-streaming-rpc双向流式-rpc">四、Bidirectional streaming RPC：双向流式 RPC<a href="#四bidirectional-streaming-rpc双向流式-rpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMrI1.png" alt="image"></p>
+<h4 id="server-3">Server<a href="#server-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">StreamService</span><span class="p">)</span> <span class="nf">Route</span><span class="p">(</span><span class="nx">stream</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamService_RouteServer</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">{</span>
+        <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamResponse</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
+        <span class="nx">r</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h4 id="client-3">Client<a href="#client-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">printRoute</span><span class="p">(</span><span class="nx">client</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">StreamServiceClient</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">StreamRequest</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">stream</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Route</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">())</span>
+    <span class="o">...</span>
+
+    <span class="k">for</span> <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">n</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">;</span> <span class="nx">n</span><span class="o">++</span> <span class="p">{</span>
+        <span class="nx">stream</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">r</span><span class="p">)</span>
+        <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">stream</span><span class="p">.</span><span class="nf">Recv</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">io</span><span class="p">.</span><span class="nx">EOF</span> <span class="p">{</span>
+            <span class="k">break</span>
+        <span class="p">}</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+
+    <span class="nx">stream</span><span class="p">.</span><span class="nf">CloseSend</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="客户端与服务端是如何交互的">客户端与服务端是如何交互的<a href="#客户端与服务端是如何交互的" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在开始分析之前，我们要先 gRPC 的调用有一个初始印象。那么最简单的就是对 Client 端调用 Server 端进行抓包去剖析，看看整个过程中它都做了些什么事。如下图：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wMgxO.jpg" alt="image"></p>
+<ul>
+<li>Magic</li>
+<li>SETTINGS</li>
+<li>HEADERS</li>
+<li>DATA</li>
+<li>SETTINGS</li>
+<li>WINDOW_UPDATE</li>
+<li>PING</li>
+<li>HEADERS</li>
+<li>DATA</li>
+<li>HEADERS</li>
+<li>WINDOW_UPDATE</li>
+<li>PING</li>
+</ul>
+<p>我们略加整理发现共有十二个行为，是比较重要的。在开始分析之前，建议你自己先想一下，它们的作用都是什么？大胆猜测一下，带着疑问去学习效果更佳。</p>
+<h3 id="行为分析">行为分析<a href="#行为分析" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="magic">Magic<a href="#magic" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wM7JP.jpg" alt="image"></p>
+<p>Magic 帧的主要作用是建立 HTTP/2 请求的前言。在 HTTP/2 中，要求两端都要发送一个连接前言，作为对所使用协议的最终确认，并确定 HTTP/2 连接的初始设置，客户端和服务端各自发送不同的连接前言。</p>
+<p>而上图中的 Magic 帧是客户端的前言之一，内容为 <code>PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n</code>，以确定启用 HTTP/2 连接。</p>
+<h4 id="settings">SETTINGS<a href="#settings" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wQPzT.jpg" alt="image"></p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wQ779.jpg" alt="image"></p>
+<p>SETTINGS 帧的主要作用是设置这一个连接的参数，作用域是整个连接而并非单一的流。</p>
+<p>而上图的 SETTINGS 帧都是空 SETTINGS 帧，图一是客户端连接的前言（Magic 和 SETTINGS 帧分别组成连接前言）。图二是服务端的。另外我们从图中可以看到多个 SETTINGS 帧，这是为什么呢？是因为发送完连接前言后，客户端和服务端还需要有一步互动确认的动作。对应的就是带有 ACK 标识 SETTINGS 帧。</p>
+<h4 id="headers">HEADERS<a href="#headers" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wN2tg.jpg" alt="image"></p>
+<p>HEADERS 帧的主要作用是存储和传播 HTTP 的标头信息。我们关注到 HEADERS 里有一些眼熟的信息，分别如下：</p>
+<ul>
+<li>method：POST</li>
+<li>scheme：http</li>
+<li>path：/proto.SearchService/Search</li>
+<li>authority：:10001</li>
+<li>content-type：application/grpc</li>
+<li>user-agent：grpc-go/1.20.0-dev</li>
+</ul>
+<p>你会发现这些东西非常眼熟，其实都是 gRPC 的基础属性，实际上远远不止这些，只是设置了多少展示多少。例如像平时常见的 <code>grpc-timeout</code>、<code>grpc-encoding</code> 也是在这里设置的。</p>
+<h4 id="data">DATA<a href="#data" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wNTBV.jpg" alt="image"></p>
+<p>DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，可以很明显看到我们的请求参数 gRPC 存储在里面。只需要了解到这一点就可以了。</p>
+<h4 id="headers-data-headers">HEADERS, DATA, HEADERS<a href="#headers-data-headers" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wNj39.jpg" alt="image"></p>
+<p>在上图中 HEADERS 帧比较简单，就是告诉我们 HTTP 响应状态和响应的内容格式。</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUl4g.jpg" alt="imgae"></p>
+<p>在上图中 DATA 帧主要承载了响应结果的数据集，图中的 gRPC Server 就是我们 RPC 方法的响应结果。</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUUbV.jpg" alt="image"></p>
+<p>在上图中 HEADERS 帧主要承载了 gRPC 状态 和 gRPC 状态消息，图中的 <code>grpc-status</code> 和 <code>grpc-message</code> 就是我们的 gRPC 调用状态的结果。</p>
+<h3 id="其它步骤">其它步骤<a href="#其它步骤" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<h4 id="window_update">WINDOW_UPDATE<a href="#window_update" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>主要作用是管理和流的窗口控制。通常情况下打开一个连接后，服务器和客户端会立即交换 SETTINGS 帧来确定流控制窗口的大小。默认情况下，该大小设置为约 65 KB，但可通过发出一个 WINDOW_UPDATE 帧为流控制设置不同的大小。</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUwUU.jpg" alt="image"></p>
+<h4 id="pingpong">PING/PONG<a href="#pingpong" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>主要作用是判断当前连接是否仍然可用，也常用于计算往返时间。其实也就是 PING/PONG，大家对此应该很熟。</p>
+<h3 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wU05F.png" alt="image"></p>
+<ul>
+<li>在建立连接之前，客户端/服务端都会发送<strong>连接前言</strong>（Magic+SETTINGS），确立协议和配置项。</li>
+<li>在传输数据时，是会涉及滑动窗口（WINDOW_UPDATE）等流控策略的。</li>
+<li>传播 gRPC 附加信息时，是基于 HEADERS 帧进行传播和设置；而具体的请求/响应数据是存储的 DATA 帧中的。</li>
+<li>请求/响应结果会分为 HTTP 和 gRPC 状态响应两种类型。</li>
+<li>客户端发起 PING，服务端就会回应 PONG，反之亦可。</li>
+</ul>
+<p>这块 gRPC 的基础使用，你可以看看我另外的 <a href="https://github.com/EDDYCJY/blog#grpc%E7%B3%BB%E5%88%97%E7%9B%AE%E5%BD%95">《gRPC 入门系列》</a>，相信对你一定有帮助。</p>
+<h2 id="浅谈理解">浅谈理解<a href="#浅谈理解" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="服务端">服务端<a href="#服务端" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUDC4.png" alt="image"></p>
+<p>为什么四行代码，就能够起一个 gRPC Server，内部做了什么逻辑。你有想过吗？接下来我们一步步剖析，看看里面到底是何方神圣。</p>
+<h3 id="一初始化">一、初始化<a href="#一初始化" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// grpc.NewServer()
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewServer</span><span class="p">(</span><span class="nx">opt</span> <span class="o">...</span><span class="nx">ServerOption</span><span class="p">)</span> <span class="o">*</span><span class="nx">Server</span> <span class="p">{</span>
+	<span class="nx">opts</span> <span class="o">:=</span> <span class="nx">defaultServerOptions</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">o</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">opt</span> <span class="p">{</span>
+		<span class="nf">o</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">opts</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">s</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Server</span><span class="p">{</span>
+		<span class="nx">lis</span><span class="p">:</span>    <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">net</span><span class="p">.</span><span class="nx">Listener</span><span class="p">]</span><span class="kt">bool</span><span class="p">),</span>
+		<span class="nx">opts</span><span class="p">:</span>   <span class="nx">opts</span><span class="p">,</span>
+		<span class="nx">conns</span><span class="p">:</span>  <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">io</span><span class="p">.</span><span class="nx">Closer</span><span class="p">]</span><span class="kt">bool</span><span class="p">),</span>
+		<span class="nx">m</span><span class="p">:</span>      <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">service</span><span class="p">),</span>
+		<span class="nx">quit</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+		<span class="nx">done</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+		<span class="nx">czData</span><span class="p">:</span> <span class="nb">new</span><span class="p">(</span><span class="nx">channelzData</span><span class="p">),</span>
+	<span class="p">}</span>
+	<span class="nx">s</span><span class="p">.</span><span class="nx">cv</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nf">NewCond</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">)</span>
+	<span class="o">...</span>
+
+	<span class="k">return</span> <span class="nx">s</span>
+<span class="p">}</span>
+</code></pre></div><p>这块比较简单，主要是实例 grpc.Server 并进行初始化动作。涉及如下：</p>
+<ul>
+<li>lis：监听地址列表。</li>
+<li>opts：服务选项，这块包含 Credentials、Interceptor 以及一些基础配置。</li>
+<li>conns：客户端连接句柄列表。</li>
+<li>m：服务信息映射。</li>
+<li>quit：退出信号。</li>
+<li>done：完成信号。</li>
+<li>czData：用于存储 ClientConn，addrConn 和 Server 的 channelz 相关数据。</li>
+<li>cv：当优雅退出时，会等待这个信号量，直到所有 RPC 请求都处理并断开才会继续处理。</li>
+</ul>
+<h3 id="二注册">二、注册<a href="#二注册" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">pb</span><span class="p">.</span><span class="nf">RegisterSearchServiceServer</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">SearchService</span><span class="p">{})</span>
+</code></pre></div><h4 id="步骤一service-api-interface">步骤一：Service API interface<a href="#步骤一service-api-interface" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// search.pb.go
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">SearchServiceServer</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">Search</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="o">*</span><span class="nx">SearchRequest</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SearchResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">RegisterSearchServiceServer</span><span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">Server</span><span class="p">,</span> <span class="nx">srv</span> <span class="nx">SearchServiceServer</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">s</span><span class="p">.</span><span class="nf">RegisterService</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">_SearchService_serviceDesc</span><span class="p">,</span> <span class="nx">srv</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>还记得我们平时编写的 Protobuf 吗？在生成出来的 <code>.pb.go</code> 文件中，会定义出 Service APIs interface 的具体实现约束。而我们在 gRPC Server 进行注册时，会传入应用 Service 的功能接口实现，此时生成的 <code>RegisterServer</code> 方法就会保证两者之间的一致性。</p>
+<h4 id="步骤二service-api-idl">步骤二：Service API IDL<a href="#步骤二service-api-idl" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>你想乱传糊弄一下？不可能的，请乖乖定义与 Protobuf 一致的接口方法。但是那个 <code>&amp;_SearchService_serviceDesc</code> 又有什么作用呢？代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// search.pb.go
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">_SearchService_serviceDesc</span> <span class="p">=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">ServiceDesc</span><span class="p">{</span>
+	<span class="nx">ServiceName</span><span class="p">:</span> <span class="s">&#34;proto.SearchService&#34;</span><span class="p">,</span>
+	<span class="nx">HandlerType</span><span class="p">:</span> <span class="p">(</span><span class="o">*</span><span class="nx">SearchServiceServer</span><span class="p">)(</span><span class="kc">nil</span><span class="p">),</span>
+	<span class="nx">Methods</span><span class="p">:</span> <span class="p">[]</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">MethodDesc</span><span class="p">{</span>
+		<span class="p">{</span>
+			<span class="nx">MethodName</span><span class="p">:</span> <span class="s">&#34;Search&#34;</span><span class="p">,</span>
+			<span class="nx">Handler</span><span class="p">:</span>    <span class="nx">_SearchService_Search_Handler</span><span class="p">,</span>
+		<span class="p">},</span>
+	<span class="p">},</span>
+	<span class="nx">Streams</span><span class="p">:</span>  <span class="p">[]</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">StreamDesc</span><span class="p">{},</span>
+	<span class="nx">Metadata</span><span class="p">:</span> <span class="s">&#34;search.proto&#34;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div><p>这看上去像服务的描述代码，用来向内部表述 “我” 都有什么。涉及如下:</p>
+<ul>
+<li>ServiceName：服务名称</li>
+<li>HandlerType：服务接口，用于检查用户提供的实现是否满足接口要求</li>
+<li>Methods：一元方法集，注意结构内的 <code>Handler</code> 方法，其对应最终的 RPC 处理方法，在执行 RPC 方法的阶段会使用。</li>
+<li>Streams：流式方法集</li>
+<li>Metadata：元数据，是一个描述数据属性的东西。在这里主要是描述 <code>SearchServiceServer</code> 服务</li>
+</ul>
+<h4 id="步骤三register-service">步骤三：Register Service<a href="#步骤三register-service" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Server</span><span class="p">)</span> <span class="nf">register</span><span class="p">(</span><span class="nx">sd</span> <span class="o">*</span><span class="nx">ServiceDesc</span><span class="p">,</span> <span class="nx">ss</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+    <span class="o">...</span>
+	<span class="nx">srv</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">service</span><span class="p">{</span>
+		<span class="nx">server</span><span class="p">:</span> <span class="nx">ss</span><span class="p">,</span>
+		<span class="nx">md</span><span class="p">:</span>     <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">MethodDesc</span><span class="p">),</span>
+		<span class="nx">sd</span><span class="p">:</span>     <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">StreamDesc</span><span class="p">),</span>
+		<span class="nx">mdata</span><span class="p">:</span>  <span class="nx">sd</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">sd</span><span class="p">.</span><span class="nx">Methods</span> <span class="p">{</span>
+		<span class="nx">d</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">sd</span><span class="p">.</span><span class="nx">Methods</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+		<span class="nx">srv</span><span class="p">.</span><span class="nx">md</span><span class="p">[</span><span class="nx">d</span><span class="p">.</span><span class="nx">MethodName</span><span class="p">]</span> <span class="p">=</span> <span class="nx">d</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">sd</span><span class="p">.</span><span class="nx">Streams</span> <span class="p">{</span>
+		<span class="o">...</span>
+	<span class="p">}</span>
+	<span class="nx">s</span><span class="p">.</span><span class="nx">m</span><span class="p">[</span><span class="nx">sd</span><span class="p">.</span><span class="nx">ServiceName</span><span class="p">]</span> <span class="p">=</span> <span class="nx">srv</span>
+<span class="p">}</span>
+</code></pre></div><p>在最后一步中，我们会将先前的服务接口信息、服务描述信息给注册到内部 <code>service</code> 去，以便于后续实际调用的使用。涉及如下：</p>
+<ul>
+<li>server：服务的接口信息</li>
+<li>md：一元服务的 RPC 方法集</li>
+<li>sd：流式服务的 RPC 方法集</li>
+<li>mdata：metadata，元数据</li>
+</ul>
+<h4 id="小结-1">小结<a href="#小结-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>在这一章节中，主要介绍的是 gRPC Server 在启动前的整理和注册行为，看上去很简单，但其实一切都是为了后续的实际运行的预先准备。因此我们整理一下思路，将其串联起来看看，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUgDx.png" alt="image"></p>
+<h3 id="三监听">三、监听<a href="#三监听" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>接下来到了整个流程中，最重要也是大家最关注的监听/处理阶段，核心代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Server</span><span class="p">)</span> <span class="nf">Serve</span><span class="p">(</span><span class="nx">lis</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Listener</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="o">...</span>
+	<span class="kd">var</span> <span class="nx">tempDelay</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="nx">rawConn</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">lis</span><span class="p">.</span><span class="nf">Accept</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">ne</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">err</span><span class="p">.(</span><span class="kd">interface</span> <span class="p">{</span>
+				<span class="nf">Temporary</span><span class="p">()</span> <span class="kt">bool</span>
+			<span class="p">});</span> <span class="nx">ok</span> <span class="o">&amp;&amp;</span> <span class="nx">ne</span><span class="p">.</span><span class="nf">Temporary</span><span class="p">()</span> <span class="p">{</span>
+				<span class="k">if</span> <span class="nx">tempDelay</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+					<span class="nx">tempDelay</span> <span class="p">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span>
+				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+					<span class="nx">tempDelay</span> <span class="o">*=</span> <span class="mi">2</span>
+				<span class="p">}</span>
+				<span class="k">if</span> <span class="nx">max</span> <span class="o">:=</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">;</span> <span class="nx">tempDelay</span> <span class="p">&gt;</span> <span class="nx">max</span> <span class="p">{</span>
+					<span class="nx">tempDelay</span> <span class="p">=</span> <span class="nx">max</span>
+				<span class="p">}</span>
+				<span class="o">...</span>
+				<span class="nx">timer</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTimer</span><span class="p">(</span><span class="nx">tempDelay</span><span class="p">)</span>
+				<span class="k">select</span> <span class="p">{</span>
+				<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">timer</span><span class="p">.</span><span class="nx">C</span><span class="p">:</span>
+				<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">s</span><span class="p">.</span><span class="nx">quit</span><span class="p">:</span>
+					<span class="nx">timer</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
+					<span class="k">return</span> <span class="kc">nil</span>
+				<span class="p">}</span>
+				<span class="k">continue</span>
+			<span class="p">}</span>
+			<span class="o">...</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="nx">tempDelay</span> <span class="p">=</span> <span class="mi">0</span>
+
+		<span class="nx">s</span><span class="p">.</span><span class="nx">serveWG</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+			<span class="nx">s</span><span class="p">.</span><span class="nf">handleRawConn</span><span class="p">(</span><span class="nx">rawConn</span><span class="p">)</span>
+			<span class="nx">s</span><span class="p">.</span><span class="nx">serveWG</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+		<span class="p">}()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>Serve 会根据外部传入的 Listener 不同而调用不同的监听模式，这也是 <code>net.Listener</code> 的魅力，灵活性和扩展性会比较高。而在 gRPC Server 中最常用的就是 <code>TCPConn</code>，基于 TCP Listener 去做。接下来我们一起看看具体的处理逻辑，如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUI8H.png" alt="image"></p>
+<ul>
+<li>循环处理连接，通过 <code>lis.Accept</code> 取出连接，如果队列中没有需处理的连接时，会形成阻塞等待。</li>
+<li>若 <code>lis.Accept</code> 失败，则触发休眠机制，若为第一次失败那么休眠 5ms，否则翻倍，再次失败则不断翻倍直至上限休眠时间 1s，而休眠完毕后就会尝试去取下一个 “它”。</li>
+<li>若 <code>lis.Accept</code> 成功，则重置休眠的时间计数和启动一个新的 goroutine 调用 <code>handleRawConn</code> 方法去执行/处理新的请求，也就是大家很喜欢说的 “每一个请求都是不同的 goroutine 在处理”。</li>
+<li>在循环过程中，包含了 “退出” 服务的场景，主要是硬关闭和优雅重启服务两种情况。</li>
+</ul>
+<h2 id="客户端">客户端<a href="#客户端" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUHKI.png" alt="image"></p>
+<h3 id="一创建拨号连接">一、创建拨号连接<a href="#一创建拨号连接" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// grpc.Dial(&#34;:&#34;+PORT, grpc.WithInsecure())
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">DialContext</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">target</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">DialOption</span><span class="p">)</span> <span class="p">(</span><span class="nx">conn</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">cc</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">ClientConn</span><span class="p">{</span>
+		<span class="nx">target</span><span class="p">:</span>            <span class="nx">target</span><span class="p">,</span>
+		<span class="nx">csMgr</span><span class="p">:</span>             <span class="o">&amp;</span><span class="nx">connectivityStateManager</span><span class="p">{},</span>
+		<span class="nx">conns</span><span class="p">:</span>             <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="o">*</span><span class="nx">addrConn</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}),</span>
+		<span class="nx">dopts</span><span class="p">:</span>             <span class="nf">defaultDialOptions</span><span class="p">(),</span>
+		<span class="nx">blockingpicker</span><span class="p">:</span>    <span class="nf">newPickerWrapper</span><span class="p">(),</span>
+		<span class="nx">czData</span><span class="p">:</span>            <span class="nb">new</span><span class="p">(</span><span class="nx">channelzData</span><span class="p">),</span>
+		<span class="nx">firstResolveEvent</span><span class="p">:</span> <span class="nx">grpcsync</span><span class="p">.</span><span class="nf">NewEvent</span><span class="p">(),</span>
+	<span class="p">}</span>
+	<span class="o">...</span>
+	<span class="nf">chainUnaryClientInterceptors</span><span class="p">(</span><span class="nx">cc</span><span class="p">)</span>
+	<span class="nf">chainStreamClientInterceptors</span><span class="p">(</span><span class="nx">cc</span><span class="p">)</span>
+
+	<span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div><p><code>grpc.Dial</code> 方法实际上是对于 <code>grpc.DialContext</code> 的封装，区别在于 <code>ctx</code> 是直接传入 <code>context.Background</code>。其主要功能是<strong>创建</strong>与给定目标的客户端连接，其承担了以下职责：</p>
+<ul>
+<li>初始化 ClientConn</li>
+<li>初始化（基于进程 LB）负载均衡配置</li>
+<li>初始化 channelz</li>
+<li>初始化重试规则和客户端一元/流式拦截器</li>
+<li>初始化协议栈上的基础信息</li>
+<li>相关 context 的超时控制</li>
+<li>初始化并解析地址信息</li>
+<li>创建与服务端之间的连接</li>
+</ul>
+<h4 id="连没连">连没连<a href="#连没连" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>之前听到有的人说调用 <code>grpc.Dial</code> 后客户端就已经与服务端建立起了连接，但这对不对呢？我们先鸟瞰全貌，看看正在跑的 goroutine。如下：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wUXa8.jpg" alt="image"></p>
+<p>我们可以有几个核心方法一直在等待/处理信号，通过分析底层源码可得知。涉及如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">ac</span> <span class="o">*</span><span class="nx">addrConn</span><span class="p">)</span> <span class="nf">connect</span><span class="p">()</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">ac</span> <span class="o">*</span><span class="nx">addrConn</span><span class="p">)</span> <span class="nf">resetTransport</span><span class="p">()</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">ac</span> <span class="o">*</span><span class="nx">addrConn</span><span class="p">)</span> <span class="nf">createTransport</span><span class="p">(</span><span class="nx">addr</span> <span class="nx">resolver</span><span class="p">.</span><span class="nx">Address</span><span class="p">,</span> <span class="nx">copts</span> <span class="nx">transport</span><span class="p">.</span><span class="nx">ConnectOptions</span><span class="p">,</span> <span class="nx">connectDeadline</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">)</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">ac</span> <span class="o">*</span><span class="nx">addrConn</span><span class="p">)</span> <span class="nf">getReadyTransport</span><span class="p">()</span>
+</code></pre></div><p>在这里主要分析 goroutine 提示的 <code>resetTransport</code> 方法，看看都做了啥。核心代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">ac</span> <span class="o">*</span><span class="nx">addrConn</span><span class="p">)</span> <span class="nf">resetTransport</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">ac</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">Shutdown</span> <span class="p">{</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="o">...</span>
+		<span class="nx">connectDeadline</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Add</span><span class="p">(</span><span class="nx">dialDuration</span><span class="p">)</span>
+		<span class="nx">ac</span><span class="p">.</span><span class="nf">updateConnectivityState</span><span class="p">(</span><span class="nx">connectivity</span><span class="p">.</span><span class="nx">Connecting</span><span class="p">)</span>
+		<span class="nx">newTr</span><span class="p">,</span> <span class="nx">addr</span><span class="p">,</span> <span class="nx">reconnect</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ac</span><span class="p">.</span><span class="nf">tryAllAddrs</span><span class="p">(</span><span class="nx">addrs</span><span class="p">,</span> <span class="nx">connectDeadline</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">ac</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">Shutdown</span> <span class="p">{</span>
+				<span class="k">return</span>
+			<span class="p">}</span>
+			<span class="nx">ac</span><span class="p">.</span><span class="nf">updateConnectivityState</span><span class="p">(</span><span class="nx">connectivity</span><span class="p">.</span><span class="nx">TransientFailure</span><span class="p">)</span>
+			<span class="nx">timer</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTimer</span><span class="p">(</span><span class="nx">backoffFor</span><span class="p">)</span>
+			<span class="k">select</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">timer</span><span class="p">.</span><span class="nx">C</span><span class="p">:</span>
+				<span class="o">...</span>
+			<span class="p">}</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nx">ac</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">Shutdown</span> <span class="p">{</span>
+			<span class="nx">newTr</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="o">...</span>
+		<span class="k">if</span> <span class="p">!</span><span class="nx">healthcheckManagingState</span> <span class="p">{</span>
+			<span class="nx">ac</span><span class="p">.</span><span class="nf">updateConnectivityState</span><span class="p">(</span><span class="nx">connectivity</span><span class="p">.</span><span class="nx">Ready</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="o">...</span>
+
+		<span class="k">if</span> <span class="nx">ac</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">Shutdown</span> <span class="p">{</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="nx">ac</span><span class="p">.</span><span class="nf">updateConnectivityState</span><span class="p">(</span><span class="nx">connectivity</span><span class="p">.</span><span class="nx">TransientFailure</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>在该方法中会不断地去尝试创建连接，若成功则结束。否则不断地根据 <code>Backoff</code> 算法的重试机制去尝试创建连接，直到成功为止。从结论上来讲，单纯调用 <code>DialContext</code> 是异步建立连接的，也就是并不是马上生效，处于 <code>Connecting</code> 状态，而正式下要到达 <code>Ready</code> 状态才可用。</p>
+<h4 id="真的连了吗">真的连了吗<a href="#真的连了吗" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wakZV.jpg" alt="image"></p>
+<p>在抓包工具上提示一个包都没有，那么这算真正连接了吗？我认为这是一个表述问题，我们应该尽可能的严谨。如果你真的想通过 <code>DialContext</code> 方法就打通与服务端的连接，则需要调用 <code>WithBlock</code> 方法，虽然会导致阻塞等待，但最终连接会到达 <code>Ready</code> 状态（握手成功）。如下图：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3waJiD.jpg" alt="image"></p>
+<h3 id="二实例化-service-api">二、实例化 Service API<a href="#二实例化-service-api" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SearchServiceClient</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">Search</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">in</span> <span class="o">*</span><span class="nx">SearchRequest</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">CallOption</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SearchResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">searchServiceClient</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">cc</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">ClientConn</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">NewSearchServiceClient</span><span class="p">(</span><span class="nx">cc</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">ClientConn</span><span class="p">)</span> <span class="nx">SearchServiceClient</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">searchServiceClient</span><span class="p">{</span><span class="nx">cc</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>这块就是实例 Service API interface，比较简单。</p>
+<h3 id="三调用">三、调用<a href="#三调用" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// search.pb.go
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">searchServiceClient</span><span class="p">)</span> <span class="nf">Search</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">in</span> <span class="o">*</span><span class="nx">SearchRequest</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">CallOption</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">SearchResponse</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">out</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">SearchResponse</span><span class="p">)</span>
+	<span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">cc</span><span class="p">.</span><span class="nf">Invoke</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;/proto.SearchService/Search&#34;</span><span class="p">,</span> <span class="nx">in</span><span class="p">,</span> <span class="nx">out</span><span class="p">,</span> <span class="nx">opts</span><span class="o">...</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">out</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>proto 生成的 RPC 方法更像是一个包装盒，把需要的东西放进去，而实际上调用的还是 <code>grpc.invoke</code> 方法。如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">invoke</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">reply</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">cc</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">CallOption</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">cs</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">newClientStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">unaryStreamDesc</span><span class="p">,</span> <span class="nx">cc</span><span class="p">,</span> <span class="nx">method</span><span class="p">,</span> <span class="nx">opts</span><span class="o">...</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">cs</span><span class="p">.</span><span class="nf">SendMsg</span><span class="p">(</span><span class="nx">req</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">cs</span><span class="p">.</span><span class="nf">RecvMsg</span><span class="p">(</span><span class="nx">reply</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>通过概览，可以关注到三块调用。如下：</p>
+<ul>
+<li>newClientStream：获取传输层 Trasport 并组合封装到 ClientStream 中返回，在这块会涉及负载均衡、超时控制、 Encoding、 Stream 的动作，与服务端基本一致的行为。</li>
+<li>cs.SendMsg：发送 RPC 请求出去，但其并不承担等待响应的功能。</li>
+<li>cs.RecvMsg：阻塞等待接受到的 RPC 方法响应结果。</li>
+</ul>
+<h4 id="连接">连接<a href="#连接" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// clientconn.go
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">cc</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">)</span> <span class="nf">getTransport</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">failfast</span> <span class="kt">bool</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">transport</span><span class="p">.</span><span class="nx">ClientTransport</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">DoneInfo</span><span class="p">),</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">t</span><span class="p">,</span> <span class="nx">done</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">blockingpicker</span><span class="p">.</span><span class="nf">pick</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">failfast</span><span class="p">,</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">PickOptions</span><span class="p">{</span>
+		<span class="nx">FullMethodName</span><span class="p">:</span> <span class="nx">method</span><span class="p">,</span>
+	<span class="p">})</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nf">toRPCErr</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">done</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>在 <code>newClientStream</code> 方法中，我们通过 <code>getTransport</code> 方法获取了 Transport 层中抽象出来的 ClientTransport 和 ServerTransport，实际上就是获取一个连接给后续 RPC 调用传输使用。</p>
+<h3 id="四关闭连接">四、关闭连接<a href="#四关闭连接" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// conn.Close()
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">cc</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">)</span> <span class="nf">Close</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">cc</span><span class="p">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="o">...</span>
+	<span class="nx">cc</span><span class="p">.</span><span class="nx">csMgr</span><span class="p">.</span><span class="nf">updateState</span><span class="p">(</span><span class="nx">connectivity</span><span class="p">.</span><span class="nx">Shutdown</span><span class="p">)</span>
+    <span class="o">...</span>
+	<span class="nx">cc</span><span class="p">.</span><span class="nx">blockingpicker</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">rWrapper</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">rWrapper</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">bWrapper</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">bWrapper</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">ac</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">conns</span> <span class="p">{</span>
+		<span class="nx">ac</span><span class="p">.</span><span class="nf">tearDown</span><span class="p">(</span><span class="nx">ErrClientConnClosing</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">channelz</span><span class="p">.</span><span class="nf">IsOn</span><span class="p">()</span> <span class="p">{</span>
+		<span class="o">...</span>
+		<span class="nx">channelz</span><span class="p">.</span><span class="nf">AddTraceEvent</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">channelzID</span><span class="p">,</span> <span class="nx">ted</span><span class="p">)</span>
+		<span class="nx">channelz</span><span class="p">.</span><span class="nf">RemoveEntry</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">channelzID</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div><p>该方法会取消 ClientConn 上下文，同时关闭所有底层传输。涉及如下：</p>
+<ul>
+<li>Context Cancel</li>
+<li>清空并关闭客户端连接</li>
+<li>清空并关闭解析器连接</li>
+<li>清空并关闭负载均衡连接</li>
+<li>添加跟踪引用</li>
+<li>移除当前通道信息</li>
+</ul>
+<h2 id="qa">Q&amp;A<a href="#qa" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="1-grpc-metadata-是通过什么传输">1. gRPC Metadata 是通过什么传输？<a href="#1-grpc-metadata-是通过什么传输" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3waaQA.jpg" alt="image"></p>
+<h3 id="2-调用-grpcdial-会真正的去连接服务端吗">2. 调用 grpc.Dial 会真正的去连接服务端吗？<a href="#2-调用-grpcdial-会真正的去连接服务端吗" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>会，但是是异步连接的，连接状态为正在连接。但如果你设置了 <code>grpc.WithBlock</code> 选项，就会阻塞等待（等待握手成功）。另外你需要注意，当未设置 <code>grpc.WithBlock</code> 时，ctx 超时控制对其无任何效果。</p>
+<h3 id="3-调用-clientconn-不-close-会导致泄露吗">3. 调用 ClientConn 不 Close 会导致泄露吗？<a href="#3-调用-clientconn-不-close-会导致泄露吗" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>会，除非你的客户端不是常驻进程，那么在应用结束时会被动地回收资源。但如果是常驻进程，你又真的忘记执行 <code>Close</code> 语句，会造成的泄露。如下图：</p>
+<p><strong>3.1. 客户端</strong></p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wawLt.jpg" alt="image"></p>
+<p><strong>3.2. 服务端</strong></p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wa6Jg.png" alt="image"></p>
+<p><strong>3.3. TCP</strong></p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3waWyn.jpg" alt="image"></p>
+<h3 id="4-不控制超时调用的话会出现什么问题">4. 不控制超时调用的话，会出现什么问题？<a href="#4-不控制超时调用的话会出现什么问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>短时间内不会出现问题，但是会不断积蓄泄露，积蓄到最后当然就是服务无法提供响应了。如下图：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wafLq.jpg" alt="image"></p>
+<h3 id="5-为什么默认的拦截器不可以传多个">5. 为什么默认的拦截器不可以传多个？<a href="#5-为什么默认的拦截器不可以传多个" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">chainUnaryClientInterceptors</span><span class="p">(</span><span class="nx">cc</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">interceptors</span> <span class="o">:=</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">dopts</span><span class="p">.</span><span class="nx">chainUnaryInts</span>
+	<span class="k">if</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">dopts</span><span class="p">.</span><span class="nx">unaryInt</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">interceptors</span> <span class="p">=</span> <span class="nb">append</span><span class="p">([]</span><span class="nx">UnaryClientInterceptor</span><span class="p">{</span><span class="nx">cc</span><span class="p">.</span><span class="nx">dopts</span><span class="p">.</span><span class="nx">unaryInt</span><span class="p">},</span> <span class="nx">interceptors</span><span class="o">...</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="kd">var</span> <span class="nx">chainedInt</span> <span class="nx">UnaryClientInterceptor</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">interceptors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">chainedInt</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">interceptors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+		<span class="nx">chainedInt</span> <span class="p">=</span> <span class="nx">interceptors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">chainedInt</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">reply</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">cc</span> <span class="o">*</span><span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">invoker</span> <span class="nx">UnaryInvoker</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">CallOption</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">interceptors</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">method</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">reply</span><span class="p">,</span> <span class="nx">cc</span><span class="p">,</span> <span class="nf">getChainUnaryInvoker</span><span class="p">(</span><span class="nx">interceptors</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">invoker</span><span class="p">),</span> <span class="nx">opts</span><span class="o">...</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="nx">cc</span><span class="p">.</span><span class="nx">dopts</span><span class="p">.</span><span class="nx">unaryInt</span> <span class="p">=</span> <span class="nx">chainedInt</span>
+<span class="p">}</span>
+</code></pre></div><p>当存在多个拦截器时，取的就是第一个拦截器。因此结论是允许传多个，但并没有用。</p>
+<h3 id="6-真的需要用到多个拦截器的话怎么办">6. 真的需要用到多个拦截器的话，怎么办？<a href="#6-真的需要用到多个拦截器的话怎么办" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>可以使用 <a href="https://github.com/grpc-ecosystem/go-grpc-middleware">go-grpc-middleware</a> 提供的 <code>grpc.UnaryInterceptor</code> 和 <code>grpc.StreamInterceptor</code> 链式方法，方便快捷省心。</p>
+<p>单单会用还不行，我们再深剖一下，看看它是怎么实现的。核心代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">ChainUnaryClient</span><span class="p">(</span><span class="nx">interceptors</span> <span class="o">...</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryClientInterceptor</span><span class="p">)</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryClientInterceptor</span> <span class="p">{</span>
+	<span class="nx">n</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">interceptors</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">n</span> <span class="p">&gt;</span> <span class="mi">1</span> <span class="p">{</span>
+		<span class="nx">lastI</span> <span class="o">:=</span> <span class="nx">n</span> <span class="o">-</span> <span class="mi">1</span>
+		<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">reply</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">cc</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">invoker</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryInvoker</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">CallOption</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="kd">var</span> <span class="p">(</span>
+				<span class="nx">chainHandler</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryInvoker</span>
+				<span class="nx">curI</span>         <span class="kt">int</span>
+			<span class="p">)</span>
+
+			<span class="nx">chainHandler</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">currentCtx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">currentMethod</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">currentReq</span><span class="p">,</span> <span class="nx">currentRepl</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">currentConn</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">currentOpts</span> <span class="o">...</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">CallOption</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+				<span class="k">if</span> <span class="nx">curI</span> <span class="o">==</span> <span class="nx">lastI</span> <span class="p">{</span>
+					<span class="k">return</span> <span class="nf">invoker</span><span class="p">(</span><span class="nx">currentCtx</span><span class="p">,</span> <span class="nx">currentMethod</span><span class="p">,</span> <span class="nx">currentReq</span><span class="p">,</span> <span class="nx">currentRepl</span><span class="p">,</span> <span class="nx">currentConn</span><span class="p">,</span> <span class="nx">currentOpts</span><span class="o">...</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="nx">curI</span><span class="o">++</span>
+				<span class="nx">err</span> <span class="o">:=</span> <span class="nx">interceptors</span><span class="p">[</span><span class="nx">curI</span><span class="p">](</span><span class="nx">currentCtx</span><span class="p">,</span> <span class="nx">currentMethod</span><span class="p">,</span> <span class="nx">currentReq</span><span class="p">,</span> <span class="nx">currentRepl</span><span class="p">,</span> <span class="nx">currentConn</span><span class="p">,</span> <span class="nx">chainHandler</span><span class="p">,</span> <span class="nx">currentOpts</span><span class="o">...</span><span class="p">)</span>
+				<span class="nx">curI</span><span class="o">--</span>
+				<span class="k">return</span> <span class="nx">err</span>
+			<span class="p">}</span>
+
+			<span class="k">return</span> <span class="nx">interceptors</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">method</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">reply</span><span class="p">,</span> <span class="nx">cc</span><span class="p">,</span> <span class="nx">chainHandler</span><span class="p">,</span> <span class="nx">opts</span><span class="o">...</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div><p>当拦截器数量大于 1 时，从 <code>interceptors[1]</code> 开始递归，每一个递归的拦截器 <code>interceptors[i]</code> 会不断地执行，最后才真正的去执行 <code>handler</code> 方法。同时也经常有人会问拦截器的执行顺序是什么，通过这段代码你得出结论了吗？</p>
+<h3 id="7-频繁创建-clientconn-有什么问题">7. 频繁创建 ClientConn 有什么问题？<a href="#7-频繁创建-clientconn-有什么问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>这个问题我们可以反向验证一下，假设不公用 ClientConn 看看会怎么样？如下:</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">BenchmarkSearch</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">B</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">b</span><span class="p">.</span><span class="nx">N</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">conn</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">GetClientConn</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">b</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;GetClientConn err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nf">Search</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">conn</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">b</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;Search err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>    ... connection error: desc = &quot;transport: Error while dialing dial tcp :10001: socket: too many open files&quot;
+    ... connection error: desc = &quot;transport: Error while dialing dial tcp :10001: socket: too many open files&quot;
+    ... connection error: desc = &quot;transport: Error while dialing dial tcp :10001: socket: too many open files&quot;
+    ... connection error: desc = &quot;transport: Error while dialing dial tcp :10001: socket: too many open files&quot;
+FAIL
+exit status 1
+</code></pre><p>当你的应用场景是存在高频次同时生成/调用 ClientConn 时，可能会导致系统的文件句柄占用过多。这种情况下你可以变更应用程序生成/调用 ClientConn 的模式，又或是池化它，这块可以参考 <a href="github.com/processout/grpc-go-pool">grpc-go-pool</a> 项目。</p>
+<h3 id="8-客户端请求失败后会默认重试吗">8. 客户端请求失败后会默认重试吗？<a href="#8-客户端请求失败后会默认重试吗" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>会不断地进行重试，直到上下文取消。而重试时间方面采用 backoff 算法作为的重连机制，默认的最大重试时间间隔是 120s。</p>
+<h3 id="9-为什么要用-http2-作为传输协议">9. 为什么要用 HTTP/2 作为传输协议？<a href="#9-为什么要用-http2-作为传输协议" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>许多客户端要通过 HTTP 代理来访问网络，gRPC 全部用 HTTP/2 实现，等到代理开始支持 HTTP/2 就能透明转发 gRPC 的数据。不光如此，负责负载均衡、访问控制等等的反向代理都能无缝兼容 gRPC，比起自己设计 wire protocol 的 Thrift，这样做科学不少。@ctiller @滕亦飞</p>
+<h3 id="10-在-kubernetes-中-grpc-负载均衡有问题">10. 在 Kubernetes 中 gRPC 负载均衡有问题？<a href="#10-在-kubernetes-中-grpc-负载均衡有问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>gRPC 的 RPC 协议是基于 HTTP/2 标准实现的，HTTP/2 的一大特性就是不需要像 HTTP/1.1 一样，每次发出请求都要重新建立一个新连接，而是会复用原有的连接。</p>
+<p>所以这将导致 kube-proxy 只有在连接建立时才会做负载均衡，而在这之后的每一次 RPC 请求都会利用原本的连接，那么实际上后续的每一次的 RPC 请求都跑到了同一个地方。</p>
+<p>注：使用 k8s service 做负载均衡的情况下</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>gRPC 基于 HTTP/2 + Protobuf。</li>
+<li>gRPC 有四种调用方式，分别是一元、服务端/客户端流式、双向流式。</li>
+<li>gRPC 的附加信息都会体现在 HEADERS 帧，数据在 DATA 帧上。</li>
+<li>Client 请求若使用 grpc.Dial 默认是异步建立连接，当时状态为 Connecting。</li>
+<li>Client 请求若需要同步则调用 WithBlock()，完成状态为 Ready。</li>
+<li>Server 监听是循环等待连接，若没有则休眠，最大休眠时间 1s；若接收到新请求则起一个新的 goroutine 去处理。</li>
+<li>grpc.ClientConn 不关闭连接，会导致 goroutine 和 Memory 等泄露。</li>
+<li>任何内/外调用如果不加超时控制，会出现泄漏和客户端不断重试。</li>
+<li>特定场景下，如果不对 grpc.ClientConn 加以调控，会影响调用。</li>
+<li>拦截器如果不用 go-grpc-middleware 链式处理，会覆盖。</li>
+<li>在选择 gRPC 的负载均衡模式时，需要谨慎。</li>
+</ul>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="http://doc.oschina.net/grpc">http://doc.oschina.net/grpc</a></li>
+<li><a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md</a></li>
+<li><a href="https://juejin.im/post/5b88a4f56fb9a01a0b31a67e">https://juejin.im/post/5b88a4f56fb9a01a0b31a67e</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/web/wa-http2-under-the-hood/index.html">https://www.ibm.com/developerworks/cn/web/wa-http2-under-the-hood/index.html</a></li>
+<li><a href="https://github.com/grpc/grpc-go/issues/1953">https://github.com/grpc/grpc-go/issues/1953</a></li>
+<li><a href="https://www.zhihu.com/question/52670041">https://www.zhihu.com/question/52670041</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>1760 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-06-29 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#简述">简述</a></li>
+    <li><a href="#调用模型">调用模型</a></li>
+    <li><a href="#调用方式">调用方式</a>
+      <ul>
+        <li><a href="#一unary-rpc一元-rpc">一、Unary RPC：一元 RPC</a></li>
+        <li><a href="#二server-side-streaming-rpc服务端流式-rpc">二、Server-side streaming RPC：服务端流式 RPC</a></li>
+        <li><a href="#三client-side-streaming-rpc客户端流式-rpc">三、Client-side streaming RPC：客户端流式 RPC</a></li>
+        <li><a href="#四bidirectional-streaming-rpc双向流式-rpc">四、Bidirectional streaming RPC：双向流式 RPC</a></li>
+      </ul>
+    </li>
+    <li><a href="#客户端与服务端是如何交互的">客户端与服务端是如何交互的</a>
+      <ul>
+        <li><a href="#行为分析">行为分析</a></li>
+        <li><a href="#其它步骤">其它步骤</a></li>
+        <li><a href="#小结">小结</a></li>
+      </ul>
+    </li>
+    <li><a href="#浅谈理解">浅谈理解</a>
+      <ul>
+        <li><a href="#服务端">服务端</a></li>
+        <li><a href="#一初始化">一、初始化</a></li>
+        <li><a href="#二注册">二、注册</a></li>
+        <li><a href="#三监听">三、监听</a></li>
+      </ul>
+    </li>
+    <li><a href="#客户端">客户端</a>
+      <ul>
+        <li><a href="#一创建拨号连接">一、创建拨号连接</a></li>
+        <li><a href="#二实例化-service-api">二、实例化 Service API</a></li>
+        <li><a href="#三调用">三、调用</a></li>
+        <li><a href="#四关闭连接">四、关闭连接</a></li>
+      </ul>
+    </li>
+    <li><a href="#qa">Q&amp;A</a>
+      <ul>
+        <li><a href="#1-grpc-metadata-是通过什么传输">1. gRPC Metadata 是通过什么传输？</a></li>
+        <li><a href="#2-调用-grpcdial-会真正的去连接服务端吗">2. 调用 grpc.Dial 会真正的去连接服务端吗？</a></li>
+        <li><a href="#3-调用-clientconn-不-close-会导致泄露吗">3. 调用 ClientConn 不 Close 会导致泄露吗？</a></li>
+        <li><a href="#4-不控制超时调用的话会出现什么问题">4. 不控制超时调用的话，会出现什么问题？</a></li>
+        <li><a href="#5-为什么默认的拦截器不可以传多个">5. 为什么默认的拦截器不可以传多个？</a></li>
+        <li><a href="#6-真的需要用到多个拦截器的话怎么办">6. 真的需要用到多个拦截器的话，怎么办？</a></li>
+        <li><a href="#7-频繁创建-clientconn-有什么问题">7. 频繁创建 ClientConn 有什么问题？</a></li>
+        <li><a href="#8-客户端请求失败后会默认重试吗">8. 客户端请求失败后会默认重试吗？</a></li>
+        <li><a href="#9-为什么要用-http2-作为传输协议">9. 为什么要用 HTTP/2 作为传输协议？</a></li>
+        <li><a href="#10-在-kubernetes-中-grpc-负载均衡有问题">10. 在 Kubernetes 中 gRPC 负载均衡有问题？</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/tools/2019-07-12-go-tool-trace/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>Go 大杀器之跟踪剖析 trace</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/grpc-gateway/2019-06-22-grpc-gateway-tls/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载四」gRPC&#43;gRPC Gateway 能不能不用证书？</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

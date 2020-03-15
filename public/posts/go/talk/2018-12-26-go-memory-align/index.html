@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="在 Go 中恰到好处的内存对齐">
+<meta itemprop="description" content="问题 type Part1 struct { a bool b int32 c int8 d int64 e byte } 在开始之前，希望你计算一下 Part1 共占用的大小是多少呢？
+func main() { fmt.Printf(&#34;bool size: %d\n&#34;, unsafe.Sizeof(bool(true))) fmt.Printf(&#34;int32 size: %d\n&#34;, unsafe.Sizeof(int32(0))) fmt.Printf(&#34;int8 size: %d\n&#34;, unsafe.Sizeof(int8(0))) fmt.Printf(&#34;int64 size: %d\n&#34;, unsafe.Sizeof(int64(0))) fmt.Printf(&#34;byte size: %d\n&#34;, unsafe.Sizeof(byte(0))) fmt.Printf(&#34;string size: %d\n&#34;, unsafe.Sizeof(&#34;EDDYCJY&#34;)) } 输出结果：
+bool size: 1 int32 size: 4 int8 size: 1 int64 size: 8 byte size: 1 string size: 16 这么一算，Part1 这一个结构体的占用内存大小为 1&#43;4&#43;1&#43;8&#43;1 = 15 个字节。相信有的小伙伴是这么算的，看上去也没什么毛病">
+<meta itemprop="datePublished" content="2018-12-26T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-12-26T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="619">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="在 Go 中恰到好处的内存对齐" />
+<meta property="og:description" content="问题 type Part1 struct { a bool b int32 c int8 d int64 e byte } 在开始之前，希望你计算一下 Part1 共占用的大小是多少呢？
+func main() { fmt.Printf(&#34;bool size: %d\n&#34;, unsafe.Sizeof(bool(true))) fmt.Printf(&#34;int32 size: %d\n&#34;, unsafe.Sizeof(int32(0))) fmt.Printf(&#34;int8 size: %d\n&#34;, unsafe.Sizeof(int8(0))) fmt.Printf(&#34;int64 size: %d\n&#34;, unsafe.Sizeof(int64(0))) fmt.Printf(&#34;byte size: %d\n&#34;, unsafe.Sizeof(byte(0))) fmt.Printf(&#34;string size: %d\n&#34;, unsafe.Sizeof(&#34;EDDYCJY&#34;)) } 输出结果：
+bool size: 1 int32 size: 4 int8 size: 1 int64 size: 8 byte size: 1 string size: 16 这么一算，Part1 这一个结构体的占用内存大小为 1&#43;4&#43;1&#43;8&#43;1 = 15 个字节。相信有的小伙伴是这么算的，看上去也没什么毛病" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2018-12-26-go-memory-align/" />
+<meta property="article:published_time" content="2018-12-26T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-12-26T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="在 Go 中恰到好处的内存对齐"/>
+<meta name="twitter:description" content="问题 type Part1 struct { a bool b int32 c int8 d int64 e byte } 在开始之前，希望你计算一下 Part1 共占用的大小是多少呢？
+func main() { fmt.Printf(&#34;bool size: %d\n&#34;, unsafe.Sizeof(bool(true))) fmt.Printf(&#34;int32 size: %d\n&#34;, unsafe.Sizeof(int32(0))) fmt.Printf(&#34;int8 size: %d\n&#34;, unsafe.Sizeof(int8(0))) fmt.Printf(&#34;int64 size: %d\n&#34;, unsafe.Sizeof(int64(0))) fmt.Printf(&#34;byte size: %d\n&#34;, unsafe.Sizeof(byte(0))) fmt.Printf(&#34;string size: %d\n&#34;, unsafe.Sizeof(&#34;EDDYCJY&#34;)) } 输出结果：
+bool size: 1 int32 size: 4 int8 size: 1 int64 size: 8 byte size: 1 string size: 16 这么一算，Part1 这一个结构体的占用内存大小为 1&#43;4&#43;1&#43;8&#43;1 = 15 个字节。相信有的小伙伴是这么算的，看上去也没什么毛病"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>在 Go 中恰到好处的内存对齐</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Dec 26, 2018</span></div>
+				<h1>在 Go 中恰到好处的内存对齐</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/27/3wuT0A.png" alt="image"></p>
+<h2 id="问题">问题<a href="#问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Part1</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">a</span> <span class="kt">bool</span>
+	<span class="nx">b</span> <span class="kt">int32</span>
+	<span class="nx">c</span> <span class="kt">int8</span>
+	<span class="nx">d</span> <span class="kt">int64</span>
+	<span class="nx">e</span> <span class="kt">byte</span>
+<span class="p">}</span>
+</code></pre></div><p>在开始之前，希望你计算一下 <code>Part1</code> 共占用的大小是多少呢？</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;bool size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="kc">true</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int32 size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nb">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int8 size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nb">int8</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int64 size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nb">int64</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;byte size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nb">byte</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;string size: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="s">&#34;EDDYCJY&#34;</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>bool size: 1
+int32 size: 4
+int8 size: 1
+int64 size: 8
+byte size: 1
+string size: 16
+</code></pre><p>这么一算，<code>Part1</code> 这一个结构体的占用内存大小为 1+4+1+8+1 = 15 个字节。相信有的小伙伴是这么算的，看上去也没什么毛病</p>
+<p>真实情况是怎么样的呢？我们实际调用看看，如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Part1</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">a</span> <span class="kt">bool</span>
+	<span class="nx">b</span> <span class="kt">int32</span>
+	<span class="nx">c</span> <span class="kt">int8</span>
+	<span class="nx">d</span> <span class="kt">int64</span>
+	<span class="nx">e</span> <span class="kt">byte</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">part1</span> <span class="o">:=</span> <span class="nx">Part1</span><span class="p">{}</span>
+
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;part1 size: %d, align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nx">part1</span><span class="p">),</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nx">part1</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>part1 size: 32, align: 8
+</code></pre><p>最终输出为占用 32 个字节。这与前面所预期的结果完全不一样。这充分地说明了先前的计算方式是错误的。为什么呢？</p>
+<p>在这里要提到 “内存对齐” 这一概念，才能够用正确的姿势去计算，接下来我们详细的讲讲它是什么</p>
+<h2 id="内存对齐">内存对齐<a href="#内存对齐" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>有的小伙伴可能会认为内存读取，就是一个简单的字节数组摆放</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wuLff.png" alt="image"></p>
+<p>上图表示一个坑一个萝卜的内存读取方式。但实际上 CPU 并不会以一个一个字节去读取和写入内存。相反 CPU 读取内存是<strong>一块一块读取</strong>的，块的大小可以为 2、4、6、8、16 字节等大小。块大小我们称其为<strong>内存访问粒度</strong>。如下图：</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wKSmj.png" alt="image"></p>
+<p>在样例中，假设访问粒度为 4。 CPU 是以每 4 个字节大小的访问粒度去读取和写入内存的。这才是正确的姿势</p>
+<h3 id="为什么要关心对齐">为什么要关心对齐<a href="#为什么要关心对齐" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>你正在编写的代码在性能（CPU、Memory）方面有一定的要求</li>
+<li>你正在处理向量方面的指令</li>
+<li>某些硬件平台（ARM）体系不支持未对齐的内存访问</li>
+</ul>
+<p>另外作为一个工程师，你也很有必要学习这块知识点哦 :)</p>
+<h3 id="为什么要做对齐">为什么要做对齐<a href="#为什么要做对齐" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>平台（移植性）原因：不是所有的硬件平台都能够访问任意地址上的任意数据。例如：特定的硬件平台只允许在特定地址获取特定类型的数据，否则会导致异常情况</li>
+<li>性能原因：若访问未对齐的内存，将会导致 CPU 进行两次内存访问，并且要花费额外的时钟周期来处理对齐及运算。而本身就对齐的内存仅需要一次访问就可以完成读取动作</li>
+</ul>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wKApT.png" alt="image"></p>
+<p>在上图中，假设从 Index 1 开始读取，将会出现很崩溃的问题。因为它的内存访问边界是不对齐的。因此 CPU 会做一些额外的处理工作。如下：</p>
+<ol>
+<li>CPU <strong>首次</strong>读取未对齐地址的第一个内存块，读取 0-3 字节。并移除不需要的字节 0</li>
+<li>CPU <strong>再次</strong>读取未对齐地址的第二个内存块，读取 4-7 字节。并移除不需要的字节 5、6、7 字节</li>
+<li>合并 1-4 字节的数据</li>
+<li>合并后放入寄存器</li>
+</ol>
+<p>从上述流程可得出，不做 “内存对齐” 是一件有点 &ldquo;麻烦&rdquo; 的事。因为它会增加许多耗费时间的动作</p>
+<p>而假设做了内存对齐，从 Index 0 开始读取 4 个字节，只需要读取一次，也不需要额外的运算。这显然高效很多，是标准的<strong>空间换时间</strong>做法</p>
+<h3 id="默认系数">默认系数<a href="#默认系数" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在不同平台上的编译器都有自己默认的 “对齐系数”，可通过预编译命令 <code>#pragma pack(n)</code> 进行变更，n 就是代指 “对齐系数”。一般来讲，我们常用的平台的系数如下：</p>
+<ul>
+<li>32 位：4</li>
+<li>64 位：8</li>
+</ul>
+<p>另外要注意，不同硬件平台占用的大小和对齐值都可能是不一样的。因此本文的值不是唯一的，调试的时候需按本机的实际情况考虑</p>
+<h3 id="成员对齐">成员对齐<a href="#成员对齐" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;bool align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="kc">true</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int32 align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nb">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int8 align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nb">int8</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;int64 align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nb">int64</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;byte align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nb">byte</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;string align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="s">&#34;EDDYCJY&#34;</span><span class="p">))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;map align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{}))</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>bool align: 1
+int32 align: 4
+int8 align: 1
+int64 align: 8
+byte align: 1
+string align: 8
+map align: 8
+</code></pre><p>在 Go 中可以调用 <code>unsafe.Alignof</code> 来返回相应类型的对齐系数。通过观察输出结果，可得知基本都是 <code>2^n</code>，最大也不会超过 8。这是因为我手提（64 位）编译器默认对齐系数是 8，因此最大值不会超过这个数</p>
+<h3 id="整体对齐">整体对齐<a href="#整体对齐" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在上小节中，提到了结构体中的成员变量要做字节对齐。那么想当然身为最终结果的结构体，也是需要做字节对齐的</p>
+<h3 id="对齐规则">对齐规则<a href="#对齐规则" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>结构体的成员变量，第一个成员变量的偏移量为 0。往后的每个成员变量的对齐值必须为<strong>编译器默认对齐长度</strong>（<code>#pragma pack(n)</code>）或<strong>当前成员变量类型的长度</strong>（<code>unsafe.Sizeof</code>），取<strong>最小值作为当前类型的对齐值</strong>。其偏移量必须为对齐值的整数倍</li>
+<li>结构体本身，对齐值必须为<strong>编译器默认对齐长度</strong>（<code>#pragma pack(n)</code>）或<strong>结构体的所有成员变量类型中的最大长度</strong>，取<strong>最大数的最小整数倍</strong>作为对齐值</li>
+<li>结合以上两点，可得知若<strong>编译器默认对齐长度</strong>（<code>#pragma pack(n)</code>）超过结构体内成员变量的类型最大长度时，默认对齐长度是没有任何意义的</li>
+</ul>
+<h2 id="分析流程">分析流程<a href="#分析流程" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>接下来我们一起分析一下，“它” 到底经历了些什么，影响了 “预期” 结果</p>
+<table>
+<thead>
+<tr>
+<th>成员变量</th>
+<th>类型</th>
+<th>偏移量</th>
+<th>自身占用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>bool</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>字节对齐</td>
+<td>无</td>
+<td>1</td>
+<td>3</td>
+</tr>
+<tr>
+<td>b</td>
+<td>int32</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr>
+<td>c</td>
+<td>int8</td>
+<td>8</td>
+<td>1</td>
+</tr>
+<tr>
+<td>字节对齐</td>
+<td>无</td>
+<td>9</td>
+<td>7</td>
+</tr>
+<tr>
+<td>d</td>
+<td>int64</td>
+<td>16</td>
+<td>8</td>
+</tr>
+<tr>
+<td>e</td>
+<td>byte</td>
+<td>24</td>
+<td>1</td>
+</tr>
+<tr>
+<td>字节对齐</td>
+<td>无</td>
+<td>25</td>
+<td>7</td>
+</tr>
+<tr>
+<td>总占用大小</td>
+<td>-</td>
+<td>-</td>
+<td>32</td>
+</tr>
+</tbody>
+</table>
+<h3 id="成员对齐-1">成员对齐<a href="#成员对齐-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一个成员 a
+<ul>
+<li>类型为 bool</li>
+<li>大小/对齐值为 1 字节</li>
+<li>初始地址，偏移量为 0。占用了第 1 位</li>
+</ul>
+</li>
+<li>第二个成员 b
+<ul>
+<li>类型为 int32</li>
+<li>大小/对齐值为 4 字节</li>
+<li>根据规则 1，其偏移量必须为 4 的整数倍。确定偏移量为 4，因此 2-4 位为 Padding。而当前数值从第 5 位开始填充，到第 8 位。如下：axxx|bbbb</li>
+</ul>
+</li>
+<li>第三个成员 c
+<ul>
+<li>类型为 int8</li>
+<li>大小/对齐值为 1 字节</li>
+<li>根据规则 1，其偏移量必须为 1 的整数倍。当前偏移量为 8。不需要额外对齐，填充 1 个字节到第 9 位。如下：axxx|bbbb|c&hellip;</li>
+</ul>
+</li>
+<li>第四个成员 d
+<ul>
+<li>类型为 int64</li>
+<li>大小/对齐值为 8 字节</li>
+<li>根据规则 1，其偏移量必须为 8 的整数倍。确定偏移量为 16，因此 9-16 位为 Padding。而当前数值从第 17 位开始写入，到第 24 位。如下：axxx|bbbb|cxxx|xxxx|dddd|dddd</li>
+</ul>
+</li>
+<li>第五个成员 e
+<ul>
+<li>类型为 byte</li>
+<li>大小/对齐值为 1 字节</li>
+<li>根据规则 1，其偏移量必须为 1 的整数倍。当前偏移量为 24。不需要额外对齐，填充 1 个字节到第 25 位。如下：axxx|bbbb|cxxx|xxxx|dddd|dddd|e&hellip;</li>
+</ul>
+</li>
+</ul>
+<h3 id="整体对齐-1">整体对齐<a href="#整体对齐-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在每个成员变量进行对齐后，根据规则 2，整个结构体本身也要进行字节对齐，因为可发现它可能并不是 <code>2^n</code>，不是偶数倍。显然不符合对齐的规则</p>
+<p>根据规则 2，可得出对齐值为 8。现在的偏移量为 25，不是 8 的整倍数。因此确定偏移量为 32。对结构体进行对齐</p>
+<h3 id="结果">结果<a href="#结果" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Part1 内存布局：axxx|bbbb|cxxx|xxxx|dddd|dddd|exxx|xxxx</p>
+<h3 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>通过本节的分析，可得知先前的 “推算” 为什么错误？</p>
+<p>是因为实际内存管理并非 “一个萝卜一个坑” 的思想。而是一块一块。通过空间换时间（效率）的思想来完成这块读取、写入。另外也需要兼顾不同平台的内存操作情况</p>
+<h2 id="巧妙的结构体">巧妙的结构体<a href="#巧妙的结构体" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在上一小节，可得知根据成员变量的类型不同，其结构体的内存会产生对齐等动作。那假设字段顺序不同，会不会有什么变化呢？我们一起来试试吧 :-)</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Part1</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">a</span> <span class="kt">bool</span>
+	<span class="nx">b</span> <span class="kt">int32</span>
+	<span class="nx">c</span> <span class="kt">int8</span>
+	<span class="nx">d</span> <span class="kt">int64</span>
+	<span class="nx">e</span> <span class="kt">byte</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">Part2</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">e</span> <span class="kt">byte</span>
+	<span class="nx">c</span> <span class="kt">int8</span>
+	<span class="nx">a</span> <span class="kt">bool</span>
+	<span class="nx">b</span> <span class="kt">int32</span>
+	<span class="nx">d</span> <span class="kt">int64</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">part1</span> <span class="o">:=</span> <span class="nx">Part1</span><span class="p">{}</span>
+	<span class="nx">part2</span> <span class="o">:=</span> <span class="nx">Part2</span><span class="p">{}</span>
+
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;part1 size: %d, align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nx">part1</span><span class="p">),</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nx">part1</span><span class="p">))</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;part2 size: %d, align: %d\n&#34;</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nx">part2</span><span class="p">),</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Alignof</span><span class="p">(</span><span class="nx">part2</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>part1 size: 32, align: 8
+part2 size: 16, align: 8
+</code></pre><p>通过结果可以惊喜的发现，只是 “简单” 对成员变量的字段顺序进行改变，就改变了结构体占用大小</p>
+<p>接下来我们一起剖析一下 <code>Part2</code>，看看它的内部到底和上一位之间有什么区别，才导致了这样的结果？</p>
+<h3 id="分析流程-1">分析流程<a href="#分析流程-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>成员变量</th>
+<th>类型</th>
+<th>偏移量</th>
+<th>自身占用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>e</td>
+<td>byte</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>c</td>
+<td>int8</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a</td>
+<td>bool</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>字节对齐</td>
+<td>无</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b</td>
+<td>int32</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr>
+<td>d</td>
+<td>int64</td>
+<td>8</td>
+<td>8</td>
+</tr>
+<tr>
+<td>总占用大小</td>
+<td>-</td>
+<td>-</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+<h4 id="成员对齐-2">成员对齐<a href="#成员对齐-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<ul>
+<li>第一个成员 e
+<ul>
+<li>类型为 byte</li>
+<li>大小/对齐值为 1 字节</li>
+<li>初始地址，偏移量为 0。占用了第 1 位</li>
+</ul>
+</li>
+<li>第二个成员 c
+<ul>
+<li>类型为 int8</li>
+<li>大小/对齐值为 1 字节</li>
+<li>根据规则 1，其偏移量必须为 1 的整数倍。当前偏移量为 2。不需要额外对齐</li>
+</ul>
+</li>
+<li>第三个成员 a
+<ul>
+<li>类型为 bool</li>
+<li>大小/对齐值为 1 字节</li>
+<li>根据规则 1，其偏移量必须为 1 的整数倍。当前偏移量为 3。不需要额外对齐</li>
+</ul>
+</li>
+<li>第四个成员 b
+<ul>
+<li>类型为 int32</li>
+<li>大小/对齐值为 4 字节</li>
+<li>根据规则 1，其偏移量必须为 4 的整数倍。确定偏移量为 4，因此第 3 位为 Padding。而当前数值从第 4 位开始填充，到第 8 位。如下：ecax|bbbb</li>
+</ul>
+</li>
+<li>第五个成员 d
+<ul>
+<li>类型为 int64</li>
+<li>大小/对齐值为 8 字节</li>
+<li>根据规则 1，其偏移量必须为 8 的整数倍。当前偏移量为 8。不需要额外对齐，从 9-16 位填充 8 个字节。如下：ecax|bbbb|dddd|dddd</li>
+</ul>
+</li>
+</ul>
+<h4 id="整体对齐-2">整体对齐<a href="#整体对齐-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>符合规则 2，不需要额外对齐</p>
+<h4 id="结果-1">结果<a href="#结果-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>Part2 内存布局：ecax|bbbb|dddd|dddd</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>通过对比 <code>Part1</code> 和 <code>Part2</code> 的内存布局，你会发现两者有很大的不同。如下：</p>
+<ul>
+<li>
+<p>Part1：axxx|bbbb|cxxx|xxxx|dddd|dddd|exxx|xxxx</p>
+</li>
+<li>
+<p>Part2：ecax|bbbb|dddd|dddd</p>
+</li>
+</ul>
+<p>仔细一看，<code>Part1</code> 存在许多 Padding。显然它占据了不少空间，那么 Padding 是怎么出现的呢？</p>
+<p>通过本文的介绍，可得知是由于不同类型导致需要进行字节对齐，以此保证内存的访问边界</p>
+<p>那么也不难理解，为什么<strong>调整结构体内成员变量的字段顺序</strong>就能达到缩小结构体占用大小的疑问了，是因为巧妙地减少了 Padding 的存在。让它们更 “紧凑” 了。这一点对于加深 Go 的内存布局印象和大对象的优化非常有帮</p>
+<p>当然了，没什么特殊问题，你可以不关注这一块。但你要知道这块知识点 😄</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Data_structure_alignment">Data structure alignment</a></li>
+<li><a href="https://www.ibm.com/developerworks/library/pa-dalign/">Data alignment</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>619 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-12-26 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#问题">问题</a></li>
+    <li><a href="#内存对齐">内存对齐</a>
+      <ul>
+        <li><a href="#为什么要关心对齐">为什么要关心对齐</a></li>
+        <li><a href="#为什么要做对齐">为什么要做对齐</a></li>
+        <li><a href="#默认系数">默认系数</a></li>
+        <li><a href="#成员对齐">成员对齐</a></li>
+        <li><a href="#整体对齐">整体对齐</a></li>
+        <li><a href="#对齐规则">对齐规则</a></li>
+      </ul>
+    </li>
+    <li><a href="#分析流程">分析流程</a>
+      <ul>
+        <li><a href="#成员对齐-1">成员对齐</a></li>
+        <li><a href="#整体对齐-1">整体对齐</a></li>
+        <li><a href="#结果">结果</a></li>
+        <li><a href="#小结">小结</a></li>
+      </ul>
+    </li>
+    <li><a href="#巧妙的结构体">巧妙的结构体</a>
+      <ul>
+        <li><a href="#分析流程-1">分析流程</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/slice/2019-01-06-why-slice-max/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>Go Slice 最大容量大小是怎么来的</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/pkg/2018-12-15-unsafe/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>有点不安全却又一亮的 Go unsafe.Pointer</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

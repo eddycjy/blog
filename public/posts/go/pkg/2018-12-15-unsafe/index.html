@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="有点不安全却又一亮的 Go unsafe.Pointer">
+<meta itemprop="description" content="在上一篇文章《深入理解 Go Slice》中，大家会发现其底层数据结构使用了 unsafe.Pointer。因此想着再介绍一下其关联知识
+前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？
+首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它
+错误示例 func main(){ num := 5 numPointer := &amp;num flnum := (*float32)(numPointer) fmt.Println(flnum) } 输出结果：
+# command-line-arguments ...: cannot convert numPointer (type *int) to type *float32 在示例中，我们创建了一个 num 变量，值为 5，类型为 int。取了其对于的指针地址后，试图强制转换为 *float32，结果失败&hellip;
+unsafe 针对刚刚的 “错误示例”，我们可以采用今天的男主角 unsafe 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：
+ 围绕 Go 程序内存安全及类型的操作 很可能会是不可移植的 不受 Go 1 兼容性指南的保护  简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄
+Pointer 为了解决这个问题，需要用到 unsafe.Pointer。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）">
+<meta itemprop="datePublished" content="2018-12-15T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-12-15T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="233">
+
+
+
+<meta itemprop="keywords" content="go,源码分析," /><meta property="og:title" content="有点不安全却又一亮的 Go unsafe.Pointer" />
+<meta property="og:description" content="在上一篇文章《深入理解 Go Slice》中，大家会发现其底层数据结构使用了 unsafe.Pointer。因此想着再介绍一下其关联知识
+前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？
+首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它
+错误示例 func main(){ num := 5 numPointer := &amp;num flnum := (*float32)(numPointer) fmt.Println(flnum) } 输出结果：
+# command-line-arguments ...: cannot convert numPointer (type *int) to type *float32 在示例中，我们创建了一个 num 变量，值为 5，类型为 int。取了其对于的指针地址后，试图强制转换为 *float32，结果失败&hellip;
+unsafe 针对刚刚的 “错误示例”，我们可以采用今天的男主角 unsafe 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：
+ 围绕 Go 程序内存安全及类型的操作 很可能会是不可移植的 不受 Go 1 兼容性指南的保护  简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄
+Pointer 为了解决这个问题，需要用到 unsafe.Pointer。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/pkg/2018-12-15-unsafe/" />
+<meta property="article:published_time" content="2018-12-15T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-12-15T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="有点不安全却又一亮的 Go unsafe.Pointer"/>
+<meta name="twitter:description" content="在上一篇文章《深入理解 Go Slice》中，大家会发现其底层数据结构使用了 unsafe.Pointer。因此想着再介绍一下其关联知识
+前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？
+首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它
+错误示例 func main(){ num := 5 numPointer := &amp;num flnum := (*float32)(numPointer) fmt.Println(flnum) } 输出结果：
+# command-line-arguments ...: cannot convert numPointer (type *int) to type *float32 在示例中，我们创建了一个 num 变量，值为 5，类型为 int。取了其对于的指针地址后，试图强制转换为 *float32，结果失败&hellip;
+unsafe 针对刚刚的 “错误示例”，我们可以采用今天的男主角 unsafe 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：
+ 围绕 Go 程序内存安全及类型的操作 很可能会是不可移植的 不受 Go 1 兼容性指南的保护  简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄
+Pointer 为了解决这个问题，需要用到 unsafe.Pointer。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>有点不安全却又一亮的 Go unsafe.Pointer</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Dec 15, 2018</span></div>
+				<h1>有点不安全却又一亮的 Go unsafe.Pointer</h1>
+			</header>
+			<div class="content">
+				<p>在上一篇文章《深入理解 Go Slice》中，大家会发现其底层数据结构使用了 <code>unsafe.Pointer</code>。因此想着再介绍一下其关联知识</p>
+<h2 id="前言">前言<a href="#前言" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？</p>
+<p>首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它</p>
+<h2 id="错误示例">错误示例<a href="#错误示例" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<pre><code>func main(){
+	num := 5
+	numPointer := &amp;num
+
+	flnum := (*float32)(numPointer)
+	fmt.Println(flnum)
+}
+</code></pre><p>输出结果：</p>
+<pre><code># command-line-arguments
+...: cannot convert numPointer (type *int) to type *float32
+</code></pre><p>在示例中，我们创建了一个 <code>num</code> 变量，值为 5，类型为 <code>int</code>。取了其对于的指针地址后，试图强制转换为 <code>*float32</code>，结果失败&hellip;</p>
+<h2 id="unsafe">unsafe<a href="#unsafe" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>针对刚刚的 “错误示例”，我们可以采用今天的男主角 <code>unsafe</code> 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：</p>
+<ul>
+<li>围绕 Go 程序内存安全及类型的操作</li>
+<li>很可能会是不可移植的</li>
+<li>不受 Go 1 兼容性指南的保护</li>
+</ul>
+<p>简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄</p>
+<h3 id="pointer">Pointer<a href="#pointer" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>为了解决这个问题，需要用到 <code>unsafe.Pointer</code>。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）</p>
+<p>其包含四种核心操作：</p>
+<ul>
+<li>任何类型的指针值都可以转换为 Pointer</li>
+<li>Pointer 可以转换为任何类型的指针值</li>
+<li>uintptr 可以转换为 Pointer</li>
+<li>Pointer 可以转换为 uintptr</li>
+</ul>
+<p>在这一部分，重点看第一点、第二点。你再想想怎么修改 “错误示例” 让它运行起来？</p>
+<pre><code>func main(){
+	num := 5
+	numPointer := &amp;num
+
+	flnum := (*float32)(unsafe.Pointer(numPointer))
+	fmt.Println(flnum)
+}
+</code></pre><p>输出结果：</p>
+<pre><code>0xc4200140b0
+</code></pre><p>在上述代码中，我们小加改动。通过 <code>unsafe.Pointer</code> 的特性对该指针变量进行了修改，就可以完成任意类型（*T）的指针转换</p>
+<p>需要注意的是，这时还无法对变量进行操作或访问。因为不知道该指针地址指向的东西具体是什么类型。不知道是什么类型，又如何进行解析呢。无法解析也就自然无法对其变更了</p>
+<h3 id="offsetof">Offsetof<a href="#offsetof" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在上小节中，我们对普通的指针变量进行了修改。那么它是否能做更复杂一点的事呢？</p>
+<pre><code>type Num struct{
+	i string
+	j int64
+}
+
+func main(){
+	n := Num{i: &quot;EDDYCJY&quot;, j: 1}
+	nPointer := unsafe.Pointer(&amp;n)
+
+	niPointer := (*string)(unsafe.Pointer(nPointer))
+	*niPointer = &quot;煎鱼&quot;
+
+	njPointer := (*int64)(unsafe.Pointer(uintptr(nPointer) + unsafe.Offsetof(n.j)))
+	*njPointer = 2
+
+	fmt.Printf(&quot;n.i: %s, n.j: %d&quot;, n.i, n.j)
+}
+
+</code></pre><p>输出结果：</p>
+<pre><code>n.i: 煎鱼, n.j: 2
+</code></pre><p>在剖析这段代码做了什么事之前，我们需要了解结构体的一些基本概念：</p>
+<ul>
+<li>结构体的成员变量在内存存储上是一段连续的内存</li>
+<li>结构体的初始地址就是第一个成员变量的内存地址</li>
+<li>基于结构体的成员地址去计算偏移量。就能够得出其他成员变量的内存地址</li>
+</ul>
+<p>再回来看看上述代码，得出执行流程：</p>
+<ul>
+<li>
+<p>修改 <code>n.i</code> 值：<code>i</code> 为第一个成员变量。因此不需要进行偏移量计算，直接取出指针后转换为 <code>Pointer</code>，再强制转换为字符串类型的指针值即可</p>
+</li>
+<li>
+<p>修改 <code>n.j</code> 值：<code>j</code> 为第二个成员变量。需要进行偏移量计算，才可以对其内存地址进行修改。在进行了偏移运算后，当前地址已经指向第二个成员变量。接着重复转换赋值即可</p>
+</li>
+</ul>
+<p>需要注意的是，这里使用了如下方法（来完成偏移计算的目标）：</p>
+<p>1、uintptr：<code>uintptr</code> 是 Go 的内置类型。返回无符号整数，可存储一个完整的地址。后续常用于指针运算</p>
+<pre><code>type uintptr uintptr
+</code></pre><p>2、unsafe.Offsetof：返回成员变量 x 在结构体当中的偏移量。更具体的讲，就是返回结构体初始位置到 x 之间的字节数。需要注意的是入参 <code>ArbitraryType</code> 表示任意类型，并非定义的 <code>int</code>。它实际作用是一个占位符</p>
+<pre><code>func Offsetof(x ArbitraryType) uintptr
+</code></pre><p>在这一部分，其实就是巧用了 <code>Pointer</code> 的第三、第四点特性。这时候就已经可以对变量进行操作了 😄</p>
+<h3 id="错误示例-1">错误示例<a href="#错误示例-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>func main(){
+	n := Num{i: &quot;EDDYCJY&quot;, j: 1}
+	nPointer := unsafe.Pointer(&amp;n)
+    ...
+
+	ptr := uintptr(nPointer)
+	njPointer := (*int64)(unsafe.Pointer(ptr + unsafe.Offsetof(n.j)))
+	...
+}
+</code></pre><p>这里存在一个问题，<code>uintptr</code> 类型是不能存储在临时变量中的。因为从 GC 的角度来看，<code>uintptr</code> 类型的临时变量只是一个无符号整数，并不知道它是一个指针地址</p>
+<p>因此当满足一定条件后，<code>ptr</code> 这个临时变量是可能被垃圾回收掉的，那么接下来的内存操作，岂不成迷？</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>简洁回顾两个知识点。第一是 <code>unsafe.Pointer</code> 可以让你的变量在不同的指针类型转来转去，也就是表示为任意可寻址的指针类型。第二是 <code>uintptr</code> 常用于与 <code>unsafe.Pointer</code> 打配合，用于做指针运算，巧妙地很</p>
+<p>最后还是那句，没有特殊必要的话。是不建议使用 <code>unsafe</code> 标准库，它并不安全。虽然它常常能让你眼前一亮 👌</p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90">源码分析</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>233 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-12-15 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#错误示例">错误示例</a></li>
+    <li><a href="#unsafe">unsafe</a>
+      <ul>
+        <li><a href="#pointer">Pointer</a></li>
+        <li><a href="#offsetof">Offsetof</a></li>
+        <li><a href="#错误示例-1">错误示例</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/talk/2018-12-26-go-memory-align/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>在 Go 中恰到好处的内存对齐</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/slice/2018-12-11-slice/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>深入理解 Go Slice</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

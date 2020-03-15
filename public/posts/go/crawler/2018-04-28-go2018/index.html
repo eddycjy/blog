@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="了解一下Golang的市场行情">
+<meta itemprop="description" content="项目地址：https://github.com/go-crawler/lagou_jobs
+如果对你有所帮助，欢迎 Star，给文章来波赞，这样可以让更多的人看见 :)
+目标 在工作中 Golang 已是一份子，想让大家了解一下 Golang 的市场行情，也想让更多的人熟悉它。因此主要是展示数据分析的结果
+目标站点是 某招聘网站 的职位数据抓取和分析，爬取城市分别为 北京、上海、广州、深圳、杭州、成都，再得出一个结论
+分析 首先需要进行页面分析，找到我们的抓取方向
+搜索 golang 关键字，打开页面 F12 就能看到它发送了四个请求，留意 positionAjax.json 这个请求
+我们仔细研判这个接口的入参和出参
+入参 1、Query String Param
+  city：请求的城市
+  needAddtionalResult：是否需要补充额外的参数，这里默认 false
+  2、Form Data
+ first：是否首页 pn：页码 kd：关键字  出参 就是它了，从返回结果可得出许多有用的信息
+ companyFullName：公司全称 companyLabelList：公司标签 companyShortName：公司简称 companySize：公司规模 education：学历要求 financeStage：融资阶段  等等~
+分页 在上面两张图中，可以发现在 content 节点中包含 pageNo、pageSize 字段，content.positionResult 节点有 totalCount 字段，可以得知当前是第几页，每页显示多少条，当前的职位总条数
+需要注意一下，分页的计算是要向上取整的
+模拟浏览器头 User-Agent 可以用 fake-useragent 这个项目来随机生成 UA 头 😄">
+<meta itemprop="datePublished" content="2018-04-28T12:30:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-04-28T12:30:00&#43;00:00" />
+<meta itemprop="wordCount" content="308">
+
+
+
+<meta itemprop="keywords" content="go,数据分析," /><meta property="og:title" content="了解一下Golang的市场行情" />
+<meta property="og:description" content="项目地址：https://github.com/go-crawler/lagou_jobs
+如果对你有所帮助，欢迎 Star，给文章来波赞，这样可以让更多的人看见 :)
+目标 在工作中 Golang 已是一份子，想让大家了解一下 Golang 的市场行情，也想让更多的人熟悉它。因此主要是展示数据分析的结果
+目标站点是 某招聘网站 的职位数据抓取和分析，爬取城市分别为 北京、上海、广州、深圳、杭州、成都，再得出一个结论
+分析 首先需要进行页面分析，找到我们的抓取方向
+搜索 golang 关键字，打开页面 F12 就能看到它发送了四个请求，留意 positionAjax.json 这个请求
+我们仔细研判这个接口的入参和出参
+入参 1、Query String Param
+  city：请求的城市
+  needAddtionalResult：是否需要补充额外的参数，这里默认 false
+  2、Form Data
+ first：是否首页 pn：页码 kd：关键字  出参 就是它了，从返回结果可得出许多有用的信息
+ companyFullName：公司全称 companyLabelList：公司标签 companyShortName：公司简称 companySize：公司规模 education：学历要求 financeStage：融资阶段  等等~
+分页 在上面两张图中，可以发现在 content 节点中包含 pageNo、pageSize 字段，content.positionResult 节点有 totalCount 字段，可以得知当前是第几页，每页显示多少条，当前的职位总条数
+需要注意一下，分页的计算是要向上取整的
+模拟浏览器头 User-Agent 可以用 fake-useragent 这个项目来随机生成 UA 头 😄" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/crawler/2018-04-28-go2018/" />
+<meta property="article:published_time" content="2018-04-28T12:30:00+00:00" />
+<meta property="article:modified_time" content="2018-04-28T12:30:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="了解一下Golang的市场行情"/>
+<meta name="twitter:description" content="项目地址：https://github.com/go-crawler/lagou_jobs
+如果对你有所帮助，欢迎 Star，给文章来波赞，这样可以让更多的人看见 :)
+目标 在工作中 Golang 已是一份子，想让大家了解一下 Golang 的市场行情，也想让更多的人熟悉它。因此主要是展示数据分析的结果
+目标站点是 某招聘网站 的职位数据抓取和分析，爬取城市分别为 北京、上海、广州、深圳、杭州、成都，再得出一个结论
+分析 首先需要进行页面分析，找到我们的抓取方向
+搜索 golang 关键字，打开页面 F12 就能看到它发送了四个请求，留意 positionAjax.json 这个请求
+我们仔细研判这个接口的入参和出参
+入参 1、Query String Param
+  city：请求的城市
+  needAddtionalResult：是否需要补充额外的参数，这里默认 false
+  2、Form Data
+ first：是否首页 pn：页码 kd：关键字  出参 就是它了，从返回结果可得出许多有用的信息
+ companyFullName：公司全称 companyLabelList：公司标签 companyShortName：公司简称 companySize：公司规模 education：学历要求 financeStage：融资阶段  等等~
+分页 在上面两张图中，可以发现在 content 节点中包含 pageNo、pageSize 字段，content.positionResult 节点有 totalCount 字段，可以得知当前是第几页，每页显示多少条，当前的职位总条数
+需要注意一下，分页的计算是要向上取整的
+模拟浏览器头 User-Agent 可以用 fake-useragent 这个项目来随机生成 UA 头 😄"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>了解一下Golang的市场行情</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Apr 28, 2018</span></div>
+				<h1>了解一下Golang的市场行情</h1>
+			</header>
+			<div class="content">
+				<p>项目地址：https://github.com/go-crawler/lagou_jobs</p>
+<p>如果对你有所帮助，欢迎 Star，给文章来波赞，这样可以让更多的人看见  :)</p>
+<h2 id="目标">目标<a href="#目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在工作中 Golang 已是一份子，想让大家了解一下 Golang 的市场行情，也想让更多的人熟悉它。因此主要是展示数据分析的结果</p>
+<p>目标站点是 <a href="https://www.lagou.com/">某招聘网站</a> 的职位数据抓取和分析，爬取城市分别为 北京、上海、广州、深圳、杭州、成都，再得出一个结论</p>
+<h3 id="分析">分析<a href="#分析" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>首先需要进行页面分析，找到我们的抓取方向</p>
+<p><img src="https://i.loli.net/2018/04/26/5ae1e28a3412a.jpeg" alt="image"></p>
+<p>搜索 golang 关键字，打开页面 F12 就能看到它发送了四个请求，留意 positionAjax.json 这个请求</p>
+<p><img src="https://i.loli.net/2018/04/26/5ae1efe538791.jpeg" alt="image"></p>
+<p>我们仔细研判这个接口的入参和出参</p>
+<h3 id="入参">入参<a href="#入参" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、Query String Param</p>
+<ul>
+<li>
+<p>city：请求的城市</p>
+</li>
+<li>
+<p>needAddtionalResult：是否需要补充额外的参数，这里默认 false</p>
+</li>
+</ul>
+<p>2、Form Data</p>
+<ul>
+<li>first：是否首页</li>
+<li>pn：页码</li>
+<li>kd：关键字</li>
+</ul>
+<h3 id="出参">出参<a href="#出参" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://i.loli.net/2018/04/26/5ae1f4c9920a9.jpeg" alt="image"></p>
+<p>就是它了，从返回结果可得出许多有用的信息</p>
+<ul>
+<li>companyFullName：公司全称</li>
+<li>companyLabelList：公司标签</li>
+<li>companyShortName：公司简称</li>
+<li>companySize：公司规模</li>
+<li>education：学历要求</li>
+<li>financeStage：融资阶段</li>
+</ul>
+<p>等等~</p>
+<h3 id="分页">分页<a href="#分页" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在上面两张图中，可以发现在 content 节点中包含 pageNo、pageSize 字段，content.positionResult 节点有 totalCount 字段，可以得知当前是第几页，每页显示多少条，当前的职位总条数</p>
+<p>需要注意一下，分页的计算是要向上取整的</p>
+<h2 id="模拟浏览器头">模拟浏览器头<a href="#模拟浏览器头" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>User-Agent 可以用 <a href="https://github.com/EDDYCJY/fake-useragent">fake-useragent</a> 这个项目来随机生成 UA 头 😄</p>
+<h2 id="数据">数据<a href="#数据" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="一分布图">一、分布图<a href="#一分布图" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>不同工作、工种，自然也会遍布在不同的工作区域，我们先了解一下各个城市的 Golang 工程师都主要在哪个区上班，心里留个底</p>
+<h4 id="北京">北京<a href="#北京" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae291859667c.jpeg" alt="image"></p>
+<h4 id="上海">上海<a href="#上海" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae290856b774.jpeg" alt="image"></p>
+<h4 id="广州">广州<a href="#广州" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae28f1ab3e0c.jpeg" alt="image"></p>
+<h4 id="深圳">深圳<a href="#深圳" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae1fbebb1784.jpeg" alt="image"></p>
+<h4 id="杭州">杭州<a href="#杭州" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae29218c91dc.jpeg" alt="image"></p>
+<h4 id="成都">成都<a href="#成都" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://i.loli.net/2018/04/27/5ae295b1059ed.jpeg" alt="image"></p>
+<h3 id="二招聘与职位数量对比">二、招聘与职位数量对比<a href="#二招聘与职位数量对比" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://i.loli.net/2018/04/27/5ae296b750dd8.png" alt="image"></p>
+<p>通过分析图中的数据，我们可以得知各城市的招聘职位数量</p>
+<ul>
+<li>北京：348</li>
+<li>上海：145</li>
+<li>广州：37</li>
+<li>成都：49</li>
+<li>杭州：45</li>
+<li>深圳：108</li>
+</ul>
+<p>总共招聘的职位数量为 732 个，数量顺序分别为 北京 &gt; 上海 &gt; 深圳 &gt; 成都 &gt; 杭州 &gt; 广州</p>
+<p>还有另外一个关注点，就是招聘公司数量与职位的数量对比，可以看到 北京 招聘的职位数量为 348 个，而招聘的公司数量为 191 个，约为 1.82 的比例，也就是一家公司能提供两个 Golang 职位，它可能类别不同、（中级、中高级、高级）级别不同，具有一定可能性。而在广州，为 31 对比 37，虽然差额不大，但仍然存在这种现象</p>
+<p>可以得出结果，Golang 在市场上具有一定的伸缩空间，也就是具有上升空间，一家公司会将 Golang 应用在多个不同的应用场景，也就是方向不同，需要的级别人才也就不同了</p>
+<p>但是需要注意的是，Golang 的市场招聘人数目前份额还是较低，六个城市总数仅为 732 个，与其他大热语言相差有一定距离，需要谨慎</p>
+<p>同时，面试 Golang 的人与其他大热语言相比会少些，职位的争夺是否小点呢？</p>
+<h3 id="三招聘公司规模">三、招聘公司规模<a href="#三招聘公司规模" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://i.loli.net/2018/04/27/5ae2ab2babbd9.png" alt="image"></p>
+<p>通过查看招聘 Golang 工程师的公司规模，可以很直观的发现，微型公司使用 Golang 较少，其他类别的规模都有一定程度的应用，且差距不大。在 2000 人以上、50 - 150 人的公司规模中最受青睐</p>
+<p>为什么呢，我认为有以下可能</p>
+<ul>
+<li>大型公司结合场景，想通过 Golang 的特性来解决一些痛点问题</li>
+<li>在小型公司 Golang 这颗新星实施起来更便捷，有一定的应用场景</li>
+</ul>
+<p>你觉得呢，是不是应该有更多的选择它的原因？</p>
+<h3 id="四学历要求">四、学历要求<a href="#四学历要求" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dbTdP.png" alt="image"></p>
+<p>在招聘市场上，Golang 的招聘者更希望你是本科学历，大专和不限也有一定的份额，但市场份额相差较大</p>
+<p>硕士学历要求的为两个，可以得出，在市场上 Golang 招聘者们对高学历的需求并不高，或者并不强制高学历</p>
+<h3 id="五行业领域">五、行业领域<a href="#五行业领域" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqPiT.png" alt="image"></p>
+<p>在这里，重点关注 Golang 工程师的招聘公司都分别在什么行业领域，大头移动互联网是不容置疑的了，还可以惊喜的发现</p>
+<ul>
+<li>数据服务</li>
+<li>电子商务</li>
+<li>金融</li>
+<li>企业服务</li>
+<li>游戏</li>
+</ul>
+<p>Golang 在这几个方面都有所应用，说明了在市场上，Golang 的路子是比较广阔的，前景不错</p>
+<p>同时，如果可以涉及多个领域的内容，想必身为工程师的你，肯定很激动</p>
+<h3 id="六职位诱惑">六、职位诱惑<a href="#六职位诱惑" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqEQJ.png" alt="image"></p>
+<p>职位诱惑是投简历时必看的一点了，可以看到高频词条基本都是 IT 从业者关心的话题了，这里你懂的&hellip;</p>
+<p>重点，我看到了一个 “免费三餐” 的词条命中 7 次，分别来自北京的海淀区、东城区、朝阳区，上海的黄浦区的七家不同的公司，辛苦了</p>
+<h3 id="七行业职位标签">七、行业、职位标签<a href="#七行业职位标签" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqlWD.png" alt="image"></p>
+<p>在招聘 JD 中，描述和标签常用于给求职者了解这一职业的具体工作内容和其关联性</p>
+<p>在图中你可以看到 Golang 常常和什么内容搭上边，这点很有意义哦</p>
+<p>1、语言</p>
+<ul>
+<li>Java</li>
+<li>Python</li>
+<li>C/C++</li>
+<li>PHP</li>
+</ul>
+<p>在图中可以看出，Golang 与以上四种语言有一定关联性，而 Java 和 Python 分别第一、第二名，可以说明市场上对复合型人才的渴望度更高，也许你不懂也行，但你懂了就最好（加分项）。需要你自身有多语言的经验，也便于和其他人对接</p>
+<p>同时 Golang 目前存在许多内部转语言写的情况，所以这一点可以参考</p>
+<p>2、职称</p>
+<ul>
+<li>高级</li>
+<li>资深</li>
+<li>中级</li>
+</ul>
+<p>特意将职称放在第二位，可以发现在市场上 Golang 标签的需求是 高级 &gt; 资深 &gt; 中级，关联第一项 “语言关联” 不难得出这个结论，因为语言只是解决问题的工具，到了中级及以上的工程师都是懂多门语言的居多，再采取不同的方案去解决应用场景上的问题</p>
+<p>可得出结论，市场目前对 Golang 更期望是中高、高级、资深的人才，而中级的反而少一点点</p>
+<p>大家可以努力再往上冲击冲击</p>
+<p>3、组件</p>
+<ul>
+<li>Linux</li>
+<li>Redis</li>
+<li>Mysql</li>
+</ul>
+<p>4、行业</p>
+<ul>
+<li>云计算</li>
+<li>信息安全</li>
+<li>大数据</li>
+<li>金融</li>
+<li>软件开发</li>
+</ul>
+<h4 id="八薪资与工作年限">八、薪资与工作年限<a href="#八薪资与工作年限" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dq3Se.jpg" alt="image"></p>
+<p>1、1-3 年</p>
+<p>一个（成长）特殊的阶段，有个位数也有双位数的，大头可以到 15-30k，20-40k，而初级的也有 8-16k</p>
+<p>2、3-5 年</p>
+<p>厚积待发的阶段，薪酬范畴的跨度是较大，10-60k 的薪酬都有，这充分说明能力决定你的上下</p>
+<p>3、5-10 年</p>
+<p>核心，招聘网站上的招聘数量反而少，都会走内推或猎头，不需要特别介绍了</p>
+<h5 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>这一部分，相信是很多人关注的地方</p>
+<p>在有的文章中会看到，他们的薪资部分是以平均值来展示的。我就很纳闷，因为对平均值并不是很关心，<strong>重点是无法体现薪资幅度</strong>。因此这里我会尽可能的把数据展现给你们看</p>
+<p>（正文）从图表来看，Golang 当前的薪酬水平还是很不错的，市场能根据不同阶段（水平）的人给出一个好的价位</p>
+<p>（题外话）看完之后希望你能知道以下内容</p>
+<ul>
+<li>你当前工作年限的最高、最低薪资范畴</li>
+<li>你的下一阶段的薪资范畴</li>
+<li>为什么有的人高，有的人低</li>
+<li>在大头部队还是小头，为什么</li>
+<li>不要满足于平均值</li>
+</ul>
+<h3 id="九融资阶段">九、融资阶段<a href="#九融资阶段" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqteI.png" alt="image"></p>
+<p>选用 Golang 的公司大多数都较为稳定，有一部分比较刺激 :)</p>
+<h4 id="融资阶段与薪资范畴对比">融资阶段与薪资范畴对比<a href="#融资阶段与薪资范畴对比" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<h5 id="不需要融资">不需要融资<a href="#不需要融资" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqyOs.png" alt="image"></p>
+<h5 id="上市公司">上市公司<a href="#上市公司" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqWkV.png" alt="image"></p>
+<h5 id="a-轮">A 轮<a href="#a-轮" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqfYT.png" alt="image"></p>
+<h5 id="b-轮">B 轮<a href="#b-轮" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqTX9.png" alt="image"></p>
+<h5 id="c-轮">C 轮<a href="#c-轮" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqOk6.png" alt="image"></p>
+<h5 id="d-轮以上">D 轮以上<a href="#d-轮以上" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dqz1e.png" alt="image"></p>
+<h3 id="十附近的地铁">十、附近的地铁<a href="#十附近的地铁" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Golang 工程师都驻扎在什么地铁站附近呢</p>
+<p>经常在地铁上看到同行在看代码，来了解一下都分布在哪 :)</p>
+<h4 id="北京-1">北京<a href="#北京-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLCnA.png" alt="image"></p>
+<h4 id="上海-1">上海<a href="#上海-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLkAP.png" alt="image"></p>
+<h4 id="广州-1">广州<a href="#广州-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLAtf.png" alt="image"></p>
+<h4 id="深圳-1">深圳<a href="#深圳-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLZ9S.png" alt="image"></p>
+<h4 id="杭州-1">杭州<a href="#杭州-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLKns.png" alt="image"></p>
+<h4 id="成都-1">成都<a href="#成都-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dL3NV.png" alt="image"></p>
+<h2 id="结论">结论<a href="#结论" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如同官方所说 &ldquo;Go has been on an amazing journey over the last 8+ years&rdquo;，作为一门新生语言，一直在不断地发展，<strong>缺点肯定是有的，你要去识别它</strong></p>
+<h3 id="从数量来看">从数量来看<a href="#从数量来看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>单从这个招聘网站上来看，数量方面，与大热语言的招聘职位数量仍然有一定的差距，但 Golang 存在许多内部转语言开发的情况，当前展现出来的数据，<strong>招聘数量不多，但质量不错</strong></p>
+<h3 id="从分布图来看">从分布图来看<a href="#从分布图来看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>一线城市基本都有 Golang 的职位，虽然其他城市较少，但对于新语言来说是需要持续关注的过程，不能一刀切</p>
+<h3 id="从职称级别来看">从职称级别来看<a href="#从职称级别来看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Golang 中高、高级、资深仍然是占大头，给的薪资也基本符合市场行情</p>
+<h3 id="从方向来看">从方向来看<a href="#从方向来看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Golang 涉及的行业领域广泛，移动互联网、数据服务、电子商务、金融、企业服务、云计算等都是它的战场之一</p>
+<h3 id="从开源项目来看">从开源项目来看<a href="#从开源项目来看" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>docker、k8s、etcd、consul 都挺稳</p>
+<hr>
+<p>总的来说，Golang 处于一个发展的阶段，市场行情也还行、应用场景较广，不过招聘数量不多，你又怎么看呢？</p>
+<p>最后放上今天新发布的 Logo :)</p>
+<p><img src="https://s2.ax1x.com/2020/02/27/3dLY3F.jpg" alt="image"></p>
+<p>如果对你有所帮助，欢迎 Star，给文章点个赞，这样可以让更多的人看见这篇文章</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>项目地址：https://github.com/go-crawler/lagou_jobs</li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90">数据分析</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>308 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-04-28 20:30 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#目标">目标</a>
+      <ul>
+        <li><a href="#分析">分析</a></li>
+        <li><a href="#入参">入参</a></li>
+        <li><a href="#出参">出参</a></li>
+        <li><a href="#分页">分页</a></li>
+      </ul>
+    </li>
+    <li><a href="#模拟浏览器头">模拟浏览器头</a></li>
+    <li><a href="#数据">数据</a>
+      <ul>
+        <li><a href="#一分布图">一、分布图</a></li>
+        <li><a href="#二招聘与职位数量对比">二、招聘与职位数量对比</a></li>
+        <li><a href="#三招聘公司规模">三、招聘公司规模</a></li>
+        <li><a href="#四学历要求">四、学历要求</a></li>
+        <li><a href="#五行业领域">五、行业领域</a></li>
+        <li><a href="#六职位诱惑">六、职位诱惑</a></li>
+        <li><a href="#七行业职位标签">七、行业、职位标签</a></li>
+        <li><a href="#九融资阶段">九、融资阶段</a></li>
+        <li><a href="#十附近的地铁">十、附近的地铁</a></li>
+      </ul>
+    </li>
+    <li><a href="#结论">结论</a>
+      <ul>
+        <li><a href="#从数量来看">从数量来看</a></li>
+        <li><a href="#从分布图来看">从分布图来看</a></li>
+        <li><a href="#从职称级别来看">从职称级别来看</a></li>
+        <li><a href="#从方向来看">从方向来看</a></li>
+        <li><a href="#从开源项目来看">从开源项目来看</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/gin/2018-04-29-cron/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载十一」Cron定时任务</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/gin/2018-04-15-gorm-callback/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载十」定制 GORM Callbacks</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

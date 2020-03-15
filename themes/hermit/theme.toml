@@ -1,0 +1,18 @@
+name = "Hermit"
+license = "MIT"
+licenselink = "https://github.com/Track3/hermit/blob/master/LICENSE"
+description = "A minimal and fast hugo theme for bloggers."
+homepage = "https://github.com/Track3/hermit"
+tags = ["blog", "minimal", "dark", "responsive"]
+features = [
+  "single column",
+  "featured image",
+  "social icons",
+  "google analytics",
+  "disqus"
+]
+min_version = 0.43
+
+[author]
+  name = "Track3"
+  homepage = "https://www.xxxlbox.com"

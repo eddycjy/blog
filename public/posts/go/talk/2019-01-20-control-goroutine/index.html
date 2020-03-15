@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="来，控制一下 goroutine 的并发数量">
+<meta itemprop="description" content="问题 func main() { userCount := math.MaxInt64 for i := 0; i &lt; userCount; i&#43;&#43; { go func(i int) { // 做一些各种各样的业务逻辑处理 	fmt.Printf(&#34;go func: %d\n&#34;, i) time.Sleep(time.Second) }(i) } } 在这里，假设 userCount 是一个外部传入的参数（不可预测，有可能值非常大），有人会全部丢进去循环。想着全部都并发 goroutine 去同时做某一件事。觉得这样子会效率会更高，对不对！
+那么，你觉得这里有没有什么问题？
+噩梦般的开始 当然，在特定场景下，问题可大了。因为在本文被丢进去同时并发的可是一个极端值。我们可以一起观察下图的指标分析，看看情况有多 “崩溃”。下图是上述代码的表现：
+输出结果 ... go func: 5839 go func: 5840 go func: 5841 go func: 5842 go func: 5915 go func: 5524 go func: 5916 go func: 8209 go func: 8264 signal: killed 如果你自己执行过代码，在 “输出结果” 上你会遇到如下问题：">
+<meta itemprop="datePublished" content="2019-01-20T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-01-20T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="711">
+
+
+
+<meta itemprop="keywords" content="go," /><meta property="og:title" content="来，控制一下 goroutine 的并发数量" />
+<meta property="og:description" content="问题 func main() { userCount := math.MaxInt64 for i := 0; i &lt; userCount; i&#43;&#43; { go func(i int) { // 做一些各种各样的业务逻辑处理 	fmt.Printf(&#34;go func: %d\n&#34;, i) time.Sleep(time.Second) }(i) } } 在这里，假设 userCount 是一个外部传入的参数（不可预测，有可能值非常大），有人会全部丢进去循环。想着全部都并发 goroutine 去同时做某一件事。觉得这样子会效率会更高，对不对！
+那么，你觉得这里有没有什么问题？
+噩梦般的开始 当然，在特定场景下，问题可大了。因为在本文被丢进去同时并发的可是一个极端值。我们可以一起观察下图的指标分析，看看情况有多 “崩溃”。下图是上述代码的表现：
+输出结果 ... go func: 5839 go func: 5840 go func: 5841 go func: 5842 go func: 5915 go func: 5524 go func: 5916 go func: 8209 go func: 8264 signal: killed 如果你自己执行过代码，在 “输出结果” 上你会遇到如下问题：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/talk/2019-01-20-control-goroutine/" />
+<meta property="article:published_time" content="2019-01-20T12:00:00+00:00" />
+<meta property="article:modified_time" content="2019-01-20T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="来，控制一下 goroutine 的并发数量"/>
+<meta name="twitter:description" content="问题 func main() { userCount := math.MaxInt64 for i := 0; i &lt; userCount; i&#43;&#43; { go func(i int) { // 做一些各种各样的业务逻辑处理 	fmt.Printf(&#34;go func: %d\n&#34;, i) time.Sleep(time.Second) }(i) } } 在这里，假设 userCount 是一个外部传入的参数（不可预测，有可能值非常大），有人会全部丢进去循环。想着全部都并发 goroutine 去同时做某一件事。觉得这样子会效率会更高，对不对！
+那么，你觉得这里有没有什么问题？
+噩梦般的开始 当然，在特定场景下，问题可大了。因为在本文被丢进去同时并发的可是一个极端值。我们可以一起观察下图的指标分析，看看情况有多 “崩溃”。下图是上述代码的表现：
+输出结果 ... go func: 5839 go func: 5840 go func: 5841 go func: 5842 go func: 5915 go func: 5524 go func: 5916 go func: 8209 go func: 8264 signal: killed 如果你自己执行过代码，在 “输出结果” 上你会遇到如下问题："/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>来，控制一下 goroutine 的并发数量</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Jan 20, 2019</span></div>
+				<h1>来，控制一下 goroutine 的并发数量</h1>
+			</header>
+			<div class="content">
+				<p><img src="https://s2.ax1x.com/2020/02/27/3wnOsJ.jpg" alt="image"></p>
+<h2 id="问题">问题<a href="#问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="nx">math</span><span class="p">.</span><span class="nx">MaxInt64</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+		    <span class="c1">// 做一些各种各样的业务逻辑处理
+</span><span class="c1"></span>			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d\n&#34;</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+			<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+		<span class="p">}(</span><span class="nx">i</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p>在这里，假设 <code>userCount</code> 是一个外部传入的参数（不可预测，有可能值非常大），有人会全部丢进去循环。想着全部都并发 goroutine 去同时做某一件事。觉得这样子会效率会更高，对不对！</p>
+<p>那么，你觉得这里有没有什么问题？</p>
+<h2 id="噩梦般的开始">噩梦般的开始<a href="#噩梦般的开始" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>当然，在<strong>特定场景下</strong>，问题可大了。因为在本文被丢进去同时并发的可是一个极端值。我们可以一起观察下图的指标分析，看看情况有多 “崩溃”。下图是上述代码的表现：</p>
+<h3 id="输出结果">输出结果<a href="#输出结果" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>...
+go func: 5839
+go func: 5840
+go func: 5841
+go func: 5842
+go func: 5915
+go func: 5524
+go func: 5916
+go func: 8209
+go func: 8264
+signal: killed
+</code></pre><p>如果你自己执行过代码，在 “输出结果” 上你会遇到如下问题：</p>
+<ul>
+<li>系统资源占用率不断上涨</li>
+<li>输出一定数量后：控制台就不再刷新输出最新的值了</li>
+<li>信号量：signal: killed</li>
+</ul>
+<h3 id="系统负载">系统负载<a href="#系统负载" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wnxd1.jpg" alt="image"></p>
+<h3 id="cpu">CPU<a href="#cpu" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wuKW8.jpg" alt="image"></p>
+<p>短时间内系统负载暴增</p>
+<h3 id="虚拟内存">虚拟内存<a href="#虚拟内存" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://s2.ax1x.com/2020/02/27/3wu1yQ.jpg" alt="image"></p>
+<p>短时间内占用的虚拟内存暴增</p>
+<h3 id="top">top<a href="#top" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>PID    COMMAND      %CPU  TIME     #TH   #WQ  #PORT MEM    PURG   CMPRS  PGRP  PPID  STATE    BOOSTS
+...
+73414  test         100.2 01:59.50 9/1   0    18    6801M+ 0B     114G+  73403 73403 running  *0[1]
+</code></pre><h3 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>如果仔细看过监控工具的示意图，就可以知道其实我间隔的执行了两次，能看到系统间的使用率幅度非常大。当进程被杀掉后，整体又恢复为正常值</p>
+<p>在这里，我们回到主题，就是在<strong>不控制并发的 goroutine 数量</strong> 会发生什么问题？大致如下：</p>
+<ul>
+<li>CPU 使用率浮动上涨</li>
+<li>Memory 占用不断上涨。也可以看看 CMPRS，它表示进程的压缩数据的字节数。已经到达 114G+ 了</li>
+<li>主进程崩溃（被杀掉了）</li>
+</ul>
+<p>简单来说，“崩溃” 的原因就是对系统资源的占用过大。常见的比如：打开文件数（too many files open）、内存占用等等</p>
+<h3 id="危害">危害<a href="#危害" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>对该台服务器产生非常大的影响，影响自身及相关联的应用。很有可能导致不可用或响应缓慢，另外启动了复数 “失控” 的 goroutine，导致程序流转混乱</p>
+<h2 id="解决方案">解决方案<a href="#解决方案" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在前面花了大量篇幅，渲染了在存在大量并发 goroutine 数量时，不控制的话会出现 “严重” 的问题，接下来一起思考下解决方案。如下：</p>
+<ol>
+<li>控制/限制 goroutine 同时并发运行的数量</li>
+<li>改变应用程序的逻辑写法（避免大规模的使用系统资源和等待）</li>
+<li><del>调整服务的硬件配置、最大打开数、内存等阈值</del></li>
+</ol>
+<h2 id="控制-goroutine-并发数量">控制 goroutine 并发数量<a href="#控制-goroutine-并发数量" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>接下来正式的开始解决这个问题，希望你认真阅读的同时加以思考，因为这个问题在实际项目中真的是太常见了！</p>
+<p>问题已经抛出来了，你需要做的是<strong>想想有什么办法</strong>解决这个问题。建议你自行思考一下技术方案。再接着往下看 :-)</p>
+<h3 id="尝试-chan">尝试 chan<a href="#尝试-chan" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="mi">10</span>
+	<span class="nx">ch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">bool</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="kc">true</span>
+		<span class="k">go</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">ch</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">//time.Sleep(time.Second)
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">ch</span> <span class="kd">chan</span> <span class="kt">bool</span><span class="p">,</span> <span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d\n&#34;</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+	<span class="o">&lt;-</span> <span class="nx">ch</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>go func: 1
+go func: 2
+go func: 3
+go func: 4
+go func: 5
+go func: 6
+go func: 7
+go func: 8
+go func: 0
+</code></pre><p>嗯，我们似乎很好的控制了 2 个 2 个的 “顺序” 执行多个 goroutine。但是，问题出现了。你仔细数一下输出结果，才 9 个值？</p>
+<p>这明显就不对。原因出在当主协程结束时，子协程也是会被终止掉的。因此剩余的 goroutine 没来及把值输出，就被送上路了（不信你把 <code>time.Sleep</code> 打开看看，看看输出数量）</p>
+<h3 id="尝试-sync">尝试 sync<a href="#尝试-sync" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">var</span> <span class="nx">wg</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="mi">10</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">go</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d\n&#34;</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>嗯，单纯的使用 <code>sync.WaitGroup</code> 也不行。没有控制到同时并发的 goroutine 数量（代指达不到本文所要求的目标）</p>
+<h4 id="小结-1">小结<a href="#小结-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>单纯<strong>简单</strong>使用 channel 或 sync 都有明显缺陷，不行。我们再看看组件配合能不能实现</p>
+<h3 id="尝试-chan--sync">尝试 chan + sync<a href="#尝试-chan--sync" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="o">...</span>
+<span class="kd">var</span> <span class="nx">wg</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="mi">10</span>
+	<span class="nx">ch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">bool</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">go</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">ch</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">ch</span> <span class="kd">chan</span> <span class="kt">bool</span><span class="p">,</span> <span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+
+	<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="kc">true</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d, time: %d\n&#34;</span><span class="p">,</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+	<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+	<span class="o">&lt;-</span><span class="nx">ch</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>go func: 9, time: 1547911938
+go func: 1, time: 1547911938
+go func: 6, time: 1547911939
+go func: 7, time: 1547911939
+go func: 8, time: 1547911940
+go func: 0, time: 1547911940
+go func: 3, time: 1547911941
+go func: 2, time: 1547911941
+go func: 4, time: 1547911942
+go func: 5, time: 1547911942
+</code></pre><p>从输出结果来看，确实实现了控制 goroutine 以 2 个 2 个的数量去执行我们的 “业务逻辑”，当然结果集也理所应当的是乱序输出</p>
+<h3 id="方案一简单-semaphore">方案一：简单 Semaphore<a href="#方案一简单-semaphore" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在确立了简单使用 chan + sync 的方案是可行后，我们重新将流转逻辑封装为 <a href="https://github.com/EDDYCJY/gsema">gsema</a>，主程序变成如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;time&#34;</span>
+
+	<span class="s">&#34;github.com/EDDYCJY/gsema&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="nx">sema</span> <span class="p">=</span> <span class="nx">gsema</span><span class="p">.</span><span class="nf">NewSemaphore</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="mi">10</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">go</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">sema</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Read</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">sema</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+	<span class="nx">sema</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d, time: %d\n&#34;</span><span class="p">,</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+	<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="分析方案">分析方案<a href="#分析方案" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>在上述代码中，程序执行流程如下：</p>
+<ul>
+<li>设置允许的并发数目为 3 个</li>
+<li>循环 10 次，每次启动一个 goroutine 来执行任务</li>
+<li>每一个 goroutine 在内部利用 <code>sema</code> 进行调控是否阻塞</li>
+<li>按允许并发数逐渐释出 goroutine，最后结束任务</li>
+</ul>
+<p>看上去人模人样，没什么严重问题。但却有一个 “大” 坑，认真看到第二点 “每次启动一个 goroutine” 这句话。这里<strong>有点问题</strong>，提前产生那么多的 goroutine 会不会有什么问题，接下来一起分析下利弊，如下：</p>
+<h4 id="利">利<a href="#利" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<ul>
+<li>适合<strong>量不大、复杂度低</strong>的使用场景
+<ul>
+<li>几百几千个、几十万个也是可以接受的（看具体业务场景）</li>
+<li>实际业务逻辑在运行前就已经被阻塞等待了（因为并发数受限），基本实际业务逻辑损耗的性能比 goroutine 本身大</li>
+<li>goroutine 本身很轻便，仅损耗极少许的内存空间和调度。这种等待响应的情况都是躺好了，等待任务唤醒</li>
+</ul>
+</li>
+<li>Semaphore 操作复杂度低且流转简单，容易控制</li>
+</ul>
+<h4 id="弊">弊<a href="#弊" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<ul>
+<li>不适合<strong>量很大、复杂度高</strong>的使用场景
+<ul>
+<li>有几百万、几千万个 goroutine 的话，就浪费了大量调度 goroutine 和内存空间。恰好你的服务器也接受不了的话</li>
+</ul>
+</li>
+<li>Semaphore 操作复杂度提高，要管理更多的状态</li>
+</ul>
+<h3 id="小结-2">小结<a href="#小结-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>基于什么业务场景，就用什么方案去做事</li>
+<li>有足够的时间，允许你去追求更优秀、极致的方案（用第三方库也行）</li>
+</ul>
+<p>用哪种方案，我认为主要基于以上两点去思考，都是 OK 的。没有对错，只有当前业务场景能不能接受，这个预先启动的 goroutine 数量你的系统是否能够接受</p>
+<p>当然了，常见/简单的 Go 应用采用这类技术方案，基本就能解决问题了。因为像本文第一节 “问题” 如此超巨大数量的情况，情况很少。其并不存在那些 “特殊性”。因此用这个方案基本 OK</p>
+<h2 id="灵活控制-goroutine-并发数量">灵活控制 goroutine 并发数量<a href="#灵活控制-goroutine-并发数量" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>小手一紧。隔壁老王发现了新的问题。“方案一” 中，在<strong>输入输出一体</strong>的情况下，在常见的业务场景中确实可以</p>
+<p>但，这次新的业务场景比较特殊，要控制输入的数量，以此达到<strong>改变允许并发运行 goroutine 的数量</strong>。我们仔细想想，要做出如下改变：</p>
+<ul>
+<li>输入/输出要抽离，才可以分别控制</li>
+<li>输入/输出要可变，理所应当在 for-loop 中（可设置数值的地方）</li>
+<li>允许改变 goroutine 并发数量，但它也必须有一个<strong>最大值</strong>（因为允许改变是相对）</li>
+</ul>
+<h3 id="方案二灵活-chan--sync">方案二：灵活 chan + sync<a href="#方案二灵活-chan--sync" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;sync&#34;</span>
+	<span class="s">&#34;time&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="nx">wg</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">userCount</span> <span class="o">:=</span> <span class="mi">10</span>
+	<span class="nx">ch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">int</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">userCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">defer</span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+			<span class="k">for</span> <span class="nx">d</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ch</span> <span class="p">{</span>
+				<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;go func: %d, time: %d\n&#34;</span><span class="p">,</span> <span class="nx">d</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">())</span>
+				<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="nx">d</span><span class="p">))</span>
+			<span class="p">}</span>
+		<span class="p">}()</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="mi">1</span>
+		<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="mi">2</span>
+		<span class="c1">//time.Sleep(time.Second)
+</span><span class="c1"></span>	<span class="p">}</span>
+
+	<span class="nb">close</span><span class="p">(</span><span class="nx">ch</span><span class="p">)</span>
+	<span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div><p>输出结果：</p>
+<pre><code>...
+go func: 1, time: 1547950567
+go func: 3, time: 1547950567
+go func: 1, time: 1547950567
+go func: 2, time: 1547950567
+go func: 2, time: 1547950567
+go func: 3, time: 1547950567
+go func: 1, time: 1547950568
+go func: 2, time: 1547950568
+go func: 3, time: 1547950568
+go func: 1, time: 1547950568
+go func: 3, time: 1547950569
+go func: 2, time: 1547950569
+</code></pre><p>在 “方案二” 中，我们可以随时随地的根据新的业务需求，做如下事情：</p>
+<ul>
+<li>变更 channel 的输入数量</li>
+<li>能够根据特殊情况，变更 channel 的循环值</li>
+<li>变更最大允许并发的 goroutine 数量</li>
+</ul>
+<p>总的来说，就是可控空间都尽量放开了，是不是更加灵活了呢 :-)</p>
+<h3 id="方案三第三方库">方案三：第三方库<a href="#方案三第三方库" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/go-playground/pool">go-playground/pool</a></li>
+<li><a href="https://github.com/nozzle/throttler">nozzle/throttler</a></li>
+<li><a href="https://github.com/Jeffail/tunny">Jeffail/tunny</a></li>
+<li><a href="https://github.com/panjf2000/ants">panjf2000/ants</a></li>
+</ul>
+<p>比较成熟的第三方库也不少，基本都是以生成和管理 goroutine 为目标的池工具。我简单列了几个，具体建议大家阅读下源码或者多找找，原理相似</p>
+<h2 id="总结">总结<a href="#总结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在本文的开头，我花了大力气（极端数量），告诉你<strong>同时并发过多的 goroutine 数量会导致系统占用资源不断上涨。最终该服务崩盘的极端情况</strong>。为的是希望你今后避免这种问题，给你留下深刻的印象</p>
+<p>接下来我们以 “控制 goroutine 并发数量” 为主题，展开了一番分析。分别给出了三种方案。在我看来，各具优缺点，我建议你<strong>挑选合适自身场景的技术方案</strong>就可以了</p>
+<p>因为，有不同类型的技术方案也能解决这个问题，千人千面。本文推荐的是较常见的解决方案，也欢迎大家在评论区继续补充 :-)</p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>711 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2019-01-20 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#问题">问题</a></li>
+    <li><a href="#噩梦般的开始">噩梦般的开始</a>
+      <ul>
+        <li><a href="#输出结果">输出结果</a></li>
+        <li><a href="#系统负载">系统负载</a></li>
+        <li><a href="#cpu">CPU</a></li>
+        <li><a href="#虚拟内存">虚拟内存</a></li>
+        <li><a href="#top">top</a></li>
+        <li><a href="#小结">小结</a></li>
+        <li><a href="#危害">危害</a></li>
+      </ul>
+    </li>
+    <li><a href="#解决方案">解决方案</a></li>
+    <li><a href="#控制-goroutine-并发数量">控制 goroutine 并发数量</a>
+      <ul>
+        <li><a href="#尝试-chan">尝试 chan</a></li>
+        <li><a href="#尝试-sync">尝试 sync</a></li>
+        <li><a href="#尝试-chan--sync">尝试 chan + sync</a></li>
+        <li><a href="#方案一简单-semaphore">方案一：简单 Semaphore</a></li>
+        <li><a href="#分析方案">分析方案</a></li>
+        <li><a href="#小结-2">小结</a></li>
+      </ul>
+    </li>
+    <li><a href="#灵活控制-goroutine-并发数量">灵活控制 goroutine 并发数量</a>
+      <ul>
+        <li><a href="#方案二灵活-chan--sync">方案二：灵活 chan + sync</a></li>
+        <li><a href="#方案三第三方库">方案三：第三方库</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/talk/2019-02-17-for-loop-json-unmarshal/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>for-loop 与 json.Unmarshal 性能分析概要</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/slice/2019-01-06-why-slice-max/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>Go Slice 最大容量大小是怎么来的</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

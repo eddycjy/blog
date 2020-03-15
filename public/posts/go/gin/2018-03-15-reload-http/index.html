@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载七」优雅的重启服务">
+<meta itemprop="description" content="知识点  信号量的了解。 应用热更新。  本文目标 在前面编写案例代码时，我相信你会想到，每次更新完代码，更新完配置文件后，就直接这么 ctrl&#43;c 真的没问题吗，ctrl&#43;c到底做了些什么事情呢？
+在这一节中我们简单讲述 ctrl&#43;c 背后的信号以及如何在Gin中优雅的重启服务，也就是对 HTTP 服务进行热更新。
+ctrl &#43; c  内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生SIGPIPE信号
+ 在终端执行特定的组合键可以使系统发送特定的信号给此进程，完成一系列的动作
+   命令 信号 含义     ctrl &#43; c SIGINT 强制进程结束   ctrl &#43; z SIGTSTP 任务中断，进程挂起   ctrl &#43; \ SIGQUIT 进程结束 和 dump core   ctrl &#43; d  EOF    SIGHUP 终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程）    因此在我们执行ctrl &#43; c关闭gin服务端时，会强制进程结束，导致正在访问的用户等出现问题">
+<meta itemprop="datePublished" content="2018-03-15T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-03-15T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="651">
+
+
+
+<meta itemprop="keywords" content="go,gin," /><meta property="og:title" content="「连载七」优雅的重启服务" />
+<meta property="og:description" content="知识点  信号量的了解。 应用热更新。  本文目标 在前面编写案例代码时，我相信你会想到，每次更新完代码，更新完配置文件后，就直接这么 ctrl&#43;c 真的没问题吗，ctrl&#43;c到底做了些什么事情呢？
+在这一节中我们简单讲述 ctrl&#43;c 背后的信号以及如何在Gin中优雅的重启服务，也就是对 HTTP 服务进行热更新。
+ctrl &#43; c  内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生SIGPIPE信号
+ 在终端执行特定的组合键可以使系统发送特定的信号给此进程，完成一系列的动作
+   命令 信号 含义     ctrl &#43; c SIGINT 强制进程结束   ctrl &#43; z SIGTSTP 任务中断，进程挂起   ctrl &#43; \ SIGQUIT 进程结束 和 dump core   ctrl &#43; d  EOF    SIGHUP 终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程）    因此在我们执行ctrl &#43; c关闭gin服务端时，会强制进程结束，导致正在访问的用户等出现问题" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/gin/2018-03-15-reload-http/" />
+<meta property="article:published_time" content="2018-03-15T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-03-15T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载七」优雅的重启服务"/>
+<meta name="twitter:description" content="知识点  信号量的了解。 应用热更新。  本文目标 在前面编写案例代码时，我相信你会想到，每次更新完代码，更新完配置文件后，就直接这么 ctrl&#43;c 真的没问题吗，ctrl&#43;c到底做了些什么事情呢？
+在这一节中我们简单讲述 ctrl&#43;c 背后的信号以及如何在Gin中优雅的重启服务，也就是对 HTTP 服务进行热更新。
+ctrl &#43; c  内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生SIGPIPE信号
+ 在终端执行特定的组合键可以使系统发送特定的信号给此进程，完成一系列的动作
+   命令 信号 含义     ctrl &#43; c SIGINT 强制进程结束   ctrl &#43; z SIGTSTP 任务中断，进程挂起   ctrl &#43; \ SIGQUIT 进程结束 和 dump core   ctrl &#43; d  EOF    SIGHUP 终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程）    因此在我们执行ctrl &#43; c关闭gin服务端时，会强制进程结束，导致正在访问的用户等出现问题"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载七」优雅的重启服务</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Mar 15, 2018</span></div>
+				<h1>「连载七」优雅的重启服务</h1>
+			</header>
+			<div class="content">
+				<h2 id="知识点">知识点<a href="#知识点" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<ul>
+<li>信号量的了解。</li>
+<li>应用热更新。</li>
+</ul>
+<h2 id="本文目标">本文目标<a href="#本文目标" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在前面编写案例代码时，我相信你会想到，每次更新完代码，更新完配置文件后，就直接这么 <code>ctrl+c</code> 真的没问题吗，<code>ctrl+c</code>到底做了些什么事情呢？</p>
+<p>在这一节中我们简单讲述 <code>ctrl+c</code> 背后的<strong>信号</strong>以及如何在<code>Gin</code>中<strong>优雅的重启服务</strong>，也就是对 <code>HTTP</code> 服务进行热更新。</p>
+<h2 id="ctrl--c">ctrl + c<a href="#ctrl--c" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<blockquote>
+<p>内核在某些情况下发送信号，比如在进程往一个已经关闭的管道写数据时会产生<code>SIGPIPE</code>信号</p>
+</blockquote>
+<p>在终端执行特定的组合键可以使系统发送特定的信号给此进程，完成一系列的动作</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>信号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ctrl + c</td>
+<td>SIGINT</td>
+<td>强制进程结束</td>
+</tr>
+<tr>
+<td>ctrl + z</td>
+<td>SIGTSTP</td>
+<td>任务中断，进程挂起</td>
+</tr>
+<tr>
+<td>ctrl + \</td>
+<td>SIGQUIT</td>
+<td>进程结束 和 <code>dump core</code></td>
+</tr>
+<tr>
+<td>ctrl + d</td>
+<td></td>
+<td>EOF</td>
+</tr>
+<tr>
+<td></td>
+<td>SIGHUP</td>
+<td>终止收到该信号的进程。若程序中没有捕捉该信号，当收到该信号时，进程就会退出（常用于 重启、重新加载进程）</td>
+</tr>
+</tbody>
+</table>
+<p>因此在我们执行<code>ctrl + c</code>关闭<code>gin</code>服务端时，<strong>会强制进程结束，导致正在访问的用户等出现问题</strong></p>
+<p>常见的 <code>kill -9 pid</code> 会发送 <code>SIGKILL</code> 信号给进程，也是类似的结果</p>
+<h3 id="信号">信号<a href="#信号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>本段中反复出现<strong>信号</strong>是什么呢？</p>
+<p>信号是 <code>Unix</code> 、类 <code>Unix</code> 以及其他 <code>POSIX</code> 兼容的操作系统中进程间通讯的一种有限制的方式</p>
+<p>它是一种异步的通知机制，用来提醒进程一个事件（硬件异常、程序执行异常、外部发出信号）已经发生。当一个信号发送给一个进程，操作系统中断了进程正常的控制流程。此时，任何非原子操作都将被中断。如果进程定义了信号的处理函数，那么它将被执行，否则就执行默认的处理函数</p>
+<h3 id="所有信号">所有信号<a href="#所有信号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>$ kill -l
+ 1) SIGHUP   2) SIGINT   3) SIGQUIT  4) SIGILL   5) SIGTRAP
+ 6) SIGABRT  7) SIGBUS   8) SIGFPE   9) SIGKILL 10) SIGUSR1
+11) SIGSEGV 12) SIGUSR2 13) SIGPIPE 14) SIGALRM 15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD 18) SIGCONT 19) SIGSTOP 20) SIGTSTP
+21) SIGTTIN 22) SIGTTOU 23) SIGURG  24) SIGXCPU 25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF 28) SIGWINCH    29) SIGIO   30) SIGPWR
+31) SIGSYS  34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1  64) SIGRTMAX
+</code></pre><h2 id="怎样算优雅">怎样算优雅<a href="#怎样算优雅" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="目的">目的<a href="#目的" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>不关闭现有连接（正在运行中的程序）</li>
+<li>新的进程启动并替代旧进程</li>
+<li>新的进程接管新的连接</li>
+<li>连接要随时响应用户的请求，当用户仍在请求旧进程时要保持连接，新用户应请求新进程，不可以出现拒绝请求的情况</li>
+</ul>
+<h3 id="流程">流程<a href="#流程" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、替换可执行文件或修改配置文件</p>
+<p>2、发送信号量 <code>SIGHUP</code></p>
+<p>3、拒绝新连接请求旧进程，但要保证已有连接正常</p>
+<p>4、启动新的子进程</p>
+<p>5、新的子进程开始 <code>Accet</code></p>
+<p>6、系统将新的请求转交新的子进程</p>
+<p>7、旧进程处理完所有旧连接后正常结束</p>
+<h2 id="实现优雅重启">实现优雅重启<a href="#实现优雅重启" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="endless">endless<a href="#endless" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<blockquote>
+<p>Zero downtime restarts for golang HTTP and HTTPS servers. (for golang 1.3+)</p>
+</blockquote>
+<p>我们借助 <a href="https://github.com/fvbock/endless">fvbock/endless</a> 来实现 <code>Golang HTTP/HTTPS</code> 服务重新启动的零停机</p>
+<p><code>endless server</code> 监听以下几种信号量：</p>
+<ul>
+<li>syscall.SIGHUP：触发 <code>fork</code> 子进程和重新启动</li>
+<li>syscall.SIGUSR1/syscall.SIGTSTP：被监听，但不会触发任何动作</li>
+<li>syscall.SIGUSR2：触发 <code>hammerTime</code></li>
+<li>syscall.SIGINT/syscall.SIGTERM：触发服务器关闭（会完成正在运行的请求）</li>
+</ul>
+<p><code>endless</code> 正正是依靠监听这些<strong>信号量</strong>，完成管控的一系列动作</p>
+<h4 id="安装">安装<a href="#安装" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<pre><code>go get -u github.com/fvbock/endless
+</code></pre><h4 id="编写">编写<a href="#编写" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>打开 <a href="https://github.com/EDDYCJY/go-gin-example">gin-blog</a> 的 <code>main.go</code>文件，修改文件：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;fmt&#34;</span>
+    <span class="s">&#34;log&#34;</span>
+    <span class="s">&#34;syscall&#34;</span>
+
+    <span class="s">&#34;github.com/fvbock/endless&#34;</span>
+
+    <span class="s">&#34;gin-blog/routers&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/setting&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">endless</span><span class="p">.</span><span class="nx">DefaultReadTimeOut</span> <span class="p">=</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">ReadTimeout</span>
+    <span class="nx">endless</span><span class="p">.</span><span class="nx">DefaultWriteTimeOut</span> <span class="p">=</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">WriteTimeout</span>
+    <span class="nx">endless</span><span class="p">.</span><span class="nx">DefaultMaxHeaderBytes</span> <span class="p">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span>
+    <span class="nx">endPoint</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;:%d&#34;</span><span class="p">,</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">HTTPPort</span><span class="p">)</span>
+
+    <span class="nx">server</span> <span class="o">:=</span> <span class="nx">endless</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">(</span><span class="nx">endPoint</span><span class="p">,</span> <span class="nx">routers</span><span class="p">.</span><span class="nf">InitRouter</span><span class="p">())</span>
+    <span class="nx">server</span><span class="p">.</span><span class="nx">BeforeBegin</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">add</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Actual pid is %d&#34;</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nf">Getpid</span><span class="p">())</span>
+    <span class="p">}</span>
+
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">server</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Server err: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div><p><code>endless.NewServer</code> 返回一个初始化的 <code>endlessServer</code> 对象，在 <code>BeforeBegin</code> 时输出当前进程的 <code>pid</code>，调用 <code>ListenAndServe</code> 将实际“启动”服务</p>
+<h4 id="验证">验证<a href="#验证" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<h5 id="编译"><strong>编译</strong><a href="#编译" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ go build main.go
+</code></pre><h5 id="执行"><strong>执行</strong><a href="#执行" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<pre><code>$ ./main
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+...
+Actual pid is 48601
+</code></pre><p>启动成功后，输出了<code>pid</code>为 48601；在另外一个终端执行 <code>kill -1 48601</code> ，检验先前服务的终端效果</p>
+<pre><code>[root@localhost go-gin-example]# ./main
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /auth                     --&gt; ...
+[GIN-debug] GET    /api/v1/tags              --&gt; ...
+...
+
+Actual pid is 48601
+
+...
+
+Actual pid is 48755
+48601 Received SIGTERM.
+48601 [::]:8000 Listener closed.
+48601 Waiting for connections to finish...
+48601 Serve() returning...
+Server err: accept tcp [::]:8000: use of closed network connection
+</code></pre><p>可以看到该命令已经挂起，并且 <code>fork</code> 了新的子进程 <code>pid</code> 为 <code>48755</code></p>
+<pre><code>48601 Received SIGTERM.
+48601 [::]:8000 Listener closed.
+48601 Waiting for connections to finish...
+48601 Serve() returning...
+Server err: accept tcp [::]:8000: use of closed network connection
+</code></pre><p>大致意思为主进程（<code>pid</code>为 48601）接受到 <code>SIGTERM</code> 信号量，关闭主进程的监听并且等待正在执行的请求完成；这与我们先前的描述一致</p>
+<h5 id="唤醒"><strong>唤醒</strong><a href="#唤醒" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h5>
+<p>这时候在 <code>postman</code> 上再次访问我们的接口，你可以惊喜的发现，他“复活”了！</p>
+<pre><code>Actual pid is 48755
+48601 Received SIGTERM.
+48601 [::]:8000 Listener closed.
+48601 Waiting for connections to finish...
+48601 Serve() returning...
+Server err: accept tcp [::]:8000: use of closed network connection
+
+
+$ [GIN] 2018/03/15 - 13:00:16 | 200 |     188.096µs |   192.168.111.1 | GET      /api/v1/tags...
+
+</code></pre><p>这就完成了一次正向的流转了</p>
+<p>你想想，每次更新发布、或者修改配置文件等，只需要给该进程发送<strong>SIGTERM 信号</strong>，而不需要强制结束应用，是多么便捷又安全的事！</p>
+<h4 id="问题">问题<a href="#问题" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p><code>endless</code> 热更新是采取创建子进程后，将原进程退出的方式，这点不符合守护进程的要求</p>
+<h3 id="httpserver---shutdown">http.Server - Shutdown()<a href="#httpserver---shutdown" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>如果你的<code>Golang &gt;= 1.8</code>，也可以考虑使用 <code>http.Server</code> 的 <a href="https://golang.org/pkg/net/http/#Server.Shutdown">Shutdown</a> 方法</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;fmt&#34;</span>
+    <span class="s">&#34;net/http&#34;</span>
+    <span class="s">&#34;context&#34;</span>
+    <span class="s">&#34;log&#34;</span>
+    <span class="s">&#34;os&#34;</span>
+    <span class="s">&#34;os/signal&#34;</span>
+    <span class="s">&#34;time&#34;</span>
+
+
+    <span class="s">&#34;gin-blog/routers&#34;</span>
+    <span class="s">&#34;gin-blog/pkg/setting&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">router</span> <span class="o">:=</span> <span class="nx">routers</span><span class="p">.</span><span class="nf">InitRouter</span><span class="p">()</span>
+
+    <span class="nx">s</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span>
+        <span class="nx">Addr</span><span class="p">:</span>           <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;:%d&#34;</span><span class="p">,</span> <span class="nx">setting</span><span class="p">.</span><span class="nx">HTTPPort</span><span class="p">),</span>
+        <span class="nx">Handler</span><span class="p">:</span>        <span class="nx">router</span><span class="p">,</span>
+        <span class="nx">ReadTimeout</span><span class="p">:</span>    <span class="nx">setting</span><span class="p">.</span><span class="nx">ReadTimeout</span><span class="p">,</span>
+        <span class="nx">WriteTimeout</span><span class="p">:</span>   <span class="nx">setting</span><span class="p">.</span><span class="nx">WriteTimeout</span><span class="p">,</span>
+        <span class="nx">MaxHeaderBytes</span><span class="p">:</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+            <span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Listen: %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}()</span>
+
+    <span class="nx">quit</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">os</span><span class="p">.</span><span class="nx">Signal</span><span class="p">)</span>
+    <span class="nx">signal</span><span class="p">.</span><span class="nf">Notify</span><span class="p">(</span><span class="nx">quit</span><span class="p">,</span> <span class="nx">os</span><span class="p">.</span><span class="nx">Interrupt</span><span class="p">)</span>
+    <span class="o">&lt;-</span> <span class="nx">quit</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Shutdown Server ...&#34;</span><span class="p">)</span>
+
+    <span class="nx">ctx</span><span class="p">,</span> <span class="nx">cancel</span> <span class="o">:=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">WithTimeout</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nf">Shutdown</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Server Shutdown:&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Server exiting&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><h2 id="小结">小结<a href="#小结" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在日常的服务中，优雅的重启（热更新）是非常重要的一环。而 <code>Golang</code> 在 <code>HTTP</code> 服务方面的热更新也有不少方案了，我们应该根据实际应用场景挑选最合适的</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="本系列示例代码">本系列示例代码<a href="#本系列示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/go-gin-example">go-gin-example</a></li>
+</ul>
+<h3 id="拓展阅读">拓展阅读<a href="#拓展阅读" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/braintree/manners">manners</a></li>
+<li><a href="https://github.com/tylerb/graceful">graceful</a></li>
+<li><a href="https://github.com/facebookgo/grace">grace</a></li>
+<li><a href="https://github.com/golang/go/commit/0cbb12f0bbaeb3893b3d011fdb1a270291747ab0">plugin: new package for loading plugins · golang/go@0cbb12f · GitHub</a></li>
+</ul>
+<h2 id="关于">关于<a href="#关于" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="修改记录">修改记录<a href="#修改记录" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li>第一版：2018 年 02 月 16 日发布文章</li>
+<li>第二版：2019 年 10 月 01 日修改文章</li>
+</ul>
+<h2 id="heading">？<a href="#heading" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>如果有任何疑问或错误，欢迎在 <a href="https://github.com/EDDYCJY/blog">issues</a> 进行提问或给予修正意见，如果喜欢或对你有所帮助，欢迎 Star，对作者是一种鼓励和推进。</p>
+<h3 id="我的公众号">我的公众号<a href="#我的公众号" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p><img src="https://image.eddycjy.com/8d0b0c3a11e74efd5fdfd7910257e70b.jpg" alt="image"></p>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/gin">gin</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>651 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-03-15 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#知识点">知识点</a></li>
+    <li><a href="#本文目标">本文目标</a></li>
+    <li><a href="#ctrl--c">ctrl + c</a>
+      <ul>
+        <li><a href="#信号">信号</a></li>
+        <li><a href="#所有信号">所有信号</a></li>
+      </ul>
+    </li>
+    <li><a href="#怎样算优雅">怎样算优雅</a>
+      <ul>
+        <li><a href="#目的">目的</a></li>
+        <li><a href="#流程">流程</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现优雅重启">实现优雅重启</a>
+      <ul>
+        <li><a href="#endless">endless</a></li>
+        <li><a href="#httpserver---shutdown">http.Server - Shutdown()</a></li>
+      </ul>
+    </li>
+    <li><a href="#小结">小结</a></li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#本系列示例代码">本系列示例代码</a></li>
+        <li><a href="#拓展阅读">拓展阅读</a></li>
+      </ul>
+    </li>
+    <li><a href="#关于">关于</a>
+      <ul>
+        <li><a href="#修改记录">修改记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#heading">？</a>
+      <ul>
+        <li><a href="#我的公众号">我的公众号</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/gin/2018-03-18-swagger/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载八」为它加上Swagger</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/talk/2018-03-13-golang-relatively-path/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>聊一聊，Go 的相对路径问题</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

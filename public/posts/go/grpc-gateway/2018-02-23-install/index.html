@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="theme-color" content="#494f5c">
+	<meta name="msapplication-TileColor" content="#494f5c">
+<meta itemprop="name" content="「连载一」gRPC介绍与环境安装">
+<meta itemprop="description" content="假定我们有一个项目需求，希望用Rpc作为内部API的通讯，同时也想对外提供Restful Api，写两套又太繁琐不符合
+于是我们想到了Grpc以及Grpc Gateway，这就是我们所需要的
+准备环节 在正式开始我们的Grpc&#43;Grpc Gateway实践前，我们需要先配置好我们的开发环境
+ Grpc Protoc Plugin Protocol Buffers Grpc-gateway  Grpc 是什么 Google对Grpc的定义：
+ A high performance, open-source universal RPC framework
+ 也就是Grpc是一个高性能、开源的通用RPC框架，具有以下特性：
+ 强大的IDL，使用Protocol Buffers作为数据交换的格式，支持v2、v3（推荐v3） 跨语言、跨平台，也就是Grpc支持多种平台和语言 支持HTTP2，双向传输、多路复用、认证等  安装 1、官方推荐（需科学上网）
+go get -u google.golang.org/grpc 2、通过github.com
+进入到第一个$GOPATH目录（因为go get 会默认安装在第一个下）下，新建google.golang.org目录，拉取golang在github上的镜像库：
+cd /usr/local/go/path/src mkdir google.golang.org cd google.golang.org/ git clone https://github.com/grpc/grpc-go mv grpc-go/ grpc/ 目录结构：
+google.golang.org/ └── grpc ... 而在grpc下有许多常用的包，例如：
+ metadata：定义了grpc所支持的元数据结构，包中方法可以对MD进行获取和处理 credentials：实现了grpc所支持的各种认证凭据，封装了客户端对服务端进行身份验证所需要的所有状态，并做出各种断言 codes：定义了grpc使用的标准错误码，可通用  Protoc Plugin 是什么 编译器插件">
+<meta itemprop="datePublished" content="2018-02-23T12:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-02-23T12:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="411">
+
+
+
+<meta itemprop="keywords" content="go,grpc-gateway," /><meta property="og:title" content="「连载一」gRPC介绍与环境安装" />
+<meta property="og:description" content="假定我们有一个项目需求，希望用Rpc作为内部API的通讯，同时也想对外提供Restful Api，写两套又太繁琐不符合
+于是我们想到了Grpc以及Grpc Gateway，这就是我们所需要的
+准备环节 在正式开始我们的Grpc&#43;Grpc Gateway实践前，我们需要先配置好我们的开发环境
+ Grpc Protoc Plugin Protocol Buffers Grpc-gateway  Grpc 是什么 Google对Grpc的定义：
+ A high performance, open-source universal RPC framework
+ 也就是Grpc是一个高性能、开源的通用RPC框架，具有以下特性：
+ 强大的IDL，使用Protocol Buffers作为数据交换的格式，支持v2、v3（推荐v3） 跨语言、跨平台，也就是Grpc支持多种平台和语言 支持HTTP2，双向传输、多路复用、认证等  安装 1、官方推荐（需科学上网）
+go get -u google.golang.org/grpc 2、通过github.com
+进入到第一个$GOPATH目录（因为go get 会默认安装在第一个下）下，新建google.golang.org目录，拉取golang在github上的镜像库：
+cd /usr/local/go/path/src mkdir google.golang.org cd google.golang.org/ git clone https://github.com/grpc/grpc-go mv grpc-go/ grpc/ 目录结构：
+google.golang.org/ └── grpc ... 而在grpc下有许多常用的包，例如：
+ metadata：定义了grpc所支持的元数据结构，包中方法可以对MD进行获取和处理 credentials：实现了grpc所支持的各种认证凭据，封装了客户端对服务端进行身份验证所需要的所有状态，并做出各种断言 codes：定义了grpc使用的标准错误码，可通用  Protoc Plugin 是什么 编译器插件" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://eddycjy.com/posts/go/grpc-gateway/2018-02-23-install/" />
+<meta property="article:published_time" content="2018-02-23T12:00:00+00:00" />
+<meta property="article:modified_time" content="2018-02-23T12:00:00+00:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="「连载一」gRPC介绍与环境安装"/>
+<meta name="twitter:description" content="假定我们有一个项目需求，希望用Rpc作为内部API的通讯，同时也想对外提供Restful Api，写两套又太繁琐不符合
+于是我们想到了Grpc以及Grpc Gateway，这就是我们所需要的
+准备环节 在正式开始我们的Grpc&#43;Grpc Gateway实践前，我们需要先配置好我们的开发环境
+ Grpc Protoc Plugin Protocol Buffers Grpc-gateway  Grpc 是什么 Google对Grpc的定义：
+ A high performance, open-source universal RPC framework
+ 也就是Grpc是一个高性能、开源的通用RPC框架，具有以下特性：
+ 强大的IDL，使用Protocol Buffers作为数据交换的格式，支持v2、v3（推荐v3） 跨语言、跨平台，也就是Grpc支持多种平台和语言 支持HTTP2，双向传输、多路复用、认证等  安装 1、官方推荐（需科学上网）
+go get -u google.golang.org/grpc 2、通过github.com
+进入到第一个$GOPATH目录（因为go get 会默认安装在第一个下）下，新建google.golang.org目录，拉取golang在github上的镜像库：
+cd /usr/local/go/path/src mkdir google.golang.org cd google.golang.org/ git clone https://github.com/grpc/grpc-go mv grpc-go/ grpc/ 目录结构：
+google.golang.org/ └── grpc ... 而在grpc下有许多常用的包，例如：
+ metadata：定义了grpc所支持的元数据结构，包中方法可以对MD进行获取和处理 credentials：实现了grpc所支持的各种认证凭据，封装了客户端对服务端进行身份验证所需要的所有状态，并做出各种断言 codes：定义了grpc使用的标准错误码，可通用  Protoc Plugin 是什么 编译器插件"/>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="">
+	<link rel="shortcut icon" href="/favicon.ico">
+
+	<title>「连载一」gRPC介绍与环境安装</title>
+	<link rel="stylesheet" href="https://eddycjy.com/css/style.min.43ade9343bda1e3f53fcb45dc776c310b369f2a93c03dee67c82401987989309.css">
+	
+</head>
+
+<body id="page">
+	
+	<header id="site-header" class="animated slideInUp faster">
+		<div class="hdr-wrapper section-inner">
+			<div class="hdr-left">
+				<div class="site-branding">
+					<a href="https://eddycjy.com">煎鱼</a>
+				</div>
+				<nav class="site-nav hide-in-mobile">
+					<a href="https://eddycjy.com/posts/">Posts</a>
+					<a href="https://eddycjy.com/tags/">Tags</a>
+					<a href="https://eddycjy.com/about/">About</a>
+				</nav>
+			</div>
+			<div class="hdr-right hdr-icons">
+				<button id="toc-btn" class="hdr-btn desktop-only-ib" title="Table of Contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg></button><span class="hdr-social hide-in-mobile"><a href="https://github.com/eddycjy" target="_blank" rel="noopener me" title="Github"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg></a></span><button id="menu-btn" class="hdr-btn" title="Menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+			</div>
+		</div>
+	</header>
+	<div id="mobile-menu" class="animated fast">
+		<ul>
+			<li><a href="https://eddycjy.com/posts/">Posts</a></li>
+			<li><a href="https://eddycjy.com/tags/">Tags</a></li>
+			<li><a href="https://eddycjy.com/about/">About</a></li>
+		</ul>
+	</div>
+
+
+	<main class="site-main section-inner animated fadeIn faster">
+		<article class="thin">
+			<header class="post-header">
+				<div class="post-meta"><span>Feb 23, 2018</span></div>
+				<h1>「连载一」gRPC介绍与环境安装</h1>
+			</header>
+			<div class="content">
+				<p>假定我们有一个项目需求，希望用<code>Rpc</code>作为内部<code>API</code>的通讯，同时也想对外提供<code>Restful Api</code>，写两套又太繁琐不符合</p>
+<p>于是我们想到了<code>Grpc</code>以及<code>Grpc Gateway</code>，这就是我们所需要的</p>
+<p><img src="https://camo.githubusercontent.com/e75a8b46b078a3c1df0ed9966a16c24add9ccb83/68747470733a2f2f646f63732e676f6f676c652e636f6d2f64726177696e67732f642f3132687034435071724e5046686174744c5f63496f4a707446766c41716d35774c513067677149356d6b43672f7075623f773d37343926683d333730" alt="image"></p>
+<h2 id="准备环节">准备环节<a href="#准备环节" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<p>在正式开始我们的<code>Grpc</code>+<code>Grpc Gateway</code>实践前，我们需要先配置好我们的开发环境</p>
+<ul>
+<li>Grpc</li>
+<li>Protoc Plugin</li>
+<li>Protocol Buffers</li>
+<li>Grpc-gateway</li>
+</ul>
+<h2 id="grpc">Grpc<a href="#grpc" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="是什么">是什么<a href="#是什么" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>Google对<code>Grpc</code>的定义：</p>
+<blockquote>
+<p>A high performance, open-source universal RPC framework</p>
+</blockquote>
+<p>也就是<code>Grpc</code>是一个高性能、开源的通用RPC框架，具有以下特性：</p>
+<ul>
+<li>强大的<code>IDL</code>，使用<code>Protocol Buffers</code>作为数据交换的格式，支持<code>v2</code>、<code>v3</code>（推荐<code>v3</code>）</li>
+<li>跨语言、跨平台，也就是<code>Grpc</code>支持多种平台和语言</li>
+<li><strong>支持HTTP2</strong>，双向传输、多路复用、认证等</li>
+</ul>
+<h3 id="安装">安装<a href="#安装" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>1、官方推荐（需科学上网）</p>
+<pre><code>go get -u google.golang.org/grpc
+</code></pre><p>2、通过<code>github.com</code></p>
+<p>进入到第一个$GOPATH目录（因为<code>go get</code> 会默认安装在第一个下）下，新建<code>google.golang.org</code>目录，拉取<code>golang</code>在<code>github</code>上的镜像库：</p>
+<pre><code>cd /usr/local/go/path/src   
+
+mkdir google.golang.org
+
+cd google.golang.org/
+
+git clone https://github.com/grpc/grpc-go
+
+mv grpc-go/ grpc/
+</code></pre><p>目录结构：</p>
+<pre><code>google.golang.org/
+└── grpc
+    ...
+</code></pre><p>而在<code>grpc</code>下有许多常用的包，例如：</p>
+<ul>
+<li><a href="https://gowalker.org/google.golang.org/grpc/metadata">metadata</a>：定义了<code>grpc</code>所支持的元数据结构，包中方法可以对<code>MD</code>进行获取和处理</li>
+<li><a href="https://gowalker.org/google.golang.org/grpc/credentials">credentials</a>：实现了<code>grpc</code>所支持的各种认证凭据，封装了客户端对服务端进行身份验证所需要的所有状态，并做出各种断言</li>
+<li><a href="https://gowalker.org/google.golang.org/grpc/codes">codes</a>：定义了<code>grpc</code>使用的标准错误码，可通用</li>
+</ul>
+<h2 id="protoc-plugin">Protoc Plugin<a href="#protoc-plugin" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="是什么-1">是什么<a href="#是什么-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>编译器插件</p>
+<h3 id="安装-1">安装<a href="#安装-1" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>go get -u github.com/golang/protobuf/protoc-gen-go
+</code></pre><p>将<code>Protoc Plugin</code>的可执行文件从$GOPATH中移动到$GOBIN下</p>
+<pre><code>mv /usr/local/go/path/bin/protoc-gen-go /usr/local/go/bin/
+</code></pre><h2 id="protocol-buffers-v3">Protocol Buffers v3<a href="#protocol-buffers-v3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="是什么-2">是什么<a href="#是什么-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<blockquote>
+<p>Protocol buffers are a flexible, efficient, automated mechanism for serializing structured data – think XML, but smaller, faster, and simpler. You define how you want your data to be structured once, then you can use special generated source code to easily write and read your structured data to and from a variety of data streams and using a variety of languages. You can even update your data structure without breaking deployed programs that are compiled against the &ldquo;old&rdquo; format.</p>
+</blockquote>
+<p><code>Protocol Buffers</code>是<code>Google</code>推出的一种数据描述语言，支持多语言、多平台，它是一种二进制的格式，总得来说就是更小、更快、更简单、更灵活，目前分别有<code>v2</code>、<code>v3</code>的版本，我们推荐使用<code>v3</code></p>
+<ul>
+<li><a href="https://developers.google.com/protocol-buffers/docs/proto">proto2 文档地址</a></li>
+<li><a href="https://developers.google.com/protocol-buffers/docs/proto3">proto3 文档地址</a></li>
+</ul>
+<p>建议可以阅读下官方文档的介绍，本系列会在使用时简单介绍所涉及的内容</p>
+<h3 id="安装-2">安装<a href="#安装-2" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>wget https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-all-3.5.1.zip
+unzip protobuf-all-3.5.1.zip
+cd protobuf-3.5.1/
+./configure
+make
+make install
+</code></pre><p>检查是否安装成功</p>
+<pre><code>protoc --version
+</code></pre><p>如果出现报错</p>
+<pre><code>protoc: error while loading shared libraries: libprotobuf.so.15: cannot open shared object file: No such file or directory
+</code></pre><p>则执行<code>ldconfig</code>后，再次运行即可成功</p>
+<h4 id="为什么要执行ldconfig">为什么要执行<code>ldconfig</code><a href="#为什么要执行ldconfig" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>我们通过控制台输出的信息可以知道，<code>Protocol Buffers Libraries</code>的默认安装路径在<code>/usr/local/lib</code></p>
+<pre><code>Libraries have been installed in:
+   /usr/local/lib
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the `-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the `LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the `LD_RUN_PATH' environment variable
+     during linking
+   - use the `-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to `/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+</code></pre><p>而我们安装了一个新的动态链接库，<code>ldconfig</code>一般在系统启动时运行，所以现在会找不到这个<code>lib</code>，因此我们要手动执行<code>ldconfig</code>，<strong>让动态链接库为系统所共享，它是一个动态链接库管理命令</strong>，这就是<code>ldconfig</code>命令的作用</p>
+<h3 id="protoc使用">protoc使用<a href="#protoc使用" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<p>我们按照惯例执行<code>protoc --help</code>（查看帮助文档），我们抽出几个常用的命令进行讲解</p>
+<p>1、<code>-IPATH, --proto_path=PATH</code>：指定<code>import</code>搜索的目录，可指定多个，如果不指定则默认当前工作目录</p>
+<p>2、<code>--go_out</code>：生成<code>golang</code>源文件</p>
+<h4 id="参数">参数<a href="#参数" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>若要将额外的参数传递给插件，可使用从输出目录中分离出来的逗号分隔的参数列表:</p>
+<pre><code>protoc --go_out=plugins=grpc,import_path=mypackage:. *.proto
+</code></pre><ul>
+<li><code>import_prefix=xxx</code>：将指定前缀添加到所有<code>import</code>路径的开头</li>
+<li><code>import_path=foo/bar</code>：如果文件没有声明<code>go_package</code>，则用作包。如果它包含斜杠，那么最右边的斜杠将被忽略。</li>
+<li><code>plugins=plugin1+plugin2</code>：指定要加载的子插件列表（我们所下载的repo中唯一的插件是grpc）</li>
+<li><code>Mfoo/bar.proto=quux/shme</code>： <code>M</code>参数，指定<code>.proto</code>文件编译后的包名（<code>foo/bar.proto</code>编译后为包名为<code>quux/shme</code>）</li>
+</ul>
+<h4 id="grpc支持">Grpc支持<a href="#grpc支持" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h4>
+<p>如果<code>proto</code>文件指定了<code>RPC</code>服务，<code>protoc-gen-go</code>可以生成与<code>grpc</code>相兼容的代码，我们仅需要将<code>plugins=grpc</code>参数传递给<code>--go_out</code>，就可以达到这个目的</p>
+<pre><code>protoc --go_out=plugins=grpc:. *.proto
+</code></pre><h2 id="grpc-gateway">Grpc-gateway<a href="#grpc-gateway" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="是什么-3">是什么<a href="#是什么-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<blockquote>
+<p>grpc-gateway is a plugin of protoc. It reads gRPC service definition, and generates a reverse-proxy server which translates a RESTful JSON API into gRPC. This server is generated according to custom options in your gRPC definition.</p>
+</blockquote>
+<p><a href="https://github.com/grpc-ecosystem/grpc-gateway">grpc-gateway</a>是protoc的一个插件。它读取gRPC服务定义，并生成一个反向代理服务器，将RESTful JSON API转换为gRPC。此服务器是根据gRPC定义中的自定义选项生成的。</p>
+<h3 id="安装-3">安装<a href="#安装-3" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<pre><code>go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+</code></pre><p>如果出现以下报错，我们分析错误提示可得知是连接超时（大概是被墙了）</p>
+<pre><code>package google.golang.org/genproto/googleapis/api/annotations: unrecognized import path &quot;google.golang.org/genproto/googleapis/api/annotations&quot; (https fetch: Get https://google.golang.org/genproto/googleapis/api/annotations?go-get=1: dial tcp 216.239.37.1:443: getsockopt: connection timed out)
+</code></pre><p>有两种解决方法，</p>
+<p>1、科学上网</p>
+<p>2、通过<code>github.com</code></p>
+<p>进入到第一个$GOTPATH目录的<code>google.golang.org</code>目录下，拉取<code>genproto</code>在<code>github</code>上的<code>go-genproto</code>镜像库：</p>
+<pre><code>cd /usr/local/go/path/src/google.golang.org
+
+git clone https://github.com/google/go-genproto.git
+
+mv go-genproto/ genproto/
+</code></pre><p>在安装完毕后，我们将<code>grpc-gateway</code>的可执行文件从$GOPATH中移动到$GOBIN</p>
+<pre><code>mv /usr/local/go/path/bin/protoc-gen-grpc-gateway /usr/local/go/bin/
+</code></pre><p>到这里我们这节就基本完成了，建议多反复看几遍加深对各个组件的理解！</p>
+<h2 id="参考">参考<a href="#参考" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h2>
+<h3 id="示例代码">示例代码<a href="#示例代码" class="anchor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg></a></h3>
+<ul>
+<li><a href="https://github.com/EDDYCJY/grpc-hello-world">grpc-hello-world</a></li>
+</ul>
+
+			</div>
+			<hr class="post-end">
+			<footer class="post-info">
+				<p>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://eddycjy.com/tags/go">go</a></span><span class="tag"><a href="https://eddycjy.com/tags/grpc-gateway">grpc-gateway</a></span>
+				</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>411 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-02-23 20:00 &#43;0800</p>
+			</footer>
+		</article>
+		<aside id="toc" class="show-toc">
+			<div class="toc-title">Table of Contents</div>
+			<nav id="TableOfContents">
+  <ul>
+    <li><a href="#准备环节">准备环节</a></li>
+    <li><a href="#grpc">Grpc</a>
+      <ul>
+        <li><a href="#是什么">是什么</a></li>
+        <li><a href="#安装">安装</a></li>
+      </ul>
+    </li>
+    <li><a href="#protoc-plugin">Protoc Plugin</a>
+      <ul>
+        <li><a href="#是什么-1">是什么</a></li>
+        <li><a href="#安装-1">安装</a></li>
+      </ul>
+    </li>
+    <li><a href="#protocol-buffers-v3">Protocol Buffers v3</a>
+      <ul>
+        <li><a href="#是什么-2">是什么</a></li>
+        <li><a href="#安装-2">安装</a></li>
+        <li><a href="#protoc使用">protoc使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#grpc-gateway">Grpc-gateway</a>
+      <ul>
+        <li><a href="#是什么-3">是什么</a></li>
+        <li><a href="#安装-3">安装</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a>
+      <ul>
+        <li><a href="#示例代码">示例代码</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+		</aside>
+		<div class="post-nav thin">
+			<a class="next-post" href="https://eddycjy.com/posts/go/grpc-gateway/2018-02-27-hello-world/">
+				<span class="post-nav-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>&nbsp;Newer</span><br><span>「连载二」Hello World</span>
+			</a>
+			<a class="prev-post" href="https://eddycjy.com/posts/go/gin/2018-02-15-log/">
+				<span class="post-nav-label">Older&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span><br><span>「连载六」编写一个简单的文件日志</span>
+			</a>
+		</div>
+		<div id="comments" class="thin">
+						<script src="https://utteranc.es/client.js"
+							repo="eddycjy/blog"
+							issue-term="pathname"
+							theme="github-light"
+							crossorigin="anonymous"
+							async>
+			</script>
+		</div>
+	</main>
+
+	<footer id="site-footer" class="section-inner thin animated fadeIn faster">
+		<p>&copy; 2020 <a href="https://eddycjy.com">煎鱼</a> &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></p>
+		<p>
+			Made with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> &#183; Theme <a href="https://github.com/Track3/hermit" target="_blank" rel="noopener">Hermit</a> &#183; <a href="https://eddycjy.com/post/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a>
+		</p>
+	</footer>
+
+
+	<script src="https://eddycjy.com/js/main.min.784417f5847151f848c339cf0acb13a06cbb648b1483435a28ed4556c4ead69b.js"></script>
+
+</body>
+
+</html>

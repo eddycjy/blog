@@ -1,0 +1,35 @@
+# Translations for English
+# https://gohugo.io/content-management/multilingual/#translation-of-strings
+
+# 404.html
+#
+[notFound]
+other = "Oops, page not found…"
+
+[home]
+other = "Home"
+
+[archives]
+other = "Archives"
+
+# posts/single.html
+#
+[wordCount]
+other = "{{ .WordCount }} Words"
+
+[tableOfContents]
+other = "Table of Contents"
+
+[newer]
+other = "Newer"
+
+[older]
+other = "Older"
+
+# partials/header.html
+#
+[menu]
+other = "Menu"
+
+[featuredImage]
+other = "Featured Image"

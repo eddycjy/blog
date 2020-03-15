@@ -1,15 +1,12 @@
 # 煎鱼的迷之博客
 
-写写代码，喝喝茶，搞搞 Go，一起吧，这是我的项目地址：https://github.com/EDDYCJY/blog
+写写代码，喝喝茶，搞搞 Go，一起吧，这是我的项目地址：https://github.com/eddycjy/blog
 
 ## 在线阅读
 
-- https://book.eddycjy.com/golang/
-- https://eddycjy.gitbook.io/golang/
+- https://eddycjy.com/
 
 ## 我的公众号
-
-为了留言功能，最近换了新的公众号，可能需要大家重新关注一下，谢谢。
 
 ![image](https://image.eddycjy.com/7b703c95f19bad89cf81b15c83927e46.jpg)
 
