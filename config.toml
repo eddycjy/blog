@@ -35,12 +35,12 @@ enableEmoji = true  # Shorthand emojis in content files - https://gohugo.io/func
   dateformNumTime = "2006-01-02 15:04 -0700"
 
   # Metadata mostly used in document's head
-  description = "go,golang,源码分析,系列教程"
+  description = "煎鱼,博客,go,golang,源码分析,系列教程"
   # images = [""]
   themeColor = "#494f5c"
 
   homeSubtitle = "Metrics, Tracing, Logging"
-  footerCopyright = ' &#183; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a>'
+  footerCopyright = ' &#183; <a href="http://www.beian.miit.gov.cn/">粤ICP备19076352号-1</a>'
   # bgImg = ""  # Homepage background-image URL
 
   # Prefix of link to the git commit detail page. GitInfo must be enabled.
