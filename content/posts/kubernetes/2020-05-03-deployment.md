@@ -1,6 +1,6 @@
 ---
 title: "在 Kubernetes 中部署应用程序"
-date: 2020-05-01T17:08:41+08:00
+date: 2020-05-03T11:05:00+08:00
 toc: true
 tags: 
   - kubernetes
