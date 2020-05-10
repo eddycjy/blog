@@ -188,12 +188,12 @@ table {
 // Header & Footer
 //
 #site-header {
-  position: fixed;
+  //position: fixed;
   z-index: 1;
-  bottom: 0;
+  //bottom: 0;
   width: 100%;
   box-sizing: border-box;
-  box-shadow: -1px -2px 3px rgba(0, 0, 0, 0.45);
+  box-shadow: -1px 2px 3px rgba(0, 0, 0, 0.45);
   background-color: $dark-grey;
 }
 
