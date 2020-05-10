@@ -10,7 +10,7 @@ pygmentsUseClasses  = true
 rssLimit = 10  # Maximum number of items in the RSS feed.
 copyright = "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License." # This message is only used by the RSS template.
 enableEmoji = true  # Shorthand emojis in content files - https://gohugo.io/functions/emojify/
-# googleAnalytics = "UA-123-45"
+googleAnalytics = "UA-166045776-1"
 # disqusShortname = "yourdiscussshortname"
 
 [author]
