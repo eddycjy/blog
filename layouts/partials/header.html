@@ -5,7 +5,7 @@
 					<a href="{{.Site.BaseURL}}">{{ .Site.Title }}</a>
 				</div>
 				<nav class="site-nav hide-in-mobile">
-					{{- range .Site.Menus.main }}
+					{{- range .Site.Menus.nav }}
 					<a href="{{ .URL | absLangURL}}">{{ .Name }}</a>
 					{{- end }}
 				</nav>

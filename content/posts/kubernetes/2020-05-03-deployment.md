@@ -111,9 +111,6 @@ spec:
   - name: nginx-port
     protocol: TCP
     port: 80
-    nodePort: 30001
-    targetPort: 80
-  type: NodePort
 ```
 
 应用 nginx-service.yaml 文件：
@@ -128,59 +125,46 @@ $ kubectl apply -f nginx-service.yaml
 $ kubectl get services -o wide
 ```
 
-### 验证 Nginx 访问
+但这时候是无法访问到 Nginx 的，我们可以通过 Kubernetes 的 NodePort 的方式对外提供访问：
 
-```shell
-$ curl 127.0.0.1:30001
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-    body {
-        width: 35em;
-        margin: 0 auto;
-        font-family: Tahoma, Verdana, Arial, sans-serif;
-    }
-</style>
-</head>
-...
+
 ```
-
-## 部署 Ingress
-
-创建并应用 nginx-ingress.yaml 文件
-
-```shell
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
+apiVersion: v1
+kind: Service
 metadata:
-  name: simple-fanout-example
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: nginx-service
+  labels:
+    app: nginx
 spec:
-  rules:
-  - host: foo.bar.com
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: nginx-service
-          servicePort: 30001
+  selector:
+    app: nginx
+  ports:
+  - name: nginx-port
+    protocol: TCP
+    port: 80
+    nodePort: 30001
+    targetPort: 80
+  type: NodePort
 ```
 
-nginx-service 的反向代理的配置文件是通过 Ingress 在 .yaml 文件中所配置的规则来进行自动生成的。在完成后，我们还需要在本地配置 `foo.bar.com` 的 HOST 指向到 `/etc/hosts`，然后进行测试：
+然后再进行访问：
 
 ```shell
-$ curl http://foo.bar.com:30001
+$ curl http://127.0.0.1:30001
 <!DOCTYPE html>
 <html>
 <head>
 <title>Welcome to nginx!</title>
 ...
+
+
 ```
+
+至此我们已经打通了和 Nginx 之间的访问。
 
 ## 部署 Go 程序
+
+在部署环境中常常需要将应用程序部署上去，然后对外进行提供服务，我们模拟一个 Go 程序：
 
 ```go
 func main() {
@@ -197,7 +181,7 @@ func main() {
 
 ### 编写和编译 Dockerfile
 
-编写项目的 Dockerfile：
+在项目根目录创建 Dockerfile 文件，进行编写：
 
 ```shell
 FROM golang:latest
@@ -256,7 +240,7 @@ v0.0.1: digest: sha256:a1ef61e899db75eb2171652356be15559f1991b94a971306fb79cecce
 
 ## 编写 Kubernetes 配置
 
-编写 go-deployment.yaml：
+接下来我们需要针对刚刚所打包的 Go 程序创建 Deployment，编写 go-deployment.yaml 文件：
 
 ```shell
 apiVersion: extensions/v1beta1
@@ -280,64 +264,69 @@ spec:
         image: eddycjy/awesome-project:v0.0.1
 ```
 
-编写 go-service.yaml：
+创建 Service，编写 go-service.yaml：
 
 ```
 apiVersion: v1
 kind: Service
 metadata:
-  name: awesome-project-service
-  namespace: default
+  name: awesome-project-svc
   labels:
     app: awesome-project
 spec:
   ports:
-    - name: ap-port
-      port: 9001
-      protocol: TCP
-      targetPort: 9001
+  - port: 9001
+  type: ClusterIP
   selector:
-    k8s-app: awesome-project
+    app: awesome-project
 ```
 
-修改 nginx-ingress.yaml：
+## 部署 Ingress
+
+### Ingress Controller
+
+我们采用 Docker for Mac 特定提供的 Ingress Controller 部署脚本：
 
 ```
-apiVersion: networking.k8s.io/v1beta1
+$ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-0.32.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+其会所有命名空间监视 Ingress 对象，并配置 RBAC 权限，否则你有可能会遇到 403 Forbidden 的问题。
+
+### Nginx Ingress
+
+在完成了 Ingress Controller 等相关部署后，我们可以正式的部署属于自己业务的 Nginx Ingress 对象：
+
+```
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: simple-fanout-example
+  name: test-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-  - host: foo.bar.com
-    ...
-  - host: awesome-project.local
+  - host: website-ingress.local
     http:
       paths:
-      - path: /
-        backend:
-          serviceName: awesome-project-service
-          servicePort: ap-port
+      - backend:
+          serviceName: awesome-project-svc
+          servicePort: 9001
 ```
 
-打开 `/etc/hosts` 并配置 HOST `127.0.0.1 awesome-project.local` 后，进行验证：
+`kubectl apply -f` 应用刚刚所编写的配置文件，然后查看运行情况：
+
+```
+$ kubectl get ingresses.
+NAME           HOSTS                   ADDRESS     PORTS   AGE
+test-ingress   website-ingress.local   localhost   80      8h
+```
+
+如何发现 ADDRESS 为空，则存在问题，需要进行排查（可能性有很多）。在确定 ADDRESS 属性正常后，我们需要打开 `/etc/hosts` 并配置 HOST `127.0.0.1 awesome-project.local` ，并进行验证：
 
 ```shell
-$ curl http://awesome-project.local:9001/ping
+$ curl http://awesome-project.local/ping
 pong
-```
-
-检查 Pod 运行数量：
-
-```
-$ kubectl get pods
-NAME                               READY   STATUS    RESTARTS   AGE
-awesome-project-76788db95b-7ztwr   1/1     Running   0          27m
-awesome-project-76788db95b-kbtwz   1/1     Running   0          27m
-nginx-deployment-9fbc65d67-7vs6x   1/1     Running   0          23h
-nginx-deployment-9fbc65d67-vvqm2   1/1     Running   0          23h
 ```
 
 至此，我们完成了一个简单的 Go 程序的部署和外部调用。

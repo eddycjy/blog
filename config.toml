@@ -76,13 +76,30 @@ googleAnalytics = "UA-166045776-1"
     weight = 10
 
   [[menu.main]]
-    name = "系列"
-    url = "category/"
-    weight = 11
-
-  [[menu.main]]
     name = "关于"
     url = "about/"
     weight = 20
+
+
+  [[menu.nav]]
+    name = "文章"
+    url = "posts/"
+    weight = 10
+
+  [[menu.nav]]
+    name = "Go系列"
+    url = "go-categories/"
+    weight = 11
+
+  [[menu.nav]]
+    name = "Kubernetes系列"
+    url = "k8s-categories/"
+    weight = 11
+
+  [[menu.nav]]
+    name = "Prometheus系列"
+    url = "prometheus-categories/"
+    weight = 11
+
 
 

@@ -5,7 +5,7 @@ date: "2020-04-21"
 
 我不怎么喜欢左写写，右写写，因此总是在不知不觉中写了不少的系列教程，希望对你有所帮助。
 
-- HTTP Server
+- 一：**HTTP 应用**
     - [「连载一」Go 介绍与环境安装](/posts/go/gin/2018-02-10-install/)
     - [「连载二」Gin搭建Blog API's （一）](/posts/go/gin/2018-02-11-api-01/)
     - [「连载三」Gin搭建Blog API's （二）](/posts/go/gin/2018-02-12-api-02/)
@@ -25,7 +25,7 @@ date: "2020-04-21"
     - [「连载十七」用Nginx部署Go应用](/posts/go/gin/2018-09-01-nginx/)
     - [「番外」Golang 交叉编译](/posts/go/gin/2018-03-26-cgo/)
     - [「番外」请入门 Makefile](/posts/go/gin/2018-08-26-makefile/)
-- gRPC Server
+- 二：**gRPC 应用**
     - [「连载一」gRPC及相关介绍](/posts/go/grpc/2018-09-22-install/)
     - [「连载二」gRPC Client and Server](/posts/go/grpc/2018-09-23-client-and-server/)
     - [「连载三」gRPC Streaming, Client and Server](/posts/go/grpc/2018-09-24-stream-client-server/)
@@ -36,7 +36,7 @@ date: "2020-04-21"
     - [「连载八」对 RPC 方法做自定义认证](/posts/go/grpc/2018-10-14-per-rpc-credentials/)
     - [「连载九」gRPC Deadlines](/posts/go/grpc/2018-10-16-deadlines/)
     - [「连载十」分布式链路追踪 gRPC + Opentracing + Zipkin](/posts/go/grpc/2018-10-20-zipkin/)
-- grpc+grpc-gateway
+- 三：**grpc+grpc-gateway 应用**
     - [「连载一」gRPC介绍与环境安装](/posts/go/grpc-gateway/2018-02-23-install/)
     - [「连载二」Hello World](/posts/go/grpc-gateway/2018-02-27-hello-world/)
     - [「连载三」Swagger了解一下](/posts/go/grpc-gateway/2018-03-04-swagger/)
