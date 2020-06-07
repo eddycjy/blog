@@ -8,7 +8,7 @@
 
 ## 我的公众号
 
-![image](https://image.eddycjy.com/7b703c95f19bad89cf81b15c83927e46.jpg)
+![image](https://image.eddycjy.com/7074be90379a121746146bc4229819f8.jpg)
 
 ## ？
 
