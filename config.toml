@@ -40,7 +40,7 @@ googleAnalytics = "UA-166045776-1"
   themeColor = "#494f5c"
 
   homeSubtitle = "Metrics, Tracing, Logging"
-  footerCopyright = ' &#183; <a href="http://www.beian.miit.gov.cn/">粤ICP备19076352号-1</a>'
+  footerCopyright = ' &#183; <a href="http://www.beian.miit.gov.cn/">粤ICP备19076352号</a>'
   # bgImg = ""  # Homepage background-image URL
 
   # Prefix of link to the git commit detail page. GitInfo must be enabled.
