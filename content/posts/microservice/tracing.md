@@ -32,7 +32,7 @@ tags:
 
 ## 选型？有哪些
 
-接下来想做链路追踪，那必然要挑选一款开源产品作为你的分布式链路追踪系统，不大可能再造一个全新的，先实现业务目的最重要。因此在网上一搜，发现如下大量产品：
+想做链路追踪，那必然要挑选一款开源产品作为你的分布式链路追踪系统，不大可能再造一个全新的，先实现业务目的最重要。因此在网上一搜，发现如下大量产品：
 
 - Twitter：Zipkin。
 - Uber：Jaeger。
@@ -46,6 +46,8 @@ tags:
 随手一搜就发现这类产品特别的多，并且据闻各大公司都有自己的一套内部链路追踪系统，这下你可犯了大难。他们之间都是基于 Google Dapper 演进出来的，那本质上到底有什么区别，怎么延伸出这么多的新产品？
 
 ### Jaeger
+
+首先看看由 Uber 开发的 Jaeger，Jaeger 目前由 Cloud Native Computing Foundation（CNCF）托管，是 CNCF 的第七个顶级项目（于 2019 年 10 月毕业）：
 
 ![image](https://image.eddycjy.com/1a672c2972602f1f154c1666c94e860a.png)
 
@@ -78,7 +80,7 @@ Jaeger 是一个很经典的架构，由客户端主动发送链路信息到 Age
 - Web UI：数据查询与前端界面展示。
 
 从时间上来看 Jaeger 比 Zipkin 晚四年，莫非是重复造轮子。经过翻阅，可得知做 Jaeger 的主要原因是：
-> 当时将跨度发送到 Zipkin 的唯一方法是通过 Scribe，而 Zipkin 支持的唯一高性能数据存储是 Cassandra。当时 Uber 对这两种技术都没有经验，因此选择了自己构建一个后端，该后端将一些自定义组件与 Zipkin UI 结合在一起，形成了一个完整的跟踪系统。” 
+> 当时将跨度发送到 Zipkin 的唯一方法是通过 Scribe，而 Zipkin 支持的唯一高性能数据存储是 Cassandra。当时 Uber 对这两种技术都没有经验，因此选择了自己构建一个后端，该后端将一些自定义组件与 Zipkin UI 结合在一起，形成了一个完整的跟踪系统。
 
 更详细可阅读 [Evolving Distributed Tracing at Uber Engineering](https://eng.uber.com/distributed-tracing/)，可以了解很多细节。
 
