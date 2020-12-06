@@ -3,7 +3,7 @@ title: "《跟煎鱼学 Go》"
 date: "2020-04-21"
 ---
 
-我不怎么喜欢左写写，右写写，因此总是在不知不觉中写了不少的系列教程，希望对你有所帮助。
+我不怎么喜欢左写写，右写写，因此总是在不知不觉中写了不少的系列教程，希望对你有所帮助，若要催更请关注公众号后私聊催。
 
 - 一：**HTTP 应用**
     - [「连载一」Go 介绍与环境安装](/posts/go/gin/2018-02-10-install/)
@@ -41,3 +41,9 @@ date: "2020-04-21"
     - [「连载二」Hello World](/posts/go/grpc-gateway/2018-02-27-hello-world/)
     - [「连载三」Swagger了解一下](/posts/go/grpc-gateway/2018-03-04-swagger/)
     - [「连载四」gRPC+gRPC Gateway 能不能不用证书？](/posts/go/grpc-gateway/2019-06-22-grpc-gateway-tls/)
+
+### 我的公众号
+
+平时喜欢分享 Go 语言、微服务架构和奇怪的系统设计，欢迎关注我的公众号：
+
+![image](https://image.eddycjy.com/7074be90379a121746146bc4229819f8.jpg)
