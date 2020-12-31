@@ -8,11 +8,11 @@ tags:
     - go
 ---
 
-![image](https://s2.ax1x.com/2020/02/27/3wKfNq.png)
+![image](https://image.eddycjy.com/4a47a0db6e60853dedfcfdf08a5ca249.png)
 
 gRPC 在 Go 语言中大放异彩，越来越多的小伙伴在使用，最近也在公司安利了一波，希望这一篇文章能带你一览 gRPC 的巧妙之处，本文篇幅比较长，请做好阅读准备。本文目录如下：
 
-![image](https://s2.ax1x.com/2020/02/27/3wMMrQ.jpg)
+![image](https://image.eddycjy.com/156005c5baf40ff51a327f1c34f2975b.jpg)
 
 ## 简述
 
@@ -22,7 +22,7 @@ gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩�
 
 ## 调用模型
 
-![image](http://www.grpc.io/img/grpc_concept_diagram_00.png)
+![image](https://image.eddycjy.com/10fb15c77258a991b0028080a64fb42d.png)
 
 1、客户端（gRPC Stub）调用 A 方法，发起 RPC 调用。
 
@@ -38,7 +38,7 @@ gRPC 基于 HTTP/2 标准设计，带来诸如双向流、流控、头部压缩�
 
 ### 一、Unary RPC：一元 RPC
 
-![image](https://s2.ax1x.com/2020/02/27/3wMNxU.png)
+![image](https://image.eddycjy.com/09dd8c2662b96ce14928333f055c5580.png)
 
 #### Server
 
@@ -89,7 +89,7 @@ func main() {
 
 ### 二、Server-side streaming RPC：服务端流式 RPC
 
-![image](https://s2.ax1x.com/2020/02/27/3wMdr4.png)
+![image](https://image.eddycjy.com/8266e4bfeda1bd42d8f9794eb4ea0a13.png)
 
 #### Server
 
@@ -128,7 +128,7 @@ func printLists(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 ### 三、Client-side streaming RPC：客户端流式 RPC
 
-![image](https://s2.ax1x.com/2020/02/27/3wMBZ9.png)
+![image](https://image.eddycjy.com/f19c9085129709ee14d013be869df69b.png)
 
 #### Server
 
@@ -167,7 +167,7 @@ func printRecord(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 ### 四、Bidirectional streaming RPC：双向流式 RPC
 
-![image](https://s2.ax1x.com/2020/02/27/3wMrI1.png)
+![image](https://image.eddycjy.com/9eb9cd58b9ea5e04c890326b5c1f471f.png)
 
 #### Server
 
@@ -212,7 +212,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 在开始分析之前，我们要先 gRPC 的调用有一个初始印象。那么最简单的就是对 Client 端调用 Server 端进行抓包去剖析，看看整个过程中它都做了些什么事。如下图：
 
-![image](https://s2.ax1x.com/2020/02/27/3wMgxO.jpg)
+![image](https://image.eddycjy.com/8cda81fc7ad906927144235dda5fdf15.jpg)
 
 - Magic
 - SETTINGS
@@ -233,7 +233,7 @@ func printRoute(client pb.StreamServiceClient, r *pb.StreamRequest) error {
 
 #### Magic
 
-![image](https://s2.ax1x.com/2020/02/27/3wM7JP.jpg)
+![image](https://image.eddycjy.com/30e62fddc14c05988b44e7c02788e187.jpg)
 
 Magic 帧的主要作用是建立 HTTP/2 请求的前言。在 HTTP/2 中，要求两端都要发送一个连接前言，作为对所使用协议的最终确认，并确定 HTTP/2 连接的初始设置，客户端和服务端各自发送不同的连接前言。
 
@@ -241,9 +241,9 @@ Magic 帧的主要作用是建立 HTTP/2 请求的前言。在 HTTP/2 中，要�
 
 #### SETTINGS
 
-![image](https://s2.ax1x.com/2020/02/27/3wQPzT.jpg)
+![image](https://image.eddycjy.com/ae566253288191ce5d879e51dae1d8c3.jpg)
 
-![image](https://s2.ax1x.com/2020/02/27/3wQ779.jpg)
+![image](https://image.eddycjy.com/62bf1edb36141f114521ec4bb4175579.jpg)
 
 SETTINGS 帧的主要作用是设置这一个连接的参数，作用域是整个连接而并非单一的流。
 
@@ -251,7 +251,7 @@ SETTINGS 帧的主要作用是设置这一个连接的参数，作用域是整�
 
 #### HEADERS
 
-![image](https://s2.ax1x.com/2020/02/27/3wN2tg.jpg)
+![image](https://image.eddycjy.com/8df7b73a7820f4aef47864f2a6c5fccf.jpg)
 
 HEADERS 帧的主要作用是存储和传播 HTTP 的标头信息。我们关注到 HEADERS 里有一些眼熟的信息，分别如下：
 
@@ -266,21 +266,21 @@ HEADERS 帧的主要作用是存储和传播 HTTP 的标头信息。我们关注
 
 #### DATA
 
-![image](https://s2.ax1x.com/2020/02/27/3wNTBV.jpg)
+![image](https://image.eddycjy.com/9414a8f5b810972c3c9a0e2860c07532.jpg)
 
 DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，可以很明显看到我们的请求参数 gRPC 存储在里面。只需要了解到这一点就可以了。
 
 #### HEADERS, DATA, HEADERS
 
-![image](https://s2.ax1x.com/2020/02/27/3wNj39.jpg)
+![image](https://image.eddycjy.com/edab7ba7e203cd7576d1200465194ea8.jpg)
 
 在上图中 HEADERS 帧比较简单，就是告诉我们 HTTP 响应状态和响应的内容格式。
 
-![imgae](https://s2.ax1x.com/2020/02/27/3wUl4g.jpg)
+![imgae](https://image.eddycjy.com/db3a17f7bcac837ecc1fe2bc630a5473.jpg)
 
 在上图中 DATA 帧主要承载了响应结果的数据集，图中的 gRPC Server 就是我们 RPC 方法的响应结果。
 
-![image](https://s2.ax1x.com/2020/02/27/3wUUbV.jpg)
+![image](https://image.eddycjy.com/85b6f89b41cae26786ac72365fff771b.jpg)
 
 在上图中 HEADERS 帧主要承载了 gRPC 状态 和 gRPC 状态消息，图中的 `grpc-status` 和 `grpc-message` 就是我们的 gRPC 调用状态的结果。
 
@@ -290,7 +290,7 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 主要作用是管理和流的窗口控制。通常情况下打开一个连接后，服务器和客户端会立即交换 SETTINGS 帧来确定流控制窗口的大小。默认情况下，该大小设置为约 65 KB，但可通过发出一个 WINDOW_UPDATE 帧为流控制设置不同的大小。
 
-![image](https://s2.ax1x.com/2020/02/27/3wUwUU.jpg)
+![image](https://image.eddycjy.com/a269962fe1424e1ca3e68c328b9fed61.jpg)
 
 #### PING/PONG
 
@@ -298,7 +298,7 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 ### 小结
 
-![image](https://s2.ax1x.com/2020/02/27/3wU05F.png)
+![image](https://image.eddycjy.com/ba6beb7ae28ef0a97d7a0a038feb5060.png)
 
 - 在建立连接之前，客户端/服务端都会发送**连接前言**（Magic+SETTINGS），确立协议和配置项。
 - 在传输数据时，是会涉及滑动窗口（WINDOW_UPDATE）等流控策略的。
@@ -312,7 +312,7 @@ DATA 帧的主要作用是装填主体信息，是数据帧。而在上图中，
 
 ### 服务端
 
-![image](https://s2.ax1x.com/2020/02/27/3wUDC4.png)
+![image](https://image.eddycjy.com/7134f8f5aced525d1c11d229063305e7.png)
 
 为什么四行代码，就能够起一个 gRPC Server，内部做了什么逻辑。你有想过吗？接下来我们一步步剖析，看看里面到底是何方神圣。
 
@@ -434,7 +434,7 @@ func (s *Server) register(sd *ServiceDesc, ss interface{}) {
 
 在这一章节中，主要介绍的是 gRPC Server 在启动前的整理和注册行为，看上去很简单，但其实一切都是为了后续的实际运行的预先准备。因此我们整理一下思路，将其串联起来看看，如下：
 
-![image](https://s2.ax1x.com/2020/02/27/3wUgDx.png)
+![image](https://image.eddycjy.com/75c168b671d4ce827fca23907d85f114.png)
 
 ### 三、监听
 
@@ -484,7 +484,7 @@ func (s *Server) Serve(lis net.Listener) error {
 
 Serve 会根据外部传入的 Listener 不同而调用不同的监听模式，这也是 `net.Listener` 的魅力，灵活性和扩展性会比较高。而在 gRPC Server 中最常用的就是 `TCPConn`，基于 TCP Listener 去做。接下来我们一起看看具体的处理逻辑，如下：
 
-![image](https://s2.ax1x.com/2020/02/27/3wUI8H.png)
+![image](https://image.eddycjy.com/7ae5e99a8c2f19cd25f44313293553aa.png)
 
 - 循环处理连接，通过 `lis.Accept` 取出连接，如果队列中没有需处理的连接时，会形成阻塞等待。
 - 若 `lis.Accept` 失败，则触发休眠机制，若为第一次失败那么休眠 5ms，否则翻倍，再次失败则不断翻倍直至上限休眠时间 1s，而休眠完毕后就会尝试去取下一个 “它”。
@@ -493,7 +493,7 @@ Serve 会根据外部传入的 Listener 不同而调用不同的监听模式，�
 
 ## 客户端
 
-![image](https://s2.ax1x.com/2020/02/27/3wUHKI.png)
+![image](https://image.eddycjy.com/2484a7df36877a14689574eebda6dd7c.png)
 
 ### 一、创建拨号连接
 
@@ -532,7 +532,7 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 
 之前听到有的人说调用 `grpc.Dial` 后客户端就已经与服务端建立起了连接，但这对不对呢？我们先鸟瞰全貌，看看正在跑的 goroutine。如下：
 
-![image](https://s2.ax1x.com/2020/02/27/3wUXa8.jpg)
+![image](https://image.eddycjy.com/cf5793938b321b67b3b667655b375703.jpg)
 
 我们可以有几个核心方法一直在等待/处理信号，通过分析底层源码可得知。涉及如下：
 
@@ -590,11 +590,11 @@ func (ac *addrConn) resetTransport() {
 
 #### 真的连了吗
 
-![image](https://s2.ax1x.com/2020/02/27/3wakZV.jpg)
+![image](https://image.eddycjy.com/eb935669c45405844c35aafbd5fe43d7.jpg)
 
 在抓包工具上提示一个包都没有，那么这算真正连接了吗？我认为这是一个表述问题，我们应该尽可能的严谨。如果你真的想通过 `DialContext` 方法就打通与服务端的连接，则需要调用 `WithBlock` 方法，虽然会导致阻塞等待，但最终连接会到达 `Ready` 状态（握手成功）。如下图：
 
-![image](https://s2.ax1x.com/2020/02/27/3waJiD.jpg)
+![image](https://image.eddycjy.com/e0e28452229af52e70f87dd03c3a30c2.jpg)
 
 ### 二、实例化 Service API
 
@@ -708,7 +708,7 @@ func (cc *ClientConn) Close() error {
 
 ### 1. gRPC Metadata 是通过什么传输？
 
-![image](https://s2.ax1x.com/2020/02/27/3waaQA.jpg)
+![image](https://image.eddycjy.com/129e458698c4745a32d44582161b51d8.jpg)
 
 ### 2. 调用 grpc.Dial 会真正的去连接服务端吗？
 
@@ -720,21 +720,21 @@ func (cc *ClientConn) Close() error {
 
 **3.1. 客户端**
 
-![image](https://s2.ax1x.com/2020/02/27/3wawLt.jpg)
+![image](https://image.eddycjy.com/e25418821200a0f7c8f9f81b22d21691.jpg)
 
 **3.2. 服务端**
 
-![image](https://s2.ax1x.com/2020/02/27/3wa6Jg.png)
+![image](https://image.eddycjy.com/19ee203f0229aae4b91567bff25442e5.png)
 
 **3.3. TCP**
 
-![image](https://s2.ax1x.com/2020/02/27/3waWyn.jpg)
+![image](https://image.eddycjy.com/f0d0b070be593820651230120b0374be.jpg)
 
 ### 4. 不控制超时调用的话，会出现什么问题？
 
 短时间内不会出现问题，但是会不断积蓄泄露，积蓄到最后当然就是服务无法提供响应了。如下图：
 
-![image](https://s2.ax1x.com/2020/02/27/3wafLq.jpg)
+![image](https://image.eddycjy.com/853b031a43495200d111d6f5239398a3.jpg)
 
 ### 5. 为什么默认的拦截器不可以传多个？
 
