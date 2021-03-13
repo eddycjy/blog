@@ -1,5 +1,5 @@
 ---
-title: "《跟煎鱼学 Kubernetes》"
+title: "《跟煎鱼学 Kubernetes/Prometheus》"
 date: "2020-05-16"
 ---
 
@@ -8,6 +8,11 @@ date: "2020-05-16"
 1. [Kubernetes 本地快速启动（基于 Docker）](/posts/kubernetes/2020-05-01-install)
 2. [在 Kubernetes 中部署应用程序](/posts/kubernetes/2020-05-03-deployment)
 3. [使用 Go 程序调用 Kubernetes API](/posts/kubernetes/2020-05-10-api)
+
+
+1. [Prometheus 快速入门](/posts/prometheus/2020-05-16-startup)
+2. [Prometheus 四大度量指标的了解和应用](/posts/prometheus/2020-05-16-metrics)
+3. [使用 Prometheus 对 Go 程序进行指标采集](/posts/prometheus/2020-05-16-pull)
 
 ### 我的公众号
 

@@ -87,6 +87,11 @@ googleAnalytics = "UA-166045776-1"
     weight = 10
 
   [[menu.nav]]
+    name = "Go语言编程之旅"
+    url = "https://golang2.eddycjy.com/"
+    weight = 11
+
+  [[menu.nav]]
     name = "Go语言进阶之旅"
     url = "https://golang1.eddycjy.com/"
     weight = 11
@@ -100,11 +105,6 @@ googleAnalytics = "UA-166045776-1"
     name = "Kubernetes系列"
     url = "k8s-categories/"
     weight = 13
-
-  [[menu.nav]]
-    name = "Prometheus系列"
-    url = "prometheus-categories/"
-    weight = 14
 
 
 
