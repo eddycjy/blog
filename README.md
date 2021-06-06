@@ -8,6 +8,8 @@
 
 ## 我的公众号
 
+所有文章和最新进度，请关注：
+
 ![image](https://image.eddycjy.com/7074be90379a121746146bc4229819f8.jpg)
 
 ## ？
