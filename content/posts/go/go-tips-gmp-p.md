@@ -1,5 +1,5 @@
 ---
-title: "再见 Go 面试官：GMP 模型，为什么要有 P？"
+title: "Go 面试官：GMP 模型，为什么要有 P？"
 date: 2021-04-05T16:15:20+08:00
 images:
 tags: 

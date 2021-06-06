@@ -1,5 +1,5 @@
 ---
-title: "再见 Go 面试官：单核 CPU，开两个 Goroutine，其中一个死循环，会怎么样？"
+title: "Go 面试官：单核 CPU，开两个 Goroutine，其中一个死循环，会怎么样？"
 date: 2021-04-05T16:17:23+08:00
 images:
 tags: 

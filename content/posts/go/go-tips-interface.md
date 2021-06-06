@@ -1,5 +1,5 @@
 ---
-title: "Go 面试题：Go interface 的一个 “坑” 及原理分析"
+title: "Go 面试官：Go interface 的一个 “坑” 及原理分析"
 date: 2021-04-05T16:12:59+08:00
 images:
 tags: 
@@ -14,7 +14,7 @@ tags:
 无独有偶，我也在网上看到有小伙伴在 Go 面试的时候被问到了：
 
 
-![来自网上博客的截图](https://imgkr2.cn-bj.ufileos.com/47298525-071e-48a8-9fef-6f3c877efc87.png?UCloudPublicKey=TOKEN_8d8b72be-579a-4e83-bfd0-5f6ce1546f13&Signature=KulDMev7hDbYxm3oA2y%252FF4uuiXw%253D&Expires=1615902011)
+![来自网上博客的截图](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/36d7ecb0da9e4b32a493dedce6ebc691~tplv-k3u1fbpfcp-watermark.image)
 
 今天特意分享出来让大家避开这个坑。
 
