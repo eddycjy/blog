@@ -11,7 +11,7 @@ tags:
 
 前几天我们有聊到《单核 CPU，开两个 Goroutine，其中一个死循环，会怎么样？》的问题，我们在一个细节部分有提到：
 
-![](https://files.mdnice.com/user/3610/c8def7b0-e48a-4bb0-a1b9-1346c6815df6.png)
+![](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6d9cdfb09590496daeca3675aae08611~tplv-k3u1fbpfcp-zoom-1.image)
 
 有新的小伙伴会产生更多的疑问，那就是在 Go 语言中，是如何抢占 P 的呢，这里面是怎么做的？
 
