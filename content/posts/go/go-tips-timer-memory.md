@@ -104,7 +104,7 @@ func main() {
 
 ![PProf](https://image.eddycjy.com/c9552708ee112bceef4ac80f1ead50bd.jpg)
 
-从图来分析，可以发现是不断地在调用 `time.After`，从而导致计时器 `time.NerTimer` 的不断创建和内存申请。
+从图来分析，可以发现是不断地在调用 `time.After`，从而导致计时器 `time.NewTimer` 的不断创建和内存申请。
 
 这就非常奇怪了，因为我们的 Go 工程里只有几行代码与 `time` 相关联：
 
