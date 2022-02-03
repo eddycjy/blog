@@ -14,7 +14,7 @@ tags:
 本章节将使用 Go 来编写 gRPC Server 和 Client，让其互相通讯。在此之上会使用到如下库：
 
 - google.golang.org/grpc
-- github.com/golang/protobuf/protoc-gen-go
+- google.golang.org/protobuf/proc-gen-go
 
 ## 安装
 
@@ -50,7 +50,7 @@ protoc: error while loading shared libraries: libprotobuf.so.15: cannot open sha
 ### Protoc Plugin
 
 ```
-go get -u github.com/golang/protobuf/protoc-gen-go
+go get -u google.golang.org/protobuf/proc-gen-go
 ```
 
 安装环境若有问题，可参考我先前的文章 [《介绍与环境安装》](https://segmentfault.com/a/1190000013339403) 内有详细介绍，不再赘述
