@@ -97,6 +97,11 @@ googleAnalytics = "UA-166045776-1"
     weight = 11
 
   [[menu.nav]]
+    name = "Go语言设计哲学"
+    url = "https://golang3.eddycjy.com/"
+    weight = 11
+
+  [[menu.nav]]
     name = "Go语言入门系列"
     url = "go-categories/"
     weight = 12
