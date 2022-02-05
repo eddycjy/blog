@@ -1,5 +1,5 @@
 ---
-title: "Go 读者提问：值为 nil 也能调用函数，太神奇了吧？.md"
+title: "Go 读者提问：值为 nil 也能调用函数，太神奇了吧？"
 date: 2021-12-31T12:55:27+08:00
 toc: true
 images:
