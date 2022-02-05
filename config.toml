@@ -12,6 +12,7 @@ copyright = "This work is licensed under a Creative Commons Attribution-NonComme
 enableEmoji = true  # Shorthand emojis in content files - https://gohugo.io/functions/emojify/
 googleAnalytics = "UA-166045776-1"
 # disqusShortname = "yourdiscussshortname"
+summarylength = 30
 
 [author]
   name = "煎鱼"
@@ -39,6 +40,8 @@ googleAnalytics = "UA-166045776-1"
   # images = [""]
   themeColor = "#494f5c"
 
+  mainSections = ["posts"]
+
   homeSubtitle = "Metrics, Tracing, Logging"
   footerCopyright = ' &#183; <a href="http://www.beian.miit.gov.cn/">粤ICP备19076352号</a>'
   # bgImg = ""  # Homepage background-image URL
@@ -55,9 +58,11 @@ googleAnalytics = "UA-166045776-1"
   
   # Add custom css
   # customCSS = ["css/foo.css", "css/bar.css"]
+  customCSS = ["https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css", "css/styles.css"]
 
   # Social Icons
   # Check https://github.com/Track3/hermit#social-icons for more info.
+
 
   [[params.social]]
     name = "github"

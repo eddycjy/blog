@@ -1,0 +1,132 @@
+:root {
+    --bg-color: #fff;
+    --secondary-bg-color: #eeeeee;
+    --heading-color: #5f5f5f;
+    --body-color: rgba(0, 0, 0, 0.7);
+    --post-color: rgba(0, 0, 0, 0.44);
+    --border-color: rgba(0, 0, 0, 0.15);
+    --pre-bg-color: #f9f9fd;
+    --nav-text-color: #5a5a5a;
+    --tag-color: #424242;
+    --blockquote-text-color: #858585;
+    --blockquote-border-color: #dfe2e5;
+    scroll-padding-top: 100px;
+}
+
+.post .post-footer {
+    padding: 0 0 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.post .post-footer .meta {
+    max-width: 100%;
+    display: flex;
+    color: #bbbbbb;
+}
+
+.post .post-footer .meta .info {
+    float: left;
+    font-size: 12px;
+    margin-bottom: 1em;
+    color: var(--body-color);
+}
+
+.post .post-footer .info .separator a {
+    margin-right: 0.2em;
+}
+
+.post .post-footer .meta .info .date {
+    margin-right: 10px;
+    margin-left: 5px
+}
+
+.info {
+    margin: 1em;
+}
+
+.post .post-footer .meta a {
+    text-decoration: none;
+    color: var(--body-color);
+    padding-right: 10px;
+}
+
+.post .post-footer .meta a:hover {
+    color: #2660ab;
+}
+
+.post .post-footer .meta i {
+    margin-right: 6px;
+}
+
+.post .post-footer .tags {
+    padding-bottom: 15px;
+    font-size: 13px;
+}
+
+.post .post-footer .tags ul {
+    list-style-type: none;
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.post .post-footer .tags ul li {
+    list-style-type: none;
+    margin: 0;
+    padding-right: 5px;
+    display: inline;
+}
+
+.post .post-footer .tags a {
+    text-decoration: none;
+    color: var(--post-color);
+    font-weight: 400;
+}
+
+.post .post-footer .tags a:hover {
+    text-decoration: none;
+}
+
+.pagination {
+    margin: 30px;
+    padding: 0px 0 56px 0;
+    text-align: center;
+}
+
+.pagination ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 13px;
+}
+
+.pagination ul li {
+    margin: 0 2px 0 2px;
+    display: inline;
+    line-height: 1;
+}
+
+.pagination ul li a {
+    text-decoration: none;
+    color: var(--body-color);
+}
+
+.pagination .pre {
+    float: left;
+}
+
+.pagination .next {
+    float: right;
+}
+
+.tag::before {
+    content: "#";
+    opacity: .5;
+}
+
+.tag {
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1;
+    margin: 5px 8px 5px 0;
+}
